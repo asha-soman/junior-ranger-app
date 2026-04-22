@@ -6,7 +6,6 @@ import { HelperText, Text } from "react-native-paper";
 import { screenStyles } from "../../styles/loginStyles";
 import LoginForm from "../../components/login/loginForm";
 import { loginUser } from "../../services/authService";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type LoginErrors = {
   email?: string;
@@ -48,14 +47,12 @@ export default function LoginScreen() {
       setIsLoading(true);
 
       const data = await loginUser(email, password);
-      console.log("Login success:", data);
+      router.push("/verification");
 
-      // Save token
-      await AsyncStorage.setItem("token", data.access_token);
-
-      // Navigate to home
-      router.replace("/home");
-
+      router.push({
+        pathname: "/verification",
+        params: { email },
+      });
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
@@ -68,7 +65,7 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    router.push("/forgotPassword");
+    router.push("/verification");
   };
 
   const handleGoBack = () => {

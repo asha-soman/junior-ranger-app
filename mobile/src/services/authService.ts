@@ -59,3 +59,50 @@ export const forgotPassword = async (
 
   return data;
 };
+
+export const verifyCode = async (
+  email: string,
+  code: string
+) => {
+  const response = await fetch(`${BASE_URL}/verifyCode`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, code }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      Array.isArray(data.message)
+        ? data.message[0]
+        : data.message || "Verification failed"
+    );
+  }
+
+  return data;
+};
+
+export const resendCode = async (email: string) => {
+  const response = await fetch(`${BASE_URL}/resendCode`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      Array.isArray(data.message)
+        ? data.message[0]
+        : data.message || "Resend failed"
+    );
+  }
+
+  return data;
+};

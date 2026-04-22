@@ -141,3 +141,69 @@ export const recoveryStyles = StyleSheet.create({
     paddingVertical: 8,
   },
 });
+
+export const verificationStyles = StyleSheet.create({
+  formCard: {
+    borderRadius: 34,
+    paddingVertical: 34,
+    paddingHorizontal: 18,
+    backgroundColor: "#6b8a82",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 16,
+    color: "#2e2e2e",
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  singleInput: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    height: 55,
+    textAlign: "center",
+    fontSize: 16,
+    letterSpacing: 8,
+    marginBottom: 10,
+  },
+  helper: {
+    minHeight: 22,
+    marginBottom: 8,
+  },
+  buttonRow: {
+    flexDirection: "column",
+    gap: 12,
+    marginTop: 8,
+  },
+  confirmButton: {
+    borderRadius: 10,
+    backgroundColor: "#333333",
+  },
+  confirmButtonLabel: {
+    fontSize: 15,
+    color: "#ffffff",
+  },
+  resendButton: {
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    borderColor: "#333333",
+  },
+  resendButtonLabel: {
+    fontSize: 15,
+    color: "#222222",
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+});

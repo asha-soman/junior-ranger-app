@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import { formStyles } from "../../styles/loginStyles";
+
 type LoginFormProps = {
   email: string;
   password: string;
@@ -8,15 +9,18 @@ type LoginFormProps = {
     email?: string;
     password?: string;
   };
+  isLoading: boolean;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: () => void;
   onForgotPassword: () => void;
 };
+
 export default function LoginForm({
   email,
   password,
   errors,
+  isLoading,
   onEmailChange,
   onPasswordChange,
   onSubmit,
@@ -36,17 +40,13 @@ export default function LoginForm({
         underlineColor="transparent"
         activeUnderlineColor="transparent"
         error={!!errors.email}
+        editable={!isLoading}
       />
-      <HelperText
-        type="error"
-        visible={!!errors.email}
-        style={formStyles.helper}
-      >
+      <HelperText type="error" visible={!!errors.email} style={formStyles.helper}>
         {errors.email}
       </HelperText>
-      <Text style={[formStyles.label, formStyles.passwordLabel]}>
-        Password
-      </Text>
+
+      <Text style={[formStyles.label, formStyles.passwordLabel]}>Password</Text>
       <TextInput
         mode="flat"
         value={password}
@@ -57,23 +57,24 @@ export default function LoginForm({
         underlineColor="transparent"
         activeUnderlineColor="transparent"
         error={!!errors.password}
+        editable={!isLoading}
       />
-      <HelperText
-        type="error"
-        visible={!!errors.password}
-        style={formStyles.helper}
-      >
+      <HelperText type="error" visible={!!errors.password} style={formStyles.helper}>
         {errors.password}
       </HelperText>
-      <Pressable onPress={onForgotPassword}>
+
+      <Pressable onPress={onForgotPassword} disabled={isLoading}>
         <Text style={formStyles.forgotPassword}>Forgot password?</Text>
       </Pressable>
+
       <Button
         mode="contained"
         onPress={onSubmit}
         style={formStyles.button}
         contentStyle={formStyles.buttonContent}
         labelStyle={formStyles.buttonLabel}
+        loading={isLoading}
+        disabled={isLoading}
       >
         Sign In
       </Button>

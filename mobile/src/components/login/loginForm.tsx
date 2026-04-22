@@ -28,6 +28,7 @@ export default function LoginForm({
 }: LoginFormProps) {
   return (
     <View>
+
       <Text style={formStyles.label}>Email</Text>
       <TextInput
         mode="flat"
@@ -46,7 +47,9 @@ export default function LoginForm({
         {errors.email}
       </HelperText>
 
-      <Text style={[formStyles.label, formStyles.passwordLabel]}>Password</Text>
+      <Text style={[formStyles.label, formStyles.passwordLabel]}>
+        Password
+      </Text>
       <TextInput
         mode="flat"
         value={password}
@@ -64,12 +67,16 @@ export default function LoginForm({
       </HelperText>
 
       <Pressable onPress={onForgotPassword} disabled={isLoading}>
-        <Text style={formStyles.forgotPassword}>Forgot password?</Text>
+        <Text style={formStyles.forgotPassword}>
+          Forgot password?
+        </Text>
       </Pressable>
 
       <Button
         mode="contained"
-        onPress={onSubmit}
+        onPress={() => {
+          if (!isLoading) onSubmit();
+        }}
         style={formStyles.button}
         contentStyle={formStyles.buttonContent}
         labelStyle={formStyles.buttonLabel}

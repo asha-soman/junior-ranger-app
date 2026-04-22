@@ -86,3 +86,58 @@ export const formStyles = StyleSheet.create({
     fontSize: 18,
   },
 });
+
+export const recoveryStyles = StyleSheet.create({
+  formCard: {
+    borderRadius: 34,
+    paddingVertical: 34,
+    paddingHorizontal: 28,
+    backgroundColor: "#6b8a82",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  label: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    height: 50,
+    justifyContent: "center",
+  },
+  helper: {
+    minHeight: 22,
+    marginBottom: 16,
+  },
+  buttonRow: {
+    flexDirection: "column",
+    gap: 12,
+    marginTop: 8,
+  },
+  cancelButton: {
+    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    borderColor: "#333",
+  },
+  cancelButtonLabel: {
+    fontSize: 14,
+    color: "#222",
+  },
+  resetButton: {
+    borderRadius: 10,
+    backgroundColor: "#333333",
+  },
+  resetButtonLabel: {
+    fontSize: 14,
+    color: "#ffffff",
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+});

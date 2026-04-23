@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { HelperText, Text } from "react-native-paper";
-import { screenStyles } from "../../styles/loginStyles";
-import LoginForm from "../../components/login/loginForm";
-import { loginUser } from "../../services/authService";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 
-type LoginErrors = {
-  email?: string;
-  password?: string;
-};
+import LoginForm from "../../components/login/loginForm";
+import { screenStyles } from "../../styles/loginStyles";
+import { loginUser } from "../../services/auth/authService";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+
+type LoginErrors = { email?: string; password?: string };
+
+type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList,"Login">;
 
 export default function LoginScreen() {
+  const navigation = useNavigation<LoginNavigationProp>();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
@@ -46,13 +50,9 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
 
-      const data = await loginUser(email, password);
-      router.push("/verification");
+      await loginUser({ email, password });
 
-      router.push({
-        pathname: "/verification",
-        params: { email },
-      });
+      navigation.navigate("Verification", { email });
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
@@ -65,28 +65,20 @@ export default function LoginScreen() {
   };
 
   const handleForgotPassword = () => {
-    router.push("/verification");
+    navigation.navigate("ForgotPassword");
   };
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
       return;
     }
 
-    router.push("/");
+    navigation.navigate("Welcome");
   };
 
   return (
     <View style={screenStyles.container}>
-      <View style={screenStyles.header}>
-        <Pressable onPress={handleGoBack} style={screenStyles.backButton}>
-          <Ionicons name="arrow-back-circle-outline" size={34} color="#222" />
-        </Pressable>
-
-        <Text style={screenStyles.headerTitle}>Sign In</Text>
-      </View>
-
       <View style={screenStyles.content}>
         <View style={screenStyles.formCard}>
           <LoginForm

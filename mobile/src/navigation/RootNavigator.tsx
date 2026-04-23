@@ -8,10 +8,12 @@ const linking = {
         screens: {
             Splash: '',
             Welcome: 'welcome',
-            Login: 'signin',
+            Login: 'login',
             RangerSignup: 'signup',
             ForgotPassword: 'forgot-password',
+            Verification: 'verify-code/:email',
             JoinWithInvite: 'join-with-invite',
+            Home: "home",
         },
     },
 };

@@ -107,9 +107,6 @@ const RangerSignupScreen = () => {
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Sign Up</Text>
-            </View>
 
             <View style={styles.card}>
                 <Text style={styles.label}>Name</Text>

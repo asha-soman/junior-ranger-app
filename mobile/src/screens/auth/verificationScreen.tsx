@@ -1,20 +1,27 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { HelperText, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 
 import VerificationForm from "../../components/login/verificationForm";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { screenStyles, verificationStyles } from "../../styles/loginStyles";
-import { verifyCode, resendCode } from "../../services/authService";
+import { verifyCode, resendCode } from "../../services/auth/authService";
 
-type VerificationErrors = {
-  code?: string;
-};
+type VerificationErrors = { code?: string };
+
+type VerificationNavigationProp = NativeStackNavigationProp<AuthStackParamList,"Verification">;
+
+type VerificationRouteProp = RouteProp<AuthStackParamList, "Verification">;
 
 export default function VerificationScreen() {
-  const { email } = useLocalSearchParams<{ email?: string }>();
+  const navigation = useNavigation<VerificationNavigationProp>();
+  const route = useRoute<VerificationRouteProp>();
+
+  const email = route.params?.email ?? "";
 
   const [code, setCode] = useState("");
   const [errors, setErrors] = useState<VerificationErrors>({});
@@ -42,14 +49,11 @@ export default function VerificationScreen() {
     try {
       setIsLoading(true);
 
-      const result = await verifyCode(email as string, code);
-
-      console.log("Verification success:", result);
+      const result = await verifyCode({ email, code });
 
       await AsyncStorage.setItem("token", result.access_token);
 
-      router.replace("/home");
-
+      navigation.replace("Home");
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
@@ -62,43 +66,36 @@ export default function VerificationScreen() {
   };
 
   const handleResendCode = async () => {
-  setApiError("");
+    setApiError("");
 
     try {
-        setIsLoading(true);
+      setIsLoading(true);
 
-        const result = await resendCode(email as string);
-        console.log("Resend success:", result);
+      const result = await resendCode({ email });
+      console.log("Resend success:", result);
+
     } catch (error) {
-        if (error instanceof Error) {
+      if (error instanceof Error) {
         setApiError(error.message);
-        } else {
+      } else {
         setApiError("Could not resend code");
-        }
+      }
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
       return;
     }
 
-    router.push("/login");
+    navigation.navigate("Login");
   };
 
   return (
     <View style={screenStyles.container}>
-      <View style={screenStyles.header}>
-        <Pressable onPress={handleGoBack} style={screenStyles.backButton}>
-          <Ionicons name="arrow-back-circle-outline" size={34} color="#222" />
-        </Pressable>
-
-        <Text style={screenStyles.headerTitle}>Authentication</Text>
-      </View>
-
       <View style={screenStyles.content}>
         <View style={verificationStyles.formCard}>
           <Text style={verificationStyles.title}>Verification Code</Text>

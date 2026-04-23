@@ -122,19 +122,19 @@ export const recoveryStyles = StyleSheet.create({
   },
   cancelButton: {
     borderRadius: 10,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#222",
     borderColor: "#333",
   },
   cancelButtonLabel: {
-    fontSize: 14,
-    color: "#222",
+    fontSize: 16,
+    color: "#ffffff",
   },
   resetButton: {
-    borderRadius: 10,
-    backgroundColor: "#333333",
+    borderRadius: 12,
+    backgroundColor: "#4f7a8f",
   },
   resetButtonLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#ffffff",
   },
   buttonContent: {
@@ -187,21 +187,21 @@ export const verificationStyles = StyleSheet.create({
     marginTop: 8,
   },
   confirmButton: {
-    borderRadius: 10,
-    backgroundColor: "#333333",
+    borderRadius: 12,
+    backgroundColor: "#4f7a8f",
   },
   confirmButtonLabel: {
-    fontSize: 15,
+    fontSize: 16,
     color: "#ffffff",
   },
   resendButton: {
     borderRadius: 10,
-    backgroundColor: "#ffffff",
-    borderColor: "#333333",
+    backgroundColor: "#222",
+    borderColor: "#333",
   },
   resendButtonLabel: {
-    fontSize: 15,
-    color: "#222222",
+    fontSize: 16,
+    color: "#ffffff",
   },
   buttonContent: {
     paddingVertical: 8,

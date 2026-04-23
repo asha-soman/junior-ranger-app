@@ -1,14 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// import SplashScreen from '../screens/auth/SplashScreen';
-// import LoginScreen from '../screens/auth/LoginScreen';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import RangerSignupScreen from '../screens/auth/RangerSignupScreen';
-// import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
-// import JoinWithInviteScreen from '../screens/auth/JoinWithInviteScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
+    Welcome: undefined;
     Login: undefined;
     RangerSignup: undefined;
     ForgotPassword: undefined;
@@ -19,7 +17,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthNavigator() {
     return (
-        <Stack.Navigator initialRouteName="RangerSignup">
+        <Stack.Navigator initialRouteName="Welcome">
             {/* <Stack.Screen
                 name="Splash"
                 component={SplashScreen}
@@ -31,6 +29,12 @@ export default function AuthNavigator() {
                 component={LoginScreen}
                 options={{ title: 'Login' }}
             /> */}
+
+            <Stack.Screen
+                name="Welcome"
+                component={WelcomeScreen}
+                options={{ headerShown: false }}
+            />
 
             <Stack.Screen
                 name="RangerSignup"

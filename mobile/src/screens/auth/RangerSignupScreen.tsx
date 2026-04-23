@@ -4,12 +4,13 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
     Alert,
     ActivityIndicator,
     ScrollView,
 } from 'react-native';
 import { signupRanger } from '../../services/auth/authService';
+import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
+
 
 const RangerSignupScreen = () => {
     const [firstName, setFirstName] = useState('');
@@ -37,7 +38,7 @@ const RangerSignupScreen = () => {
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (!emailRegex.test(email.trim())) {
             Alert.alert('Validation Error', 'Please enter a valid email address.');
             return false;
         }
@@ -52,7 +53,7 @@ const RangerSignupScreen = () => {
             return false;
         }
 
-        if (password.length < 6) {
+        if (password.trim().length < 6) {
             Alert.alert('Validation Error', 'Password must be at least 6 characters.');
             return false;
         }
@@ -74,19 +75,17 @@ const RangerSignupScreen = () => {
         try {
             setLoading(true);
 
-            const payload = {
+            const result = await signupRanger({
                 firstName: firstName.trim(),
                 surname: surname.trim(),
                 email: email.trim().toLowerCase(),
                 phoneNumber: phoneNumber.trim(),
                 password: password.trim(),
-            };
-
-            const response = await signupRanger(payload);
+            });
 
             Alert.alert(
                 'Success',
-                response?.message || 'Account created successfully.'
+                result?.message || 'Account created successfully.'
             );
 
             setFirstName('');
@@ -96,11 +95,11 @@ const RangerSignupScreen = () => {
             setPassword('');
             setAgreedToTerms(false);
         } catch (error: any) {
-            const errorMessage =
+            const message =
                 error?.response?.data?.message ||
                 error?.message ||
                 'Something went wrong during signup.';
-            Alert.alert('Signup Failed', errorMessage);
+            Alert.alert('Signup Failed', message);
         } finally {
             setLoading(false);
         }
@@ -136,8 +135,8 @@ const RangerSignupScreen = () => {
                     style={styles.input}
                     placeholder="Email"
                     placeholderTextColor="#B0B0B0"
-                    keyboardType="email-address"
                     autoCapitalize="none"
+                    keyboardType="email-address"
                     value={email}
                     onChangeText={setEmail}
                 />
@@ -192,92 +191,3 @@ const RangerSignupScreen = () => {
 };
 
 export default RangerSignupScreen;
-
-const styles = StyleSheet.create({
-    scrollContainer: {
-        flexGrow: 1,
-        backgroundColor: '#F4F4F4',
-        paddingBottom: 30,
-    },
-    header: {
-        backgroundColor: '#6E837D',
-        paddingVertical: 22,
-        paddingHorizontal: 24,
-        marginTop: 20,
-        marginHorizontal: 10,
-    },
-    headerTitle: {
-        color: '#FFFFFF',
-        fontSize: 26,
-        fontWeight: '700',
-    },
-    card: {
-        marginTop: 26,
-        marginHorizontal: 30,
-        borderRadius: 28,
-        padding: 18,
-        backgroundColor: '#6F8F8B',
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1E1E1E',
-        marginBottom: 8,
-        marginTop: 6,
-    },
-    input: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 6,
-        paddingHorizontal: 12,
-        height: 46,
-        marginBottom: 8,
-        fontSize: 16,
-        color: '#1E1E1E',
-    },
-    button: {
-        marginTop: 18,
-        alignSelf: 'center',
-        backgroundColor: '#2D2D2D',
-        borderRadius: 8,
-        paddingVertical: 12,
-        paddingHorizontal: 22,
-        minWidth: 150,
-        alignItems: 'center',
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: '500',
-    },
-    checkboxRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginTop: 18,
-        marginHorizontal: 38,
-    },
-    checkbox: {
-        width: 18,
-        height: 18,
-        borderWidth: 1.5,
-        borderColor: '#333333',
-        marginTop: 2,
-        marginRight: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
-    },
-    checkboxChecked: {
-        backgroundColor: '#2D2D2D',
-        borderColor: '#2D2D2D',
-    },
-    checkmark: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '700',
-    },
-    termsText: {
-        fontSize: 14,
-        color: '#1E1E1E',
-        lineHeight: 20,
-    },
-});

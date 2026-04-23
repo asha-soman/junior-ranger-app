@@ -16,6 +16,6 @@ export interface SignupResponse {
 export const signupRanger = async (
     payload: RangerSignupPayload
 ): Promise<SignupResponse> => {
-    const response = await apiClient.post('/auth/signup/ranger', payload);
+    const response = await apiClient.post('/auth/signup', payload);
     return response.data;
 };

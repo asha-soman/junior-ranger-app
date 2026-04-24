@@ -1,16 +1,25 @@
-import apiClient from '../api/client'
+import apiClient from '../api/client';
 
 export interface RangerSignupPayload {
-    firstName: string;
-    surname: string;
     email: string;
-    phoneNumber: string;
+    name: string;
     password: string;
+    role: 'ranger';
 }
 
 export interface SignupResponse {
     message?: string;
-    data?: any;
+    user?: {
+        id: string;
+        email: string;
+        name: string;
+        role: 'ranger' | 'junior_ranger';
+        avatar_url?: string | null;
+        is_active?: boolean;
+        approval_status?: string;
+        created_at?: string;
+        updated_at?: string;
+    };
 }
 
 export const signupRanger = async (

@@ -7,6 +7,8 @@ import { Database } from './database.types';
 @Injectable()
 export class DatabaseService extends Kysely<Database> implements OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {
+    // const dbHost = configService.get<string>('DB_HOST');
+    // console.log('DB_HOST:', dbHost);
     super({
       dialect: new PostgresDialect({
         pool: new Pool({

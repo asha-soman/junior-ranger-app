@@ -1,11 +1,14 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 
 const apiClient = axios.create({
-    baseURL: 'http://localhost:3000',
+    baseURL:
+        Platform.OS === 'web'
+            ? process.env.EXPO_PUBLIC_WEB_API_URL
+            : process.env.EXPO_PUBLIC_MOBILE_API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000,
 });
 
 export default apiClient;

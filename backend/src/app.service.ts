@@ -12,10 +12,9 @@ export class AppService implements OnModuleInit {
         .selectAll()
         .execute();
 
-      console.log('DB Connected ✅');
-      console.log(users);
+      console.log('DB Connected Successfully!');
     } catch (error) {
-      console.error('DB Connection Failed ❌', error);
+      console.error('DB Connection Failed!', error);
     }
   }
 

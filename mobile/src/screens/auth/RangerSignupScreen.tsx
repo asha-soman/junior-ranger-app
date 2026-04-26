@@ -7,10 +7,13 @@ import {
     Alert,
     ActivityIndicator,
     ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { signupRanger } from '../../services/auth/authService';
 import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
-
 
 const RangerSignupScreen = () => {
     const [firstName, setFirstName] = useState('');
@@ -38,8 +41,9 @@ const RangerSignupScreen = () => {
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
         if (!emailRegex.test(email.trim())) {
-            Alert.alert('Validation Error', 'Please enter a valid email address.');
+            Alert.alert('Validation Error', 'Please enter a valid email.');
             return false;
         }
 
@@ -54,14 +58,17 @@ const RangerSignupScreen = () => {
         }
 
         if (password.trim().length < 6) {
-            Alert.alert('Validation Error', 'Password must be at least 6 characters.');
+            Alert.alert(
+                'Validation Error',
+                'Password must be at least 6 characters.'
+            );
             return false;
         }
 
         if (!agreedToTerms) {
             Alert.alert(
                 'Validation Error',
-                'Please agree to the Terms and Conditions and Privacy Policy.'
+                'Please agree to the Terms and Conditions.'
             );
             return false;
         }
@@ -72,17 +79,17 @@ const RangerSignupScreen = () => {
     const handleSignup = async () => {
         if (!validateForm()) return;
 
+        const payload = {
+            name: `${firstName.trim()} ${surname.trim()}`.trim(),
+            email: email.trim().toLowerCase(),
+            password: password.trim(),
+            role: 'ranger' as const,
+        };
+
         try {
             setLoading(true);
 
-            const result = await signupRanger({
-                firstName: firstName.trim(),
-                surname: surname.trim(),
-                email: email.trim().toLowerCase(),
-                phoneNumber: phoneNumber.trim(),
-                password: password.trim(),
-            });
-
+            const result = await signupRanger(payload);
             Alert.alert(
                 'Success',
                 result?.message || 'Account created successfully.'
@@ -99,13 +106,14 @@ const RangerSignupScreen = () => {
                 error?.response?.data?.message ||
                 error?.message ||
                 'Something went wrong during signup.';
+
             Alert.alert('Signup Failed', message);
         } finally {
             setLoading(false);
         }
     };
 
-    return (
+    const formContent = (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
 
             <View style={styles.card}>
@@ -132,8 +140,8 @@ const RangerSignupScreen = () => {
                     style={styles.input}
                     placeholder="Email"
                     placeholderTextColor="#B0B0B0"
-                    autoCapitalize="none"
                     keyboardType="email-address"
+                    autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
                 />
@@ -179,11 +187,29 @@ const RangerSignupScreen = () => {
                 <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
                     {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
                 </View>
+
                 <Text style={styles.termsText}>
-                    I agree to the Terms and Conditions{'\n'}and the Privacy Policy
+                    I agree to the Terms and Conditions{'\n'}
+                    and the Privacy Policy
                 </Text>
             </TouchableOpacity>
         </ScrollView>
+    );
+
+    return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+            {Platform.OS === 'web' ? (
+                formContent
+            ) : (
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    {formContent}
+                </TouchableWithoutFeedback>
+            )}
+        </KeyboardAvoidingView>
     );
 };
 

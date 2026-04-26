@@ -4,7 +4,7 @@ export const RangerSignupScreenStyles = StyleSheet.create({
     scrollContainer: {
         flexGrow: 1,
         backgroundColor: '#F4F4F4',
-        paddingBottom: 30,
+        paddingBottom: 80,
     },
     header: {
         backgroundColor: '#6E837D',

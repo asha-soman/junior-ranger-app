@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { HelperText, Text } from "react-native-paper";
+import { KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, View } from "react-native";
+import { HelperText } from "react-native-paper";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 
@@ -68,35 +67,37 @@ export default function LoginScreen() {
     navigation.navigate("ForgotPassword");
   };
 
-  const handleGoBack = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-
-    navigation.navigate("Welcome");
-  };
-
   return (
     <View style={screenStyles.container}>
-      <View style={screenStyles.content}>
-        <View style={screenStyles.formCard}>
-          <LoginForm
-            email={email}
-            password={password}
-            errors={errors}
-            isLoading={isLoading}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-            onSubmit={handleLogin}
-            onForgotPassword={handleForgotPassword}
-          />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={screenStyles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={screenStyles.formCard}>
+              <LoginForm
+                email={email}
+                password={password}
+                errors={errors}
+                isLoading={isLoading}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+                onSubmit={handleLogin}
+                onForgotPassword={handleForgotPassword}
+              />
 
-          <HelperText type="error" visible={!!apiError}>
-            {apiError}
-          </HelperText>
-        </View>
-      </View>
+              <HelperText type="error" visible={!!apiError}>
+                {apiError}
+              </HelperText>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </View>
   );
 }

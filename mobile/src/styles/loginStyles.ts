@@ -30,9 +30,10 @@ export const screenStyles = StyleSheet.create({
     textShadowRadius: 2,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 36,
+    paddingVertical: 24,
   },
   formCard: {
     borderRadius: 34,

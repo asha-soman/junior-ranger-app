@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import { formStyles } from "../../styles/loginStyles";
@@ -26,9 +27,10 @@ export default function LoginForm({
   onSubmit,
   onForgotPassword,
 }: LoginFormProps) {
+  const [hidePassword, setHidePassword] = useState(true);
+
   return (
     <View>
-
       <Text style={formStyles.label}>Email</Text>
       <TextInput
         mode="flat"
@@ -55,7 +57,13 @@ export default function LoginForm({
         value={password}
         onChangeText={onPasswordChange}
         placeholder="Password"
-        secureTextEntry
+        secureTextEntry={hidePassword}
+        right={
+          <TextInput.Icon
+            icon={hidePassword ? "eye-off" : "eye"}
+            onPress={() => setHidePassword(!hidePassword)}
+          />
+        }
         style={formStyles.input}
         underlineColor="transparent"
         activeUnderlineColor="transparent"
@@ -67,9 +75,7 @@ export default function LoginForm({
       </HelperText>
 
       <Pressable onPress={onForgotPassword} disabled={isLoading}>
-        <Text style={formStyles.forgotPassword}>
-          Forgot password?
-        </Text>
+        <Text style={formStyles.forgotPassword}>Forgot password?</Text>
       </Pressable>
 
       <Button

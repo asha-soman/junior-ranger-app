@@ -7,6 +7,10 @@ import {
     Alert,
     ActivityIndicator,
     ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { signupRanger } from '../../services/auth/authService';
 import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
@@ -82,16 +86,10 @@ const RangerSignupScreen = () => {
             role: 'ranger' as const,
         };
 
-        // console.log('Signup button clicked');
-        // console.log('Signup payload:', payload);
-
         try {
             setLoading(true);
 
             const result = await signupRanger(payload);
-
-            //console.log('Signup response:', result);
-
             Alert.alert(
                 'Success',
                 result?.message || 'Account created successfully.'
@@ -104,8 +102,6 @@ const RangerSignupScreen = () => {
             setPassword('');
             setAgreedToTerms(false);
         } catch (error: any) {
-            //console.error('Signup error:', error);
-
             const message =
                 error?.response?.data?.message ||
                 error?.message ||
@@ -117,7 +113,7 @@ const RangerSignupScreen = () => {
         }
     };
 
-    return (
+    const formContent = (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Sign Up</Text>
@@ -201,6 +197,22 @@ const RangerSignupScreen = () => {
                 </Text>
             </TouchableOpacity>
         </ScrollView>
+    );
+
+    return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+            {Platform.OS === 'web' ? (
+                formContent
+            ) : (
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    {formContent}
+                </TouchableWithoutFeedback>
+            )}
+        </KeyboardAvoidingView>
     );
 };
 

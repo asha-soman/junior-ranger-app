@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  View,
+} from "react-native";
 import { HelperText } from "react-native-paper";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
@@ -8,10 +15,12 @@ import LoginForm from "../../components/login/loginForm";
 import { screenStyles } from "../../styles/loginStyles";
 import { loginUser } from "../../services/auth/authService";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { saveToken, getToken } from "../../utils/secureStore";
+import apiClient from "@/src/services/api/client";
 
 type LoginErrors = { email?: string; password?: string };
 
-type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList,"Login">;
+type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavigationProp>();
@@ -49,7 +58,19 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
 
-      await loginUser({ email, password });
+      const result = await loginUser({ email, password });
+
+      await saveToken(result.access_token);
+
+      // to be removed later, just checks if it returns the profile of the user after logging in with the proper token code
+      const profileResponse = await apiClient.get('/auth/profile');
+      console.log('Profile response:', profileResponse.data);
+
+      // testing if token is getting saved or not
+      console.log("Token saved successfully");
+
+      const storedToken = await getToken();
+      console.log("Stored token:", storedToken);
 
       navigation.navigate("Verification", { email });
     } catch (error) {
@@ -67,36 +88,51 @@ export default function LoginScreen() {
     navigation.navigate("ForgotPassword");
   };
 
+  const loginContent = (
+    <ScrollView
+      contentContainerStyle={screenStyles.content}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={screenStyles.formCard}>
+        <LoginForm
+          email={email}
+          password={password}
+          errors={errors}
+          isLoading={isLoading}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onSubmit={handleLogin}
+          onForgotPassword={handleForgotPassword}
+        />
+
+        <HelperText type="error" visible={!!apiError}>
+          {apiError}
+        </HelperText>
+      </View>
+    </ScrollView>
+  );
+
   return (
     <View style={screenStyles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : Platform.OS === "android"
+              ? "height"
+              : undefined
+        }
         keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            contentContainerStyle={screenStyles.content}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={screenStyles.formCard}>
-              <LoginForm
-                email={email}
-                password={password}
-                errors={errors}
-                isLoading={isLoading}
-                onEmailChange={setEmail}
-                onPasswordChange={setPassword}
-                onSubmit={handleLogin}
-                onForgotPassword={handleForgotPassword}
-              />
-
-              <HelperText type="error" visible={!!apiError}>
-                {apiError}
-              </HelperText>
-            </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
+        {Platform.OS === "web" ? (
+          loginContent
+        ) : (
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            {loginContent}
+          </TouchableWithoutFeedback>
+        )}
       </KeyboardAvoidingView>
     </View>
   );

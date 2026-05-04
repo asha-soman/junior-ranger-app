@@ -1,32 +1,32 @@
 import apiClient from '../api/client';
 
 export interface RangerSignupPayload {
-    email: string;
-    name: string;
-    password: string;
-    role: 'ranger';
+  email: string;
+  name: string;
+  password: string;
+  role: 'ranger';
 }
 
 export interface SignupResponse {
-    message?: string;
-    user?: {
-        id: string;
-        email: string;
-        name: string;
-        role: 'ranger' | 'junior_ranger';
-        avatar_url?: string | null;
-        is_active?: boolean;
-        approval_status?: string;
-        created_at?: string;
-        updated_at?: string;
-    };
+  message?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    role: 'ranger' | 'junior_ranger';
+    avatar_url?: string | null;
+    is_active?: boolean;
+    approval_status?: string;
+    created_at?: string;
+    updated_at?: string;
+  };
 }
 
 export const signupRanger = async (
-    payload: RangerSignupPayload
+  payload: RangerSignupPayload
 ): Promise<SignupResponse> => {
-    const response = await apiClient.post('/auth/signup', payload);
-    return response.data;
+  const response = await apiClient.post('/auth/signup', payload);
+  return response.data;
 };
 
 export interface LoginPayload {
@@ -35,11 +35,18 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
+  message?: string;
   access_token: string;
   user?: {
     id: string;
     email: string;
-    role?: string;
+    name?: string;
+    role?: 'ranger' | 'junior_ranger' | 'admin';
+    avatar_url?: string | null;
+    is_active?: boolean;
+    approval_status?: string;
+    created_at?: string;
+    updated_at?: string;
   };
 }
 

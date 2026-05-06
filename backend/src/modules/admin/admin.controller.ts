@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -13,5 +13,19 @@ export class AdminController {
   @Get('rangers/pending')
   getPendingRangers(@Query('name') name?: string) {
     return this.adminService.getPendingRangers(name);
+  }
+  @Get('rangers/:id')
+  getRangerRequestById(@Param('id') id: string) {
+    return this.adminService.getRangerRequestById(id);
+  }
+
+  @Patch('rangers/:id/approve')
+  approveRanger(@Param('id') id: string) {
+    return this.adminService.approveRanger(id);
+  }
+
+  @Patch('rangers/:id/reject')
+  rejectRanger(@Param('id') id: string) {
+    return this.adminService.rejectRanger(id);
   }
 }

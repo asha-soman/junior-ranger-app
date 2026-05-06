@@ -8,6 +8,7 @@ import LoginScreen from "../screens/auth/loginScreen";
 import ForgotPasswordScreen from "../screens/auth/forgotPasswordScreen";
 import VerificationScreen from "../screens/auth/verificationScreen";
 import PendingRangerRequestsScreen from '../screens/admin/PendingRangerRequestsScreen';
+import RangerRequestDetailsScreen from '../screens/admin/RangerRequestDetailsScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -18,7 +19,8 @@ export type AuthStackParamList = {
     Verification: { email: string };
     JoinWithInvite: undefined;
     Home: undefined;
-    PendingRangerRequests: undefined;
+    PendingRangerRequests: { refresh?: boolean } | undefined;
+    RangerRequestDetails: { rangerId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -83,6 +85,15 @@ export default function AuthNavigator() {
                 options={{
                     ...authHeaderOptions,
                     title: 'Signup Requests ',
+                }}
+            />
+
+            <Stack.Screen
+                name="RangerRequestDetails"
+                component={RangerRequestDetailsScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Request Details',
                 }}
             />
 

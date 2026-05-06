@@ -110,4 +110,79 @@ export const adminStyles = StyleSheet.create({
     color: '#1E1E1E',
   },
 
+  detailCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    width: '97%',
+    alignSelf: 'center',
+  },
+
+  detailTitle: {
+    fontSize: 23,
+    fontWeight: '700',
+    color: '#1E1E1E',
+    marginBottom: 18,
+  },
+
+  detailRow: {
+    marginBottom: 14,
+  },
+
+  detailLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#36889c',
+    marginBottom: 4,
+  },
+
+  detailValue: {
+    fontSize: 16,
+    color: '#1E1E1E',
+  },
+
+  actionButton: {
+    borderRadius: 18,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  approveButton: {
+    backgroundColor: '#458f7f',
+  },
+
+  rejectButton: {
+    backgroundColor: '#36889c',
+  },
+
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  detailTitleCentered: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E1E1E',
+    marginBottom: 22,
+    textAlign: 'center',
+  },
+
+  buttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  inlineButton: {
+    width: '47%',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
 });

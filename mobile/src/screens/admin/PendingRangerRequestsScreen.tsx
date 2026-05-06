@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { getPendingRangers, PendingRanger } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 import { Ionicons } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'PendingRangerRequests'>;
+type RouteProps = RouteProp<AuthStackParamList, 'PendingRangerRequests'>;
 
 export default function PendingRangerRequestsScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
   const [rangers, setRangers] = useState<PendingRanger[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -14,7 +22,9 @@ export default function PendingRangerRequestsScreen() {
   const loadPendingRangers = async (nameValue = searchName) => {
     try {
       setErrorMessage('');
+
       const data = await getPendingRangers(nameValue);
+
       setRangers(data);
     } catch (error: any) {
       const message =
@@ -32,6 +42,12 @@ export default function PendingRangerRequestsScreen() {
   useEffect(() => {
     loadPendingRangers();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadPendingRangers(searchName);
+    }, [searchName])
+  );
 
   const handleSearchChange = (value: string) => {
     setSearchName(value);
@@ -56,26 +72,29 @@ export default function PendingRangerRequestsScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />
         }
       >
 
-      <View style={styles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={22}
-          color="#777"
-          style={styles.searchIcon}
-        />  
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search"
+            size={22}
+            color="#777"
+            style={styles.searchIcon}
+          />
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name"
-          placeholderTextColor="#777"
-          value={searchName}
-          onChangeText={handleSearchChange}
-        />
-      </View>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name"
+            placeholderTextColor="#777"
+            value={searchName}
+            onChangeText={handleSearchChange}
+          />
+        </View>
 
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -91,33 +110,55 @@ export default function PendingRangerRequestsScreen() {
               key={ranger.id}
               style={styles.card}
               activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate('RangerRequestDetails', {
+                  rangerId: ranger.id,
+                })
+              }
             >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
                 <Text style={styles.name}>
-                    {ranger.name || 'No name provided'}
+                  {ranger.name || 'No name provided'}
                 </Text>
 
                 <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>
+                  <Text style={styles.statusText}>
                     {ranger.approval_status}
-                    </Text>
+                  </Text>
                 </View>
               </View>
 
-              <Text style={styles.email}>{ranger.email}</Text>
+              <Text style={styles.email}>
+                {ranger.email}
+              </Text>
 
               <View style={styles.row}>
-                <Text style={styles.label}>Role</Text>
+                <Text style={styles.label}>
+                  Role
+                </Text>
+
                 <Text style={styles.value}>
-                    {ranger.role.charAt(0).toUpperCase() + ranger.role.slice(1)}
+                  {ranger.role.charAt(0).toUpperCase() +
+                    ranger.role.slice(1)}
                 </Text>
               </View>
 
               <View style={styles.row}>
-                <Text style={styles.label}>Created</Text>
+                <Text style={styles.label}>
+                  Created
+                </Text>
+
                 <Text style={styles.value}>
                   {ranger.created_at
-                    ? new Date(ranger.created_at).toLocaleDateString('en-GB')
+                    ? new Date(ranger.created_at)
+                        .toLocaleDateString('en-GB')
                     : 'Not available'}
                 </Text>
               </View>
@@ -125,6 +166,7 @@ export default function PendingRangerRequestsScreen() {
             </TouchableOpacity>
           ))
         )}
+
       </ScrollView>
     </View>
   );

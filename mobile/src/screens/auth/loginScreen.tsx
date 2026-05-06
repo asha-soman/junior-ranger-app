@@ -72,8 +72,13 @@ export default function LoginScreen() {
       const storedToken = await getToken();
       console.log("Stored token:", storedToken);
 
-      navigation.navigate("Verification", { email });
-    } catch (error) {
+      if (profileResponse.data.role === "admin") {
+        navigation.replace("PendingRangerRequests");
+      } else {
+        navigation.replace("Verification", { email });
+      }
+    } 
+      catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
       } else {

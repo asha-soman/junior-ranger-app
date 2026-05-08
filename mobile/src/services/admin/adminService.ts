@@ -43,14 +43,13 @@ export interface AdminUser {
   cohort_name: string | null;
 }
 
-export const getAdminUsers = async (
-  role?: string,
-  status?: string
+export const getAdminUsers = async (role?: string, status?: string, name?: string
 ): Promise<AdminUser[]> => {
   const response = await apiClient.get('/admin/users', {
     params: {
       role: role && role !== 'all' ? role : undefined,
       status: status && status !== 'all' ? status : undefined,
+      name: name?.trim() ? name.trim() : undefined,
     },
   });
 

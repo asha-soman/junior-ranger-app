@@ -106,7 +106,7 @@ export class AdminService {
       .executeTakeFirst();
   }
 
-  async getAllUsers(role?: string, status?: string) {
+  async getAllUsers(role?: string, status?: string, name?: string) {
     let query = this.db
       .selectFrom('users')
       .select([
@@ -126,6 +126,10 @@ export class AdminService {
 
     if (status && status !== 'all') {
       query = query.where('approval_status', '=', status as any);
+    }
+
+    if (name && name.trim()) {
+      query = query.where('name', 'ilike', `%${name.trim()}%`);
     }
 
     const users = await query.orderBy('created_at', 'desc').execute();

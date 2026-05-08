@@ -33,7 +33,8 @@ export class AdminController {
   getAllUsers(
     @Query('role') role?: string,
     @Query('status') status?: string,
+    @Query('name') name?: string,
   ) {
-    return this.adminService.getAllUsers(role, status);
+    return this.adminService.getAllUsers(role, status, name);
 }
 }

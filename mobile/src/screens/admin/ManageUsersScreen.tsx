@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { AdminUser, getAdminUsers } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 
@@ -9,13 +9,21 @@ export default function ManageUsersScreen() {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [errorMessage, setErrorMessage] = useState('');
+  const [statusDropdownVisible, setStatusDropdownVisible] = useState(false);
+  const [activeFilterSection, setActiveFilterSection] = useState<'search' | 'filters' | null>(null);
+  const [searchName, setSearchName] = useState('');
+  const [isFiltering, setIsFiltering] = useState(false);
 
-  const loadUsers = async (role = selectedRole, status = selectedStatus) => {
+  const loadUsers = async (role = 'all', status = 'all', name = '') => {
     try {
       setErrorMessage('');
-      setLoading(true);
+      if (loading) {
+        setLoading(true);
+      } else {
+        setIsFiltering(true);
+      };
 
-      const data = await getAdminUsers(role, status);
+      const data = await getAdminUsers(role, status, name);
       setUsers(data);
     } catch (error: any) {
       setErrorMessage(
@@ -25,6 +33,7 @@ export default function ManageUsersScreen() {
       );
     } finally {
       setLoading(false);
+      setIsFiltering(false);
     }
   };
 
@@ -32,14 +41,51 @@ export default function ManageUsersScreen() {
     loadUsers();
   }, []);
 
+  useEffect(() => {
+    if (activeFilterSection !== 'search') return;
+
+    const timeoutId = setTimeout(() => {
+        setSelectedRole('all');
+        setSelectedStatus('all');
+        loadUsers('all', 'all', searchName);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+    }, [searchName]);
+
+  const openSearchSection = () => {
+    setActiveFilterSection(
+      activeFilterSection === 'search' ? null : 'search'
+    );
+
+    setSelectedRole('all');
+    setSelectedStatus('all');
+    loadUsers('all', 'all', '');
+  };
+
+  const openFilterSection = () => {
+    setActiveFilterSection(
+      activeFilterSection === 'filters' ? null : 'filters'
+    );
+
+    setSearchName('');
+    loadUsers('all', 'all', '');
+  };
+
+  const handleSearchSubmit = () => {
+    setSelectedRole('all');
+    setSelectedStatus('all');
+    loadUsers('all', 'all', searchName);
+  };
+
   const handleRoleFilter = (role: string) => {
     setSelectedRole(role);
-    loadUsers(role, selectedStatus);
+    loadUsers(role, selectedStatus, '');
   };
 
   const handleStatusFilter = (status: string) => {
     setSelectedStatus(status);
-    loadUsers(selectedRole, status);
+    loadUsers(selectedRole, status, '');
   };
 
   const formatRole = (role: string) => {
@@ -49,6 +95,12 @@ export default function ManageUsersScreen() {
 
   const formatStatus = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const getStatusBadgeStyle = (status: string) => {
+    if (status === 'approved') return styles.approvedBadge;
+    if (status === 'pending') return styles.pendingBadge;
+    return styles.rejectedBadge;
   };
 
   if (loading) {
@@ -61,55 +113,139 @@ export default function ManageUsersScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-
-        <Text style={styles.sectionTitle}>Role</Text>
-
-        <View style={styles.filterRow}>
-          {['all', 'junior_ranger', 'ranger'].map((role) => (
-            <TouchableOpacity
-              key={role}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.topFilterButtonsRow}>
+          <TouchableOpacity
+            style={[
+              styles.topFilterButton,
+              activeFilterSection === 'search' &&
+                styles.activeTopFilterButton,
+            ]}
+            onPress={openSearchSection}
+          >
+            <Text
               style={[
-                styles.filterChip,
-                selectedRole === role && styles.activeFilterChip,
+                styles.topFilterButtonText,
+                activeFilterSection === 'search' &&
+                  styles.activeTopFilterButtonText,
               ]}
-              onPress={() => handleRoleFilter(role)}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedRole === role && styles.activeFilterChipText,
-                ]}
-              >
-                {role === 'all' ? 'All' : formatRole(role)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+              Search by name
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.topFilterButton,
+              activeFilterSection === 'filters' &&
+                styles.activeTopFilterButton,
+            ]}
+            onPress={openFilterSection}
+          >
+            <Text
+              style={[
+                styles.topFilterButtonText,
+                activeFilterSection === 'filters' &&
+                  styles.activeTopFilterButtonText,
+              ]}
+            >
+              Filter options
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Status</Text>
+        {activeFilterSection === 'search' && (
+          <View>
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name"
+                placeholderTextColor="#777"
+                value={searchName}
+                onChangeText={setSearchName}
+                returnKeyType="search"
+                onSubmitEditing={handleSearchSubmit}
+              />
+            </View>
+          </View>
+        )}
 
-        <View style={styles.filterRow}>
-          {['all', 'approved', 'pending', 'rejected'].map((status) => (
+        {activeFilterSection === 'filters' && (
+          <>
+            <Text style={styles.sectionTitle}>Role</Text>
+
+            <View style={styles.filterRow}>
+              {['all', 'junior_ranger', 'ranger'].map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={[
+                    styles.filterChip,
+                    selectedRole === role && styles.activeFilterChip,
+                  ]}
+                  onPress={() => handleRoleFilter(role)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedRole === role &&
+                        styles.activeFilterChipText,
+                    ]}
+                  >
+                    {role === 'all' ? 'All' : formatRole(role)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.sectionTitle}>Status</Text>
+
             <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterChip,
-                selectedStatus === status && styles.activeFilterChip,
-              ]}
-              onPress={() => handleStatusFilter(status)}
+              style={styles.dropdownButton}
+              onPress={() => setStatusDropdownVisible(true)}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedStatus === status && styles.activeFilterChipText,
-                ]}
-              >
-                {status === 'all' ? 'All' : formatStatus(status)}
+              <Text style={styles.dropdownButtonText}>
+                {selectedStatus === 'all'
+                  ? 'All'
+                  : formatStatus(selectedStatus)}
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
+
+            <Modal
+              visible={statusDropdownVisible}
+              transparent
+              animationType="fade"
+            >
+              <TouchableOpacity
+                style={styles.modalOverlay}
+                onPress={() => setStatusDropdownVisible(false)}
+              >
+                <View style={styles.dropdownMenu}>
+                  {['all', 'approved', 'pending', 'rejected'].map(
+                    (status) => (
+                      <TouchableOpacity
+                        key={status}
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          handleStatusFilter(status);
+                          setStatusDropdownVisible(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownOptionText}>
+                          {status === 'all'
+                            ? 'All'
+                            : formatStatus(status)}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          </>
+        )}
 
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>
@@ -128,12 +264,8 @@ export default function ManageUsersScreen() {
                 <View
                   style={[
                     styles.userStatusBadge,
-                    user.approval_status === 'approved'
-                      ? styles.approvedBadge
-                      : user.approval_status === 'pending'
-                      ? styles.pendingBadge
-                      : styles.rejectedBadge,
-                ]}
+                    getStatusBadgeStyle(user.approval_status),
+                  ]}
                 >
                   <Text style={styles.userStatusText}>
                     {formatStatus(user.approval_status)}

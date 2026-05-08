@@ -293,4 +293,75 @@ export const adminStyles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  dropdownButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+  },
+
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#1E1E1E',
+    fontWeight: '400',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  dropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingVertical: 8,
+  },
+
+  dropdownOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+
+  dropdownOptionText: {
+    fontSize: 16,
+    color: '#1E1E1E',
+  },
+
+  topFilterButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 10,
+  },
+
+  topFilterButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+
+  activeTopFilterButton: {
+    backgroundColor: '#376e62',
+    borderColor: '#376e62',
+  },
+
+  topFilterButtonText: {
+    color: '#376e62',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  activeTopFilterButtonText: {
+    color: '#FFFFFF',
+  },
+
 });

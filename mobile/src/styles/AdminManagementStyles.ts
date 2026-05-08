@@ -185,4 +185,112 @@ export const adminStyles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E1E1E',
+    marginBottom: 8,
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+
+  filterChip: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+
+  activeFilterChip: {
+    backgroundColor: '#376e62',
+    borderColor: '#376e62',
+  },
+
+  filterChipText: {
+    color: '#376e62',
+    fontWeight: '700',
+  },
+
+  activeFilterChipText: {
+    color: '#FFFFFF',
+  },
+
+  userCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+  },
+
+  userCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+
+  userName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E1E1E',
+    flex: 1,
+    marginRight: 10,
+  },
+
+  userEmail: {
+    fontSize: 15,
+    color: '#555555',
+    marginBottom: 12,
+  },
+
+  userInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+
+  userInfoLabel: {
+    fontSize: 14,
+    color: '#36889c',
+    fontWeight: '700',
+  },
+
+  userInfoValue: {
+    fontSize: 14,
+    color: '#1E1E1E',
+  },
+
+  userStatusBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+
+  approvedBadge: {
+    backgroundColor: '#458f7f',
+  },
+
+  pendingBadge: {
+    backgroundColor: '#36889c',
+  },
+
+  rejectedBadge: {
+    backgroundColor: '#B04A4A',
+  },
+
+  userStatusText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
 });

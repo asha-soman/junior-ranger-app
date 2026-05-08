@@ -28,4 +28,12 @@ export class AdminController {
   rejectRanger(@Param('id') id: string) {
     return this.adminService.rejectRanger(id);
   }
+
+  @Get('users')
+  getAllUsers(
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.getAllUsers(role, status);
+}
 }

@@ -105,4 +105,35 @@ export class AdminService {
       ])
       .executeTakeFirst();
   }
+
+  async getAllUsers(role?: string, status?: string) {
+    let query = this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'name',
+        'email',
+        'role',
+        'is_active',
+        'approval_status',
+        'created_at',
+      ])
+      .where('is_deleted', '=', false);
+
+    if (role && role !== 'all') {
+      query = query.where('role', '=', role as any);
+    }
+
+    if (status && status !== 'all') {
+      query = query.where('approval_status', '=', status as any);
+    }
+
+    const users = await query.orderBy('created_at', 'desc').execute();
+
+    return users.map((user) => ({
+      ...user,
+      cohort_name: null,
+    }));
+  }
+
 }

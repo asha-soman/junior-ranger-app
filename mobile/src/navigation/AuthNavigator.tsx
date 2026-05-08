@@ -9,6 +9,7 @@ import ForgotPasswordScreen from "../screens/auth/forgotPasswordScreen";
 import VerificationScreen from "../screens/auth/verificationScreen";
 import PendingRangerRequestsScreen from '../screens/admin/PendingRangerRequestsScreen';
 import RangerRequestDetailsScreen from '../screens/admin/RangerRequestDetailsScreen';
+import ManageUsersScreen from '../screens/admin/ManageUsersScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -21,6 +22,7 @@ export type AuthStackParamList = {
     Home: undefined;
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
+    ManageUsers: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -94,6 +96,15 @@ export default function AuthNavigator() {
                 options={{
                     ...authHeaderOptions,
                     title: 'Request Details',
+                }}
+            />
+
+            <Stack.Screen
+                name="ManageUsers"
+                component={ManageUsersScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Manage Users',
                 }}
             />
 

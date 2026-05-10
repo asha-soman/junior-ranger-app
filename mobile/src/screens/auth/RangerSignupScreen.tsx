@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import React, { useState, useEffect } from 'react';
+type Props = NativeStackScreenProps<AuthStackParamList, 'RangerSignup'>;
 import {
     View,
     Text,
@@ -15,7 +18,7 @@ import {
 import { signupRanger } from '../../services/auth/authService';
 import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
 
-const RangerSignupScreen = () => {
+    const RangerSignupScreen = ({ route, navigation }: Props) => {
     const [firstName, setFirstName] = useState('');
     const [surname, setSurname] = useState('');
     const [email, setEmail] = useState('');
@@ -23,6 +26,16 @@ const RangerSignupScreen = () => {
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { role } = route.params;
+
+    useEffect(() => {
+        navigation.setOptions({
+            title:
+                role === 'junior_ranger'
+                    ? 'Junior Ranger Sign Up'
+                    : 'Ranger Sign Up',
+        });
+    }, [role]);
 
     const validateForm = () => {
         if (!firstName.trim()) {
@@ -80,11 +93,11 @@ const RangerSignupScreen = () => {
         if (!validateForm()) return;
 
         const payload = {
-            name: `${firstName.trim()} ${surname.trim()}`.trim(),
-            email: email.trim().toLowerCase(),
-            password: password.trim(),
-            role: 'ranger' as const,
-        };
+    name: `${firstName.trim()} ${surname.trim()}`.trim(),
+    email: email.trim().toLowerCase(),
+    password: password.trim(),
+    role: role, // ✅ dynamic now
+};
 
         try {
             setLoading(true);
@@ -116,7 +129,14 @@ const RangerSignupScreen = () => {
     const formContent = (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-            <View style={styles.card}>
+<View
+  style={[
+    styles.card,
+    role === 'junior_ranger'
+      ? styles.juniorCard
+      : styles.rangerCard
+  ]}
+>
                 <Text style={styles.label}>Name</Text>
                 <TextInput
                     style={styles.input}

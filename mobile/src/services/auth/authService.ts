@@ -4,7 +4,7 @@ export interface RangerSignupPayload {
   email: string;
   name: string;
   password: string;
-  role: 'ranger';
+  role: 'ranger' | 'junior_ranger';
 }
 
 export interface SignupResponse {

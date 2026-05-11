@@ -7,6 +7,7 @@ import RangerSignupScreen from '../screens/auth/RangerSignupScreen';
 import LoginScreen from "../screens/auth/loginScreen";
 import ForgotPasswordScreen from "../screens/auth/forgotPasswordScreen";
 import VerificationScreen from "../screens/auth/verificationScreen";
+import AdminMenuScreen from '../screens/admin/AdminMenuScreen';
 import PendingRangerRequestsScreen from '../screens/admin/PendingRangerRequestsScreen';
 import RangerRequestDetailsScreen from '../screens/admin/RangerRequestDetailsScreen';
 import ManageUsersScreen from '../screens/admin/ManageUsersScreen';
@@ -22,6 +23,7 @@ export type AuthStackParamList = {
     Verification: { email: string };
     JoinWithInvite: undefined;
     Home: undefined;
+    AdminMenu: undefined;
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
     ManageUsers: undefined;
@@ -51,8 +53,7 @@ export default function AuthNavigator() {
                 component={LoginScreen}
                 options={{ 
                 ...authHeaderOptions,
-                title: "Sign In",
-                 }}
+                title: "Sign In" }}
             /> 
 
             <Stack.Screen
@@ -86,12 +87,17 @@ export default function AuthNavigator() {
             /> */}
 
             <Stack.Screen
+                name="AdminMenu"
+                component={AdminMenuScreen}
+                options={{ headerShown: false }}
+            />
+            
+            <Stack.Screen
                 name="PendingRangerRequests"
                 component={PendingRangerRequestsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Signup Requests ',
-                }}
+                    title: 'Signup Requests ' }}
             />
 
             <Stack.Screen
@@ -99,8 +105,7 @@ export default function AuthNavigator() {
                 component={RangerRequestDetailsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Request Details',
-                }}
+                    title: 'Request Details' }}
             />
 
             <Stack.Screen
@@ -108,8 +113,7 @@ export default function AuthNavigator() {
                 component={ManageUsersScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Manage Users',
-                }}
+                    title: 'Manage Users' }}
             />
 
             <Stack.Screen
@@ -117,8 +121,7 @@ export default function AuthNavigator() {
                 component={AdminCohortsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Cohorts',
-                }}
+                    title: 'Cohorts' }}
                 />
 
             <Stack.Screen
@@ -126,10 +129,8 @@ export default function AuthNavigator() {
                 component={AdminCohortDetailsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Cohort Details',
-                }}
+                    title: 'Cohort Details' }}
                 />
-
 
         </Stack.Navigator>
     );

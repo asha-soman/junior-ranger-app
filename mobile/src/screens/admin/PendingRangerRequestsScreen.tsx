@@ -116,21 +116,18 @@ export default function PendingRangerRequestsScreen() {
                 })
               }
             >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 6,
-                }}
-              >
-                <Text style={styles.name}>
+              <View style={styles.cardHeader}>
+                <Text
+                  style={styles.manageUserName}
+                  numberOfLines={2}
+                >
                   {ranger.name || 'No name provided'}
                 </Text>
 
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>
-                    {ranger.approval_status}
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>
+                    {ranger.approval_status.charAt(0).toUpperCase() +
+                      ranger.approval_status.slice(1)}
                   </Text>
                 </View>
               </View>

@@ -1,6 +1,77 @@
 import { StyleSheet } from 'react-native';
 
 export const adminStyles = StyleSheet.create({
+  
+  menuContainer: {
+    flex: 1,
+    backgroundColor: '#F4F4F4',
+  },
+
+  menuHeader: {
+    backgroundColor: '#376e62',
+    height: 100,
+    paddingTop: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+
+  menuHeaderIcon: {
+    position: 'absolute',
+    left: 25,
+    top: 48,
+  },
+
+  menuTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  menuContent: {
+    paddingHorizontal: 20,
+    paddingTop: 23,
+    paddingBottom: 30,
+  },
+
+  menuOption: {
+    backgroundColor: '#BFD8B8',
+    borderRadius: 24,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 110,
+    overflow: 'hidden',
+  },
+
+  menuOptionText: {
+    flex: 1,
+    marginLeft: 18,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+  },
+
+  menuOptionReverse: {
+    flexDirection: 'row-reverse',
+  },
+
+  menuOptionTextLeft: {
+    textAlign: 'center',
+    marginLeft: 0,
+    marginRight: 18,
+  },
+
+  menuImage: {
+    width: 120,
+    height: 115,
+    resizeMode: 'contain',
+  },
+  
   container: {
     flex: 1,
     backgroundColor: '#F4F4F4',
@@ -19,7 +90,7 @@ export const adminStyles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: '#1b6687',
+    backgroundColor: '#FFFFFF',
     borderRadius: 22,
     padding: 16,
     marginBottom: 14,
@@ -33,7 +104,7 @@ export const adminStyles = StyleSheet.create({
 
   email: {
     fontSize: 15,
-    color: '#F4F4F4',
+    color: '#1E1E1E',
     marginBottom: 10,
   },
 
@@ -45,13 +116,13 @@ export const adminStyles = StyleSheet.create({
 
   label: {
     fontSize: 14,
-    color: '#EDEDED',
+    color: '#1b7e87',
     fontWeight: '600',
   },
 
   value: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#1E1E1E',
   },
 
   statusBadge: {
@@ -282,6 +353,10 @@ export const adminStyles = StyleSheet.create({
 
   pendingBadge: {
     backgroundColor: '#36889c',
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
   },
 
   rejectedBadge: {
@@ -406,6 +481,27 @@ membersTitle: {
   color: '#1E1E1E',
   marginTop: 22,
   marginBottom: 12,
+},
+
+cardHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: 10,
+},
+
+manageUserName: {
+  flex: 1,
+  fontSize: 21,
+  fontWeight: '700',
+  color: '#0c0d0d',
+  marginRight: 12,
+},
+
+pendingBadgeText: {
+  color: '#FFFFFF',
+  fontWeight: '700',
+  fontSize: 14,
 },
 
 });

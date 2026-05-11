@@ -35,7 +35,7 @@ export const adminStyles = StyleSheet.create({
   },
 
   menuOption: {
-    backgroundColor: '#BFD8B8',
+    backgroundColor: '#b8d7d8',
     borderRadius: 24,
     paddingVertical: 18,
     paddingHorizontal: 18,

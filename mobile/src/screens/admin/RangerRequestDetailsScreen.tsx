@@ -49,9 +49,10 @@ export default function RangerRequestDetailsScreen() {
       Alert.alert('Success', 'Ranger account approved successfully.', [
         {
           text: 'OK',
-          onPress: () =>
-            navigation.navigate('PendingRangerRequests', {refresh: true} as never),
-          
+          onPress: () => navigation.reset({
+            index: 1,
+            routes: [{ name: 'AdminMenu' }, { name: 'PendingRangerRequests' }],
+          }),
         },
       ]);
     } catch (error: any) {
@@ -74,8 +75,10 @@ export default function RangerRequestDetailsScreen() {
       Alert.alert('Success', 'Ranger account rejected successfully.', [
         {
           text: 'OK',
-          onPress: () =>
-            navigation.navigate('PendingRangerRequests', {refresh: true} as never),
+          onPress: () => navigation.reset({
+            index: 1,
+            routes: [{ name: 'AdminMenu' }, { name: 'PendingRangerRequests' }],
+          }),
         },
       ]);
     } catch (error: any) {

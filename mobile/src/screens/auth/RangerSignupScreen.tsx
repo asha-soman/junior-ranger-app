@@ -25,6 +25,7 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [parentConsent, setParentConsent] = useState(false);
     const [loading, setLoading] = useState(false);
     const { role } = route.params;
 
@@ -86,6 +87,14 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
             return false;
         }
 
+        if (role === 'junior_ranger' && !parentConsent) {
+            Alert.alert(
+                'Consent Required',
+                'Parental consent is required for Junior Rangers.'
+            );
+            return false;
+        }
+
         return true;
     };
 
@@ -93,11 +102,16 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
         if (!validateForm()) return;
 
         const payload = {
-    name: `${firstName.trim()} ${surname.trim()}`.trim(),
-    email: email.trim().toLowerCase(),
-    password: password.trim(),
-    role: role, // ✅ dynamic now
-};
+            name: `${firstName.trim()} ${surname.trim()}`.trim(),
+            email: email.trim().toLowerCase(),
+            password: password.trim(),
+            role: role,
+
+            /*parentConsent:
+                role === 'junior_ranger'
+                    ? parentConsent
+                    : null,*/
+        };
 
         try {
             setLoading(true);
@@ -128,6 +142,7 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
 
     const formContent = (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+
 
 <View
   style={[
@@ -199,6 +214,31 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
                 </TouchableOpacity>
             </View>
 
+    {role === 'junior_ranger' && (
+    <TouchableOpacity
+        style={styles.checkboxRow}
+        onPress={() => setParentConsent(!parentConsent)}
+        activeOpacity={0.8}
+    >
+        <View
+            style={[
+                styles.checkbox,
+                parentConsent && styles.checkboxChecked,
+            ]}
+        >
+            {parentConsent && (
+                <Text style={styles.checkmark}>✓</Text>
+            )}
+        </View>
+
+        <Text style={styles.termsText}>
+            I am a parent/guardian and I give consent
+            for this child to use the app.
+        </Text>
+    </TouchableOpacity>
+)}
+
+
             <TouchableOpacity
                 style={styles.checkboxRow}
                 onPress={() => setAgreedToTerms(!agreedToTerms)}
@@ -209,7 +249,7 @@ import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScr
                 </View>
 
                 <Text style={styles.termsText}>
-                    I agree to the Terms and Conditions{'\n'}
+                    I agree to the Terms and Conditions
                     and the Privacy Policy
                 </Text>
             </TouchableOpacity>

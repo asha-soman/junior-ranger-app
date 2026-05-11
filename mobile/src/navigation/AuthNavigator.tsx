@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { authHeaderOptions } from "./navigationStyles";
-
+import { AdminUser } from '../services/admin/adminService';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import RangerSignupScreen from '../screens/auth/RangerSignupScreen';
 import LoginScreen from "../screens/auth/loginScreen";
@@ -26,7 +26,7 @@ export type AuthStackParamList = {
     AdminMenu: undefined;
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
-    ManageUsers: undefined;
+    ManageUsers: { initialUsers?: AdminUser[] } | undefined;
     AdminCohorts: undefined;
     AdminCohortDetails: { cohortId: string };
 };

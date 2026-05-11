@@ -14,32 +14,39 @@ type Props = {
   activeTab?: 'home' | 'menu' | 'notifications';
 };
 
-export default function AdminBottomTabBar({ activeTab = 'menu' }: Props) {
+export default function AdminBottomTabBar({ activeTab }: Props) {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+
+  const activeColor = '#555353';
+  const inactiveColor = '#131313';
+
   return (
-    <View style={[styles.bottomTabContainer, { paddingBottom: insets.bottom }]}>
-      <TouchableOpacity
-        style={styles.bottomTabItem}
-        onPress={() => navigation.navigate('AdminMenu')}
-      >
-        <Ionicons name="home" size={24} color="#131313" />
-        <Text style={styles.bottomTabText}>Home</Text>
+    <View
+      style={[styles.bottomTabContainer, { paddingBottom: insets.bottom -4 }]}
+    >
+      <TouchableOpacity style={styles.bottomTabItem}>
+        <Ionicons name="home" size={24} color={activeTab === 'home' ? activeColor : inactiveColor}/>
+        <Text
+          style={[ styles.bottomTabText, activeTab === 'home' && styles.activeBottomTabText ]}>
+          Home
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.bottomTabItem}
+      <TouchableOpacity style={styles.bottomTabItem}
         onPress={() => navigation.navigate('AdminMenu')}
       >
-        <Ionicons name="menu" size={26} color="#555353" />
-        <Text style={[styles.bottomTabText, styles.activeBottomTabText]}>
+        <Ionicons name="menu" size={26} color={activeTab === 'menu' ? activeColor : inactiveColor}/>
+        <Text style={[ styles.bottomTabText, activeTab === 'menu' && styles.activeBottomTabText ]}>
           Menu
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.bottomTabItem}>
-        <Ionicons name="notifications" size={24} color="#131313" />
-        <Text style={styles.bottomTabText}>Notifications</Text>
+        <Ionicons name="notifications" size={24} color={activeTab === 'notifications' ? activeColor : inactiveColor}/>
+        <Text style={[ styles.bottomTabText, activeTab === 'notifications' && styles.activeBottomTabText]}>
+          Notifications
+        </Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { AdminUser, getAdminUsers } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 
+type RouteProps = RouteProp<AuthStackParamList, 'ManageUsers'>;
+
 export default function ManageUsersScreen() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const route = useRoute<RouteProps>();
+  const initialUsers = route.params?.initialUsers ?? [];
+  const [users, setUsers] = useState<AdminUser[]>(initialUsers);
+  const [loading, setLoading] = useState(initialUsers.length === 0);
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [errorMessage, setErrorMessage] = useState('');
@@ -39,7 +46,9 @@ export default function ManageUsersScreen() {
   };
 
   useEffect(() => {
-    loadUsers();
+    if (initialUsers.length === 0) {
+      loadUsers();
+    }
   }, []);
 
   useEffect(() => {
@@ -103,14 +112,6 @@ export default function ManageUsersScreen() {
     if (status === 'pending') return styles.pendingBadge;
     return styles.rejectedBadge;
   };
-
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color="#376e62" />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -258,7 +259,7 @@ export default function ManageUsersScreen() {
 
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>
-        ) : users.length === 0 ? (
+        ) : !loading && users.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No users found</Text>
           </View>
@@ -301,6 +302,7 @@ export default function ManageUsersScreen() {
           ))
         )}
       </ScrollView>
+      <AdminBottomTabBar activeTab={undefined} />
     </View>
   );
 }

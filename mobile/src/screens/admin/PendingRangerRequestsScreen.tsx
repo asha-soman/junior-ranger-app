@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useFocusEffect, useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
+import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
 import { getPendingRangers, PendingRanger } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 import { Ionicons } from "@expo/vector-icons";
@@ -165,6 +166,7 @@ export default function PendingRangerRequestsScreen() {
         )}
 
       </ScrollView>
+      <AdminBottomTabBar activeTab={undefined} />
     </View>
   );
 }

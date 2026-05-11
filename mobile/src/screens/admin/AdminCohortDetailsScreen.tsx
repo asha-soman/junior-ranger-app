@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { AdminCohortDetails, getAdminCohortById } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
@@ -116,6 +117,7 @@ export default function AdminCohortDetailsScreen() {
           ))
         )}
       </ScrollView>
+      <AdminBottomTabBar activeTab={undefined} />
     </View>
   );
 }

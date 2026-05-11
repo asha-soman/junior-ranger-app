@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import { AdminUser, getAdminUsers } from '../../services/admin/adminService';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -10,7 +12,14 @@ import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'AdminMenu'>;
 
 export default function AdminMenuScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const [usersPreview, setUsersPreview] = useState<AdminUser[]>([]);
+    useEffect(() => {
+    getAdminUsers()
+        .then(setUsersPreview)
+        .catch(() => {});
+    }, []);
+  
+    const navigation = useNavigation<NavigationProp>();
 
   return (
     <View style={styles.menuContainer}>
@@ -35,7 +44,7 @@ export default function AdminMenuScreen() {
 
         <TouchableOpacity
           style={styles.menuOption}
-          onPress={() => navigation.navigate('ManageUsers')}
+          onPress={() => navigation.navigate('ManageUsers', {initialUsers: usersPreview})}
         >
           <Image source={require('../../../assets/images/users.png')}
             style={styles.menuImage}

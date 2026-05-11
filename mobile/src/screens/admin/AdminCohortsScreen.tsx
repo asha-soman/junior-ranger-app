@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AdminCohort, getAdminCohorts } from '../../services/admin/adminService';
@@ -172,6 +173,7 @@ export default function AdminCohortsScreen() {
           ))
         )}
       </ScrollView>
+      <AdminBottomTabBar activeTab={undefined} />
     </View>
   );
 }

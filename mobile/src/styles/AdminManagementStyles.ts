@@ -9,8 +9,8 @@ export const adminStyles = StyleSheet.create({
 
   menuHeader: {
     backgroundColor: '#376e62',
-    height: 100,
-    paddingTop: 28,
+    height: 90,
+    paddingTop: 25,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -19,7 +19,7 @@ export const adminStyles = StyleSheet.create({
   menuHeaderIcon: {
     position: 'absolute',
     left: 25,
-    top: 48,
+    top: 40,
   },
 
   menuTitle: {
@@ -30,8 +30,8 @@ export const adminStyles = StyleSheet.create({
 
   menuContent: {
     paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 105,
+    paddingTop: 17,
+    paddingBottom: 98,
   },
 
   menuOption: {
@@ -39,7 +39,7 @@ export const adminStyles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 18,
     paddingHorizontal: 18,
-    marginBottom: 18,
+    marginBottom: 17,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

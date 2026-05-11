@@ -81,8 +81,10 @@ export interface AdminCohortDetails extends AdminCohort {
   members: AdminCohortMember[];
 }
 
-export const getAdminCohorts = async (): Promise<AdminCohort[]> => {
-  const response = await apiClient.get('/admin/cohorts');
+export const getAdminCohorts = async (name?: string): Promise<AdminCohort[]> => {
+  const response = await apiClient.get('/admin/cohorts', {
+    params: { name: name?.trim() ? name.trim() : undefined },
+  });
   return response.data;
 };
 

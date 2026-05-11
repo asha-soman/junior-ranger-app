@@ -108,40 +108,46 @@ export class AdminService {
 
   async getAllUsers(role?: string, status?: string, name?: string) {
     let query = this.db
-      .selectFrom('users')
+      .selectFrom('users as u')
+      .leftJoin('cohort_members as cm', (join) =>
+        join
+          .onRef('cm.user_id', '=', 'u.id')
+          .on('cm.is_deleted', '=', false)
+      )
+      .leftJoin('cohorts as c', (join) =>
+        join
+          .onRef('c.id', '=', 'cm.cohort_id')
+          .on('c.is_deleted', '=', false)
+      )
       .select([
-        'id',
-        'name',
-        'email',
-        'role',
-        'is_active',
-        'approval_status',
-        'created_at',
+        'u.id',
+        'u.name',
+        'u.email',
+        'u.role',
+        'u.is_active',
+        'u.approval_status',
+        'u.created_at',
+        'c.name as cohort_name',
       ])
-      .where('is_deleted', '=', false);
+      .where('u.is_deleted', '=', false);
 
     if (role && role !== 'all') {
-      query = query.where('role', '=', role as any);
+      query = query.where('u.role', '=', role as any);
     }
 
     if (status && status !== 'all') {
-      query = query.where('approval_status', '=', status as any);
+      query = query.where('u.approval_status', '=', status as any);
     }
 
     if (name && name.trim()) {
-      query = query.where('name', 'ilike', `%${name.trim()}%`);
+      query = query.where('u.name', 'ilike', `%${name.trim()}%`);
     }
 
-    const users = await query.orderBy('created_at', 'desc').execute();
-
-    return users.map((user) => ({
-      ...user,
-      cohort_name: null,
-    }));
+    return query.orderBy('u.created_at', 'desc').execute();
   }
 
-  async getAllCohorts() {
-  const cohorts = await this.db
+  async getAllCohorts(name?: string) {
+  let query = this.db
     .selectFrom('cohorts as c')
     .leftJoin('users as ranger', 'ranger.id', 'c.assigned_ranger_id')
     .select([
@@ -155,6 +161,14 @@ export class AdminService {
       'ranger.email as assigned_ranger_email',
     ])
     .where('c.is_deleted', '=', false)
+    if (name && name.trim()) {
+      query = query.where(
+        'c.name',
+        'ilike',
+        `%${name.trim()}%`
+      );
+    }
+  const cohorts = await query
     .orderBy('c.created_at', 'desc')
     .execute();
 

@@ -39,8 +39,10 @@ export class AdminController {
   }
 
   @Get('cohorts')
-  getAllCohorts() {
-    return this.adminService.getAllCohorts();
+  getAllCohorts(
+    @Query('name') name?: string,
+  ) {
+    return this.adminService.getAllCohorts(name);
   }
 
   @Get('cohorts/:id')

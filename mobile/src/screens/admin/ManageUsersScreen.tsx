@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AdminUser, getAdminUsers } from '../../services/admin/adminService';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 
@@ -160,6 +161,14 @@ export default function ManageUsersScreen() {
         {activeFilterSection === 'search' && (
           <View>
             <View style={styles.searchContainer}>
+
+              <Ionicons
+                name="search"
+                size={22}
+                color="#777"
+                style={styles.searchIcon}
+              />
+              
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name"

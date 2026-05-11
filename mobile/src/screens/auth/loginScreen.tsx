@@ -73,7 +73,7 @@ export default function LoginScreen() {
       console.log("Stored token:", storedToken);
 
       if (profileResponse.data.role === "admin") {
-        navigation.replace("ManageUsers");
+        navigation.replace("AdminCohorts");
       } else {
         navigation.replace("Verification", { email });
       }

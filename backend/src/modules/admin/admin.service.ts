@@ -140,4 +140,85 @@ export class AdminService {
     }));
   }
 
+  async getAllCohorts() {
+  const cohorts = await this.db
+    .selectFrom('cohorts as c')
+    .leftJoin('users as ranger', 'ranger.id', 'c.assigned_ranger_id')
+    .select([
+      'c.id',
+      'c.name',
+      'c.description',
+      'c.location',
+      'c.created_at',
+      'c.assigned_ranger_id',
+      'ranger.name as assigned_ranger_name',
+      'ranger.email as assigned_ranger_email',
+    ])
+    .where('c.is_deleted', '=', false)
+    .orderBy('c.created_at', 'desc')
+    .execute();
+
+  const cohortsWithCounts = await Promise.all(
+    cohorts.map(async (cohort) => {
+      const memberCountResult = await this.db
+        .selectFrom('cohort_members')
+        .select((eb) => eb.fn.countAll<number>().as('member_count'))
+        .where('cohort_id', '=', cohort.id)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      return {
+        ...cohort,
+        member_count: Number(memberCountResult?.member_count ?? 0),
+      };
+    })
+  );
+
+  return cohortsWithCounts;
+}
+
+async getCohortById(id: string) {
+  const cohort = await this.db
+    .selectFrom('cohorts as c')
+    .leftJoin('users as ranger', 'ranger.id', 'c.assigned_ranger_id')
+    .select([
+      'c.id',
+      'c.name',
+      'c.description',
+      'c.location',
+      'c.created_at',
+      'c.assigned_ranger_id',
+      'ranger.name as assigned_ranger_name',
+      'ranger.email as assigned_ranger_email',
+    ])
+    .where('c.id', '=', id)
+    .where('c.is_deleted', '=', false)
+    .executeTakeFirst();
+
+  if (!cohort) {
+    throw new NotFoundException('Cohort not found');
+  }
+
+  const members = await this.db
+    .selectFrom('cohort_members as cm')
+    .leftJoin('users as u', 'u.id', 'cm.user_id')
+    .select([
+      'cm.id',
+      'cm.user_id',
+      'cm.role',
+      'u.name as user_name',
+      'u.email as user_email',
+    ])
+    .where('cm.cohort_id', '=', id)
+    .where('cm.is_deleted', '=', false)
+    .orderBy('u.name', 'asc')
+    .execute();
+
+  return {
+    ...cohort,
+    member_count: members.length,
+    members,
+  };
+}
+
 }

@@ -36,5 +36,16 @@ export class AdminController {
     @Query('name') name?: string,
   ) {
     return this.adminService.getAllUsers(role, status, name);
-}
+  }
+
+  @Get('cohorts')
+  getAllCohorts() {
+    return this.adminService.getAllCohorts();
+  }
+
+  @Get('cohorts/:id')
+  getCohortById(@Param('id') id: string) {
+    return this.adminService.getCohortById(id);
+  }
+  
 }

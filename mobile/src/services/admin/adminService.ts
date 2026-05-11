@@ -54,5 +54,44 @@ export const getAdminUsers = async (role?: string, status?: string, name?: strin
   });
 
   return response.data;
+
 };
+
+export interface AdminCohort {
+  id: string;
+  name: string;
+  description: string | null;
+  location: string | null;
+  created_at: string | null;
+  assigned_ranger_id: string | null;
+  assigned_ranger_name: string | null;
+  assigned_ranger_email: string | null;
+  member_count: number;
+}
+
+export interface AdminCohortMember {
+  id: string;
+  user_id: string;
+  role: string;
+  user_name: string | null;
+  user_email: string | null;
+}
+
+export interface AdminCohortDetails extends AdminCohort {
+  members: AdminCohortMember[];
+}
+
+export const getAdminCohorts = async (): Promise<AdminCohort[]> => {
+  const response = await apiClient.get('/admin/cohorts');
+  return response.data;
+};
+
+export const getAdminCohortById = async (
+  id: string
+): Promise<AdminCohortDetails> => {
+  const response = await apiClient.get(`/admin/cohorts/${id}`);
+  return response.data;
+};
+
+
 

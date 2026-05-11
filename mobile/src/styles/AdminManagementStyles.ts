@@ -364,4 +364,48 @@ export const adminStyles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
+cohortCard: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 22,
+  padding: 16,
+  marginBottom: 14,
+  borderWidth: 1,
+  borderColor: '#E2E2E2',
+},
+
+cohortName: {
+  fontSize: 22,
+  fontWeight: '700',
+  color: '#1E1E1E',
+  marginBottom: 6,
+},
+
+cohortDescription: {
+  fontSize: 15,
+  color: '#555555',
+  marginBottom: 14,
+},
+
+memberCountBadge: {
+  alignSelf: 'flex-start',
+  backgroundColor: '#376e62',
+  paddingVertical: 7,
+  paddingHorizontal: 14,
+  borderRadius: 20,
+  marginTop: 12,
+},
+
+memberCountText: {
+  color: '#FFFFFF',
+  fontWeight: '700',
+},
+
+membersTitle: {
+  fontSize: 20,
+  fontWeight: '700',
+  color: '#1E1E1E',
+  marginTop: 22,
+  marginBottom: 12,
+},
+
 });

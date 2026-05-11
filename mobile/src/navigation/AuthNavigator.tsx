@@ -10,6 +10,8 @@ import VerificationScreen from "../screens/auth/verificationScreen";
 import PendingRangerRequestsScreen from '../screens/admin/PendingRangerRequestsScreen';
 import RangerRequestDetailsScreen from '../screens/admin/RangerRequestDetailsScreen';
 import ManageUsersScreen from '../screens/admin/ManageUsersScreen';
+import AdminCohortsScreen from '../screens/admin/AdminCohortsScreen';
+import AdminCohortDetailsScreen from '../screens/admin/AdminCohortDetailsScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -23,6 +25,8 @@ export type AuthStackParamList = {
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
     ManageUsers: undefined;
+    AdminCohorts: undefined;
+    AdminCohortDetails: { cohortId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -107,6 +111,25 @@ export default function AuthNavigator() {
                     title: 'Manage Users',
                 }}
             />
+
+            <Stack.Screen
+                name="AdminCohorts"
+                component={AdminCohortsScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Cohorts',
+                }}
+                />
+
+            <Stack.Screen
+                name="AdminCohortDetails"
+                component={AdminCohortDetailsScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Cohort Details',
+                }}
+                />
+
 
         </Stack.Navigator>
     );

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
+import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { adminStyles as styles } from '../../styles/AdminManagementStyles';
 
@@ -67,6 +67,7 @@ export default function AdminMenuScreen() {
           <Text style={[styles.menuOptionText, styles.menuOptionTextLeft]}>Notices & Events</Text>
         </TouchableOpacity>
       </ScrollView>
+      <AdminBottomTabBar activeTab="menu" />
     </View>
   );
 }

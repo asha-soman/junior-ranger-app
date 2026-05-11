@@ -30,8 +30,8 @@ export const adminStyles = StyleSheet.create({
 
   menuContent: {
     paddingHorizontal: 20,
-    paddingTop: 23,
-    paddingBottom: 30,
+    paddingTop: 22,
+    paddingBottom: 105,
   },
 
   menuOption: {
@@ -79,7 +79,7 @@ export const adminStyles = StyleSheet.create({
 
   content: {
     padding: 18,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   pageTitle: {
@@ -502,6 +502,40 @@ pendingBadgeText: {
   color: '#FFFFFF',
   fontWeight: '700',
   fontSize: 14,
+},
+
+bottomTabContainer: {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: '#56849f',
+  paddingTop: 8,
+  paddingHorizontal: 18,
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  elevation: 0,
+  shadowOpacity: 0,
+  borderRadius: 0,
+},
+
+bottomTabItem: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  flex: 1,
+},
+
+bottomTabText: {
+  fontSize: 11,
+  fontWeight: '600',
+  color: '#131313',
+  marginTop: 4,
+},
+
+activeBottomTabText: {
+  color: '#555353',
+  fontWeight: '600',
 },
 
 });

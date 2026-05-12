@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Alert,
-    ActivityIndicator,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    TouchableWithoutFeedback,
-    Keyboard,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { signupRanger } from '../../services/auth/authService';
 import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
 

@@ -18,6 +18,7 @@ import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
 import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
 import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
+import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -48,6 +49,7 @@ export type AuthStackParamList = {
     assignedRangerId?: string | null;
   };
   RangerMenu: undefined;
+  JuniorMenu: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -190,6 +192,12 @@ export default function AuthNavigator() {
       <Stack.Screen
         name="RangerMenu"
         component={RangerMenuScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="JuniorMenu"
+        component={JuniorMenuScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

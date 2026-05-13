@@ -39,13 +39,15 @@ export default function AdminCohortDetailsScreen() {
     try {
       setErrorMessage("");
 
-      const [cohortData, membersData] = await Promise.all([
-        getCohortById(cohortId),
-        getCohortMembers(cohortId),
-      ]);
-
+      const cohortData = await getCohortById(cohortId);
       setCohort(cohortData);
-      setMembers(membersData);
+
+      if (userRole === "admin" || userRole === "ranger") {
+        const membersData = await getCohortMembers(cohortId);
+        setMembers(membersData);
+      } else {
+        setMembers([]);
+      }
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
@@ -112,31 +114,33 @@ export default function AdminCohortDetailsScreen() {
               {cohort.member_count ?? members.length}
             </Text>
           </View>
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#376e62",
-              paddingVertical: 14,
-              borderRadius: 12,
-              marginTop: 20,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onPress={() =>
-              navigation.navigate("EditCohort", {
-                cohortId,
-              })
-            }
-          >
-            <Text
+          {userRole !== "junior_ranger" && (
+            <TouchableOpacity
               style={{
-                color: "#FFFFFF",
-                fontSize: 16,
-                fontWeight: "700",
+                backgroundColor: "#376e62",
+                paddingVertical: 14,
+                borderRadius: 12,
+                marginTop: 20,
+                alignItems: "center",
+                justifyContent: "center",
               }}
+              onPress={() =>
+                navigation.navigate("EditCohort", {
+                  cohortId,
+                })
+              }
             >
-              Edit Cohort
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                Edit Cohort
+              </Text>
+            </TouchableOpacity>
+          )}
           {userRole === "admin" && (
             <TouchableOpacity
               style={{
@@ -167,32 +171,36 @@ export default function AdminCohortDetailsScreen() {
           )}
         </View>
 
-        <Text style={styles.membersTitle}>Members</Text>
+        {userRole !== "junior_ranger" && (
+          <>
+            <Text style={styles.membersTitle}>Members</Text>
 
-        {members.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>This cohort has no members</Text>
-          </View>
-        ) : (
-          members.map((member) => (
-            <View key={member.id} style={styles.userCard}>
-              <Text style={styles.userName}>
-                {member.name || "No name provided"}
-              </Text>
-
-              <Text style={styles.userEmail}>
-                {member.email || "No email provided"}
-              </Text>
-
-              <View style={styles.userInfoRow}>
-                <Text style={styles.userInfoLabel}>Role</Text>
-                <Text style={styles.userInfoValue}>
-                  {member.cohort_role.charAt(0).toUpperCase() +
-                    member.cohort_role.slice(1)}
-                </Text>
+            {members.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>This cohort has no members</Text>
               </View>
-            </View>
-          ))
+            ) : (
+              members.map((member) => (
+                <View key={member.id} style={styles.userCard}>
+                  <Text style={styles.userName}>
+                    {member.name || "No name provided"}
+                  </Text>
+
+                  <Text style={styles.userEmail}>
+                    {member.email || "No email provided"}
+                  </Text>
+
+                  <View style={styles.userInfoRow}>
+                    <Text style={styles.userInfoLabel}>Role</Text>
+                    <Text style={styles.userInfoValue}>
+                      {member.cohort_role.charAt(0).toUpperCase() +
+                        member.cohort_role.slice(1)}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
       <AdminBottomTabBar activeTab={undefined} />

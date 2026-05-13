@@ -105,26 +105,28 @@ export default function AdminCohortsScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#376e62",
-            paddingVertical: 14,
-            borderRadius: 14,
-            marginBottom: 16,
-            alignItems: "center",
-          }}
-          onPress={() => navigation.navigate("CreateCohort")}
-        >
-          <Text
+        {userRole !== "junior_ranger" && (
+          <TouchableOpacity
             style={{
-              color: "#FFFFFF",
-              fontSize: 16,
-              fontWeight: "700",
+              backgroundColor: "#376e62",
+              paddingVertical: 14,
+              borderRadius: 14,
+              marginBottom: 16,
+              alignItems: "center",
             }}
+            onPress={() => navigation.navigate("CreateCohort")}
           >
-            + Create Cohort
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 16,
+                fontWeight: "700",
+              }}
+            >
+              + Create Cohort
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>

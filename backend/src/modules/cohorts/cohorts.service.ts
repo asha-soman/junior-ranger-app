@@ -32,22 +32,24 @@ export class CohortsService {
         description: dto.description ?? null,
         location: dto.location,
         created_by_ranger_id: user.userId,
-        assigned_ranger_id: user.userId,
+        assigned_ranger_id: user.role === 'ranger' ? user.userId : null,
         is_deleted: false,
       })
       .returningAll()
       .executeTakeFirst();
 
-    await this.db
-      .insertInto('cohort_members')
-      .values({
-        id: randomUUID(),
-        user_id: user.userId,
-        cohort_id: cohortId,
-        role: 'ranger',
-        is_deleted: false,
-      })
-      .execute();
+    if (user.role === 'ranger') {
+      await this.db
+        .insertInto('cohort_members')
+        .values({
+          id: randomUUID(),
+          user_id: user.userId,
+          cohort_id: cohortId,
+          role: 'ranger',
+          is_deleted: false,
+        })
+        .execute();
+    }
 
     return {
       message: 'Cohort created successfully',
@@ -57,42 +59,78 @@ export class CohortsService {
 
   // Fetch all Cohorts
   async findAllCohorts(user: { userId: string; email: string; role: string }) {
-    if (user.role === 'admin') {
-      const cohorts = await this.db
-        .selectFrom('cohorts')
-        .selectAll()
-        .where('is_deleted', '=', false)
-        .orderBy('created_at', 'desc')
-        .execute();
+    let cohorts;
 
-      return {
-        message: 'Cohorts fetched successfully',
-        cohorts,
-      };
+    if (user.role === 'admin') {
+      cohorts = await this.db
+        .selectFrom('cohorts')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohorts.is_deleted', '=', false)
+        .orderBy('cohorts.created_at', 'desc')
+        .execute();
+    } else {
+      cohorts = await this.db
+        .selectFrom('cohort_members')
+        .innerJoin('cohorts', 'cohorts.id', 'cohort_members.cohort_id')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohort_members.user_id', '=', user.userId)
+        .where('cohort_members.is_deleted', '=', false)
+        .where('cohorts.is_deleted', '=', false)
+        .orderBy('cohorts.created_at', 'desc')
+        .execute();
     }
 
-    const cohorts = await this.db
-      .selectFrom('cohort_members')
-      .innerJoin('cohorts', 'cohorts.id', 'cohort_members.cohort_id')
-      .select([
-        'cohorts.id',
-        'cohorts.name',
-        'cohorts.description',
-        'cohorts.location',
-        'cohorts.created_by_ranger_id',
-        'cohorts.assigned_ranger_id',
-        'cohorts.created_at',
-        'cohorts.updated_at',
-      ])
-      .where('cohort_members.user_id', '=', user.userId)
-      .where('cohort_members.is_deleted', '=', false)
-      .where('cohorts.is_deleted', '=', false)
-      .orderBy('cohorts.created_at', 'desc')
-      .execute();
+    const cohortsWithMemberCount = await Promise.all(
+      cohorts.map(async (cohort) => {
+        const memberCountResult = await this.db
+          .selectFrom('cohort_members')
+          .select((eb) => eb.fn.countAll().as('count'))
+          .where('cohort_id', '=', cohort.id)
+          .where('is_deleted', '=', false)
+          .executeTakeFirst();
+
+        return {
+          ...cohort,
+          member_count: Number(memberCountResult?.count ?? 0),
+        };
+      }),
+    );
 
     return {
       message: 'Cohorts fetched successfully',
-      cohorts,
+      cohorts: cohortsWithMemberCount,
     };
   }
 
@@ -280,6 +318,16 @@ export class CohortsService {
       .where('id', '=', cohortId)
       .returningAll()
       .executeTakeFirst();
+
+    await this.db
+      .updateTable('cohort_members')
+      .set({
+        is_deleted: true,
+        updated_at: new Date(),
+      })
+      .where('cohort_id', '=', cohortId)
+      .where('role', '=', 'ranger')
+      .execute();
 
     const existingMembership = await this.db
       .selectFrom('cohort_members')

@@ -1,32 +1,37 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
-import { Ionicons } from '@expo/vector-icons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AdminCohort, getAdminCohorts } from '../../services/admin/adminService';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { adminStyles as styles } from '../../styles/AdminManagementStyles';
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  TextInput,
+} from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import { Ionicons } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Cohort, getCohorts } from "../../services/cohorts/cohortService";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
-  'AdminCohorts'
+  "AdminCohorts"
 >;
 
 export default function AdminCohortsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const hasMounted = useRef(false);
-  const [cohorts, setCohorts] = useState<AdminCohort[]>([]);
+  const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [searchName, setSearchName] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [searchName, setSearchName] = useState("");
 
-  const loadCohorts = async (
-    name = ''
-  ) => {
+  const loadCohorts = async () => {
     try {
-      setErrorMessage('');
+      setErrorMessage("");
 
       if (loading) {
         setLoading(true);
@@ -34,14 +39,13 @@ export default function AdminCohortsScreen() {
         setIsFiltering(true);
       }
 
-      const data = await getAdminCohorts(name);
-
+      const data = await getCohorts();
       setCohorts(data);
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
-          'Could not load cohorts.'
+          "Could not load cohorts.",
       );
     } finally {
       setLoading(false);
@@ -49,35 +53,27 @@ export default function AdminCohortsScreen() {
     }
   };
 
-  useEffect(() => {
-    loadCohorts();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadCohorts();
+    }, []),
+  );
 
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true;
       return;
     }
-   
-    const timeoutId = setTimeout(() => {
-      loadCohorts(searchName);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
   }, [searchName]);
+
+  const filteredCohorts = cohorts.filter((cohort) =>
+    cohort.name.toLowerCase().includes(searchName.toLowerCase().trim()),
+  );
 
   if (loading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: 'center' },
-        ]}
-      >
-        <ActivityIndicator
-          size="large"
-          color="#376e62"
-        />
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color="#376e62" />
       </View>
     );
   }
@@ -105,68 +101,70 @@ export default function AdminCohortsScreen() {
           />
         </View>
 
-        {errorMessage ? (
-          <Text style={styles.errorText}>
-            {errorMessage}
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#376e62",
+            paddingVertical: 14,
+            borderRadius: 14,
+            marginBottom: 16,
+            alignItems: "center",
+          }}
+          onPress={() => navigation.navigate("CreateCohort")}
+        >
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: "700",
+            }}
+          >
+            + Create Cohort
           </Text>
-        ) : cohorts.length === 0 ? (
+        </TouchableOpacity>
+
+        {errorMessage ? (
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        ) : filteredCohorts.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              No cohorts found
-            </Text>
+            <Text style={styles.emptyText}>No cohorts found</Text>
           </View>
         ) : (
-          cohorts.map((cohort) => (
+          filteredCohorts.map((cohort) => (
             <TouchableOpacity
               key={cohort.id}
               style={styles.cohortCard}
               activeOpacity={0.8}
               onPress={() =>
-                navigation.navigate(
-                  'AdminCohortDetails',
-                  {
-                    cohortId: cohort.id,
-                  }
-                )
+                navigation.navigate("AdminCohortDetails", {
+                  cohortId: cohort.id,
+                })
               }
             >
-              <Text style={styles.cohortName}>
-                {cohort.name}
-              </Text>
+              <Text style={styles.cohortName}>{cohort.name}</Text>
 
               <Text style={styles.cohortDescription}>
-                {cohort.description ||
-                  'No description provided'}
+                {cohort.description || "No description provided"}
               </Text>
 
               <View style={styles.userInfoRow}>
-                <Text style={styles.userInfoLabel}>
-                  Location
-                </Text>
+                <Text style={styles.userInfoLabel}>Location</Text>
 
                 <Text style={styles.userInfoValue}>
-                  {cohort.location ||
-                    'Not specified'}
+                  {cohort.location || "Not specified"}
                 </Text>
               </View>
 
               <View style={styles.userInfoRow}>
-                <Text style={styles.userInfoLabel}>
-                  Assigned Ranger
-                </Text>
+                <Text style={styles.userInfoLabel}>Assigned Ranger</Text>
 
                 <Text style={styles.userInfoValue}>
-                  {cohort.assigned_ranger_name ||
-                    'No ranger assigned'}
+                  {cohort.assigned_ranger_name || "No ranger assigned"}
                 </Text>
               </View>
 
               <View style={styles.memberCountBadge}>
                 <Text style={styles.memberCountText}>
-                  {cohort.member_count} member
-                  {cohort.member_count === 1
-                    ? ''
-                    : 's'}
+                  {cohort.member_count ?? 0} members
                 </Text>
               </View>
             </TouchableOpacity>

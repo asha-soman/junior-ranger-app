@@ -1,44 +1,70 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { AdminCohortDetails, getAdminCohortById } from '../../services/admin/adminService';
-import { adminStyles as styles } from '../../styles/AdminManagementStyles';
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import {
+  RouteProp,
+  useRoute,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
+import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import {
+  Cohort,
+  CohortMember,
+  getCohortById,
+  getCohortMembers,
+} from "../../services/cohorts/cohortService";
+import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import { TouchableOpacity } from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-type RouteProps = RouteProp<AuthStackParamList, 'AdminCohortDetails'>;
+type RouteProps = RouteProp<AuthStackParamList, "AdminCohortDetails">;
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "AdminCohortDetails"
+>;
 
 export default function AdminCohortDetailsScreen() {
   const route = useRoute<RouteProps>();
+  const navigation = useNavigation<NavigationProp>();
   const { cohortId } = route.params;
 
-  const [cohort, setCohort] = useState<AdminCohortDetails | null>(null);
+  const [cohort, setCohort] = useState<Cohort | null>(null);
+  const [members, setMembers] = useState<CohortMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   const loadCohortDetails = async () => {
     try {
-      setErrorMessage('');
-      const data = await getAdminCohortById(cohortId);
-      setCohort(data);
+      setErrorMessage("");
+
+      const [cohortData, membersData] = await Promise.all([
+        getCohortById(cohortId),
+        getCohortMembers(cohortId),
+      ]);
+
+      setCohort(cohortData);
+      setMembers(membersData);
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
-          'Could not load cohort details.'
+          "Could not load cohort details.",
       );
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadCohortDetails();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadCohortDetails();
+    }, [cohortId]),
+  );
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center' }]}>
+      <View style={[styles.container, { justifyContent: "center" }]}>
         <ActivityIndicator size="large" color="#376e62" />
       </View>
     );
@@ -61,56 +87,105 @@ export default function AdminCohortDetailsScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Description</Text>
             <Text style={styles.detailValue}>
-              {cohort.description || 'No description provided'}
+              {cohort.description || "No description provided"}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Location</Text>
             <Text style={styles.detailValue}>
-              {cohort.location || 'Not specified'}
+              {cohort.location || "Not specified"}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Assigned Ranger</Text>
             <Text style={styles.detailValue}>
-              {cohort.assigned_ranger_name || 'No ranger assigned'}
+              {cohort.assigned_ranger_name || "No ranger assigned"}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Member count</Text>
             <Text style={styles.detailValue}>
-              {cohort.member_count}
+              {cohort.member_count ?? members.length}
             </Text>
           </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: "#376e62",
+              paddingVertical: 14,
+              borderRadius: 12,
+              marginTop: 20,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() =>
+              navigation.navigate("EditCohort", {
+                cohortId,
+              })
+            }
+          >
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 16,
+                fontWeight: "700",
+              }}
+            >
+              Edit Cohort
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: "#2f5f55",
+              paddingVertical: 14,
+              borderRadius: 12,
+              marginTop: 12,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() =>
+              navigation.navigate("AssignRanger", {
+                cohortId,
+                assignedRangerId: cohort.assigned_ranger_id,
+              })
+            }
+          >
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 16,
+                fontWeight: "700",
+              }}
+            >
+              Assign Ranger
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.membersTitle}>Members</Text>
 
-        {cohort.members.length === 0 ? (
+        {members.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              This cohort has no members
-            </Text>
+            <Text style={styles.emptyText}>This cohort has no members</Text>
           </View>
         ) : (
-          cohort.members.map((member) => (
+          members.map((member) => (
             <View key={member.id} style={styles.userCard}>
               <Text style={styles.userName}>
-                {member.user_name || 'No name provided'}
+                {member.name || "No name provided"}
               </Text>
 
               <Text style={styles.userEmail}>
-                {member.user_email || 'No email provided'}
+                {member.email || "No email provided"}
               </Text>
 
               <View style={styles.userInfoRow}>
                 <Text style={styles.userInfoLabel}>Role</Text>
                 <Text style={styles.userInfoValue}>
-                  {member.role.charAt(0).toUpperCase() +
-                    member.role.slice(1)}
+                  {member.cohort_role.charAt(0).toUpperCase() +
+                    member.cohort_role.slice(1)}
                 </Text>
               </View>
             </View>

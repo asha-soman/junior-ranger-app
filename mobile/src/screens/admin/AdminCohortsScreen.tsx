@@ -14,11 +14,13 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Cohort, getCohorts } from "../../services/cohorts/cohortService";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import { RouteProp, useRoute } from "@react-navigation/native";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "AdminCohorts"
 >;
+type RouteProps = RouteProp<AuthStackParamList, "AdminCohorts">;
 
 export default function AdminCohortsScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -28,6 +30,8 @@ export default function AdminCohortsScreen() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [searchName, setSearchName] = useState("");
+  const route = useRoute<RouteProps>();
+  const userRole = route.params?.userRole ?? "admin";
 
   const loadCohorts = async () => {
     try {
@@ -137,6 +141,7 @@ export default function AdminCohortsScreen() {
               onPress={() =>
                 navigation.navigate("AdminCohortDetails", {
                   cohortId: cohort.id,
+                  userRole,
                 })
               }
             >

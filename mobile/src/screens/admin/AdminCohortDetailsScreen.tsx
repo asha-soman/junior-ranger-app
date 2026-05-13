@@ -33,6 +33,7 @@ export default function AdminCohortDetailsScreen() {
   const [members, setMembers] = useState<CohortMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const userRole = route.params?.userRole ?? "admin";
 
   const loadCohortDetails = async () => {
     try {
@@ -136,32 +137,34 @@ export default function AdminCohortDetailsScreen() {
               Edit Cohort
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#2f5f55",
-              paddingVertical: 14,
-              borderRadius: 12,
-              marginTop: 12,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onPress={() =>
-              navigation.navigate("AssignRanger", {
-                cohortId,
-                assignedRangerId: cohort.assigned_ranger_id,
-              })
-            }
-          >
-            <Text
+          {userRole === "admin" && (
+            <TouchableOpacity
               style={{
-                color: "#FFFFFF",
-                fontSize: 16,
-                fontWeight: "700",
+                backgroundColor: "#2f5f55",
+                paddingVertical: 14,
+                borderRadius: 12,
+                marginTop: 12,
+                alignItems: "center",
+                justifyContent: "center",
               }}
+              onPress={() =>
+                navigation.navigate("AssignRanger", {
+                  cohortId,
+                  assignedRangerId: cohort.assigned_ranger_id,
+                })
+              }
             >
-              Assign Ranger
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                Assign Ranger
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={styles.membersTitle}>Members</Text>

@@ -17,6 +17,7 @@ import AdminCohortDetailsScreen from "../screens/admin/AdminCohortDetailsScreen"
 import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
 import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
 import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
+import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -31,14 +32,22 @@ export type AuthStackParamList = {
   PendingRangerRequests: { refresh?: boolean } | undefined;
   RangerRequestDetails: { rangerId: string };
   ManageUsers: { initialUsers?: AdminUser[] } | undefined;
-  AdminCohorts: undefined;
-  AdminCohortDetails: { cohortId: string };
+  AdminCohorts:
+    | {
+        userRole?: "admin" | "ranger" | "junior_ranger";
+      }
+    | undefined;
+  AdminCohortDetails: {
+    cohortId: string;
+    userRole?: "admin" | "ranger" | "junior_ranger";
+  };
   CreateCohort: undefined;
   EditCohort: { cohortId: string };
   AssignRanger: {
     cohortId: string;
     assignedRangerId?: string | null;
   };
+  RangerMenu: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -176,6 +185,12 @@ export default function AuthNavigator() {
           ...authHeaderOptions,
           title: "Assign Ranger",
         }}
+      />
+
+      <Stack.Screen
+        name="RangerMenu"
+        component={RangerMenuScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

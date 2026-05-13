@@ -20,7 +20,10 @@ import apiClient from "@/src/services/api/client";
 
 type LoginErrors = { email?: string; password?: string };
 
-type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
+type LoginNavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "Login"
+>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavigationProp>();
@@ -63,8 +66,8 @@ export default function LoginScreen() {
       await saveToken(result.access_token);
 
       // to be removed later, just checks if it returns the profile of the user after logging in with the proper token code
-      const profileResponse = await apiClient.get('/auth/profile');
-      console.log('Profile response:', profileResponse.data);
+      const profileResponse = await apiClient.get("/auth/profile");
+      console.log("Profile response:", profileResponse.data);
 
       // testing if token is getting saved or not
       console.log("Token saved successfully");
@@ -72,13 +75,23 @@ export default function LoginScreen() {
       const storedToken = await getToken();
       console.log("Stored token:", storedToken);
 
+      // if (profileResponse.data.role === "admin") {
+      //   navigation.replace("AdminMenu");
+      // } else {
+      //   navigation.replace("Verification", { email });
+      // }
+
+      // JUST ADDING THIS LOGIC TO BYPASS THE VERIFICATION PAGE TO TEST ADMIN, RANGER AND JUNIOR RANGER PAGES
       if (profileResponse.data.role === "admin") {
         navigation.replace("AdminMenu");
-      } else {
-        navigation.replace("Verification", { email });
+      } else if (profileResponse.data.role === "ranger") {
+        navigation.replace("RangerMenu");
+      }  else {
+        navigation.replace("Welcome");
       }
-    } 
-      catch (error) {
+
+
+    } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
       } else {

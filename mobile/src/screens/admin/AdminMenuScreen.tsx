@@ -54,7 +54,7 @@ export default function AdminMenuScreen() {
 
         <TouchableOpacity
           style={[styles.menuOption, styles.menuOptionReverse]}
-          onPress={() => navigation.navigate('AdminCohorts')}
+          onPress={() => navigation.navigate('AdminCohorts', { userRole: 'admin' })}
         >
           <Image source={require('../../../assets/images/cohorts.png')}
             style={styles.menuImage}

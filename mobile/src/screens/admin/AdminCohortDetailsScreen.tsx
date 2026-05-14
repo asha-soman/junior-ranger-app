@@ -6,7 +6,7 @@ import {
   useNavigation,
   useFocusEffect,
 } from "@react-navigation/native";
-import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import {
   Cohort,
@@ -203,7 +203,7 @@ export default function AdminCohortDetailsScreen() {
           </>
         )}
       </ScrollView>
-      <AdminBottomTabBar activeTab={undefined} />
+      <AppBottomTabBar role={userRole} activeTab="menu" />
     </View>
   );
 }

@@ -8,7 +8,7 @@ import {
   TextInput,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Cohort, getCohorts } from "../../services/cohorts/cohortService";
@@ -178,7 +178,7 @@ export default function AdminCohortsScreen() {
           ))
         )}
       </ScrollView>
-      <AdminBottomTabBar activeTab={undefined} />
+     <AppBottomTabBar role={userRole} activeTab="menu" />
     </View>
   );
 }

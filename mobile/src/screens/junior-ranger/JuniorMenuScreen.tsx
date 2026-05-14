@@ -13,6 +13,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -56,6 +57,7 @@ export default function JuniorMenuScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      <AppBottomTabBar role="junior_ranger" activeTab="home" />
     </View>
   );
 }

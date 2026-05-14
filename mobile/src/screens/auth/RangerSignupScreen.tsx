@@ -1,276 +1,284 @@
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import React, { useState, useEffect } from 'react';
-type Props = NativeStackScreenProps<AuthStackParamList, 'RangerSignup'>;
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import React, { useState, useEffect } from "react";
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Alert,
-    ActivityIndicator,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    TouchableWithoutFeedback,
-    Keyboard,
-} from 'react-native';
-import { signupRanger } from '../../services/auth/authService';
-import { RangerSignupScreenStyles as styles } from '@/src/styles/RangerSignupScreenStyles';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-    const RangerSignupScreen = ({ route, navigation }: Props) => {
-    const [firstName, setFirstName] = useState('');
-    const [surname, setSurname] = useState('');
-    const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [password, setPassword] = useState('');
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const [parentConsent, setParentConsent] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const { role } = route.params;
+import { signupRanger } from "../../services/auth/authService";
+import { RangerSignupScreenStyles as styles } from "@/src/styles/RangerSignupScreenStyles";
 
-    useEffect(() => {
-        navigation.setOptions({
-            title:
-                role === 'junior_ranger'
-                    ? 'Junior Ranger Sign Up'
-                    : 'Ranger Sign Up',
-        });
-    }, [role]);
+type Props = NativeStackScreenProps<AuthStackParamList, "RangerSignup">;
 
-    const validateForm = () => {
-        if (!firstName.trim()) {
-            Alert.alert('Validation Error', 'Please enter your first name.');
-            return false;
-        }
+const RangerSignupScreen = ({ route, navigation }: Props) => {
+  const selectedRole = route.params?.role ?? "ranger";
 
-        if (!surname.trim()) {
-            Alert.alert('Validation Error', 'Please enter your surname.');
-            return false;
-        }
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [parentConsent, setParentConsent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-        if (!email.trim()) {
-            Alert.alert('Validation Error', 'Please enter your email.');
-            return false;
-        }
+  useEffect(() => {
+    navigation.setOptions({
+      title:
+        selectedRole === "junior_ranger"
+          ? "Junior Ranger Sign Up"
+          : "Ranger Sign Up",
+    });
+  }, [navigation, selectedRole]);
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const validateForm = () => {
+    if (!firstName.trim()) {
+      Alert.alert("Validation Error", "Please enter your first name.");
+      return false;
+    }
 
-        if (!emailRegex.test(email.trim())) {
-            Alert.alert('Validation Error', 'Please enter a valid email.');
-            return false;
-        }
+    if (!surname.trim()) {
+      Alert.alert("Validation Error", "Please enter your surname.");
+      return false;
+    }
 
-        if (!phoneNumber.trim()) {
-            Alert.alert('Validation Error', 'Please enter your phone number.');
-            return false;
-        }
+    if (!email.trim()) {
+      Alert.alert("Validation Error", "Please enter your email.");
+      return false;
+    }
 
-        if (!password.trim()) {
-            Alert.alert('Validation Error', 'Please enter your password.');
-            return false;
-        }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (password.trim().length < 6) {
-            Alert.alert(
-                'Validation Error',
-                'Password must be at least 6 characters.'
-            );
-            return false;
-        }
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert("Validation Error", "Please enter a valid email.");
+      return false;
+    }
 
-        if (!agreedToTerms) {
-            Alert.alert(
-                'Validation Error',
-                'Please agree to the Terms and Conditions.'
-            );
-            return false;
-        }
+    if (!phoneNumber.trim()) {
+      Alert.alert("Validation Error", "Please enter your phone number.");
+      return false;
+    }
 
-        if (role === 'junior_ranger' && !parentConsent) {
-            Alert.alert(
-                'Consent Required',
-                'Parental consent is required for Junior Rangers.'
-            );
-            return false;
-        }
+    if (!password.trim()) {
+      Alert.alert("Validation Error", "Please enter your password.");
+      return false;
+    }
 
-        return true;
+    if (password.trim().length < 6) {
+      Alert.alert("Validation Error", "Password must be at least 6 characters.");
+      return false;
+    }
+
+    if (selectedRole === "junior_ranger" && !parentConsent) {
+      Alert.alert(
+        "Consent Required",
+        "Parental consent is required for Junior Rangers.",
+      );
+      return false;
+    }
+
+    if (!agreedToTerms) {
+      Alert.alert(
+        "Validation Error",
+        "Please agree to the Terms and Conditions.",
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const resetForm = () => {
+    setFirstName("");
+    setSurname("");
+    setEmail("");
+    setPhoneNumber("");
+    setPassword("");
+    setAgreedToTerms(false);
+    setParentConsent(false);
+  };
+
+  const handleSignup = async () => {
+    if (!validateForm()) return;
+
+    const payload = {
+      name: `${firstName.trim()} ${surname.trim()}`.trim(),
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+      role: selectedRole,
     };
 
-    const handleSignup = async () => {
-        if (!validateForm()) return;
+    try {
+      setLoading(true);
 
-        const payload = {
-            name: `${firstName.trim()} ${surname.trim()}`.trim(),
-            email: email.trim().toLowerCase(),
-            password: password.trim(),
-            role: role,
+      const result = await signupRanger(payload);
 
-            /*parentConsent:
-                role === 'junior_ranger'
-                    ? parentConsent
-                    : null,*/
-        };
+      Alert.alert(
+        "Success",
+        result?.message || "Account created successfully.",
+      );
 
-        try {
-            setLoading(true);
+      resetForm();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong during signup.";
 
-            const result = await signupRanger(payload);
-            Alert.alert(
-                'Success',
-                result?.message || 'Account created successfully.'
-            );
+      Alert.alert("Signup Failed", message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            setFirstName('');
-            setSurname('');
-            setEmail('');
-            setPhoneNumber('');
-            setPassword('');
-            setAgreedToTerms(false);
-        } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error?.message ||
-                'Something went wrong during signup.';
+  const renderCheckboxIcon = (checked: boolean) => {
+    if (!checked) return null;
 
-            Alert.alert('Signup Failed', message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    return <Ionicons name="checkmark" size={16} color="#FFFFFF" />;
+  };
 
-    const formContent = (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+  const formContent = (
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View
+        style={[
+          styles.card,
+          selectedRole === "junior_ranger"
+            ? styles.juniorCard
+            : styles.rangerCard,
+        ]}
+      >
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          placeholderTextColor="#B0B0B0"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
 
+        <Text style={styles.label}>Surname</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          placeholderTextColor="#B0B0B0"
+          value={surname}
+          onChangeText={setSurname}
+        />
 
-<View
-  style={[
-    styles.card,
-    role === 'junior_ranger'
-      ? styles.juniorCard
-      : styles.rangerCard
-  ]}
->
-                <Text style={styles.label}>Name</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="First Name"
-                    placeholderTextColor="#B0B0B0"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                />
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#B0B0B0"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-                <Text style={styles.label}>Surname</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Last Name"
-                    placeholderTextColor="#B0B0B0"
-                    value={surname}
-                    onChangeText={setSurname}
-                />
+        <Text style={styles.label}>Phone Number</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          placeholderTextColor="#B0B0B0"
+          keyboardType="phone-pad"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+        />
 
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#B0B0B0"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={email}
-                    onChangeText={setEmail}
-                />
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#B0B0B0"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-                <Text style={styles.label}>Phone Number</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Phone Number"
-                    placeholderTextColor="#B0B0B0"
-                    keyboardType="phone-pad"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                />
-
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor="#B0B0B0"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
-
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleSignup}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                    ) : (
-                        <Text style={styles.buttonText}>Create Account</Text>
-                    )}
-                </TouchableOpacity>
-            </View>
-
-    {role === 'junior_ranger' && (
-    <TouchableOpacity
-        style={styles.checkboxRow}
-        onPress={() => setParentConsent(!parentConsent)}
-        activeOpacity={0.8}
-    >
-        <View
-            style={[
-                styles.checkbox,
-                parentConsent && styles.checkboxChecked,
-            ]}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSignup}
+          disabled={loading}
         >
-            {parentConsent && (
-                <Text style={styles.checkmark}>✓</Text>
-            )}
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Create Account</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {selectedRole === "junior_ranger" && (
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setParentConsent((previous) => !previous)}
+          activeOpacity={0.8}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              parentConsent && styles.checkboxChecked,
+            ]}
+          >
+            {renderCheckboxIcon(parentConsent)}
+          </View>
+
+          <Text style={styles.termsText}>
+            I am a parent/guardian and I give consent for this child to use the
+            app.
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity
+        style={styles.checkboxRow}
+        onPress={() => setAgreedToTerms((previous) => !previous)}
+        activeOpacity={0.8}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            agreedToTerms && styles.checkboxChecked,
+          ]}
+        >
+          {renderCheckboxIcon(agreedToTerms)}
         </View>
 
         <Text style={styles.termsText}>
-            I am a parent/guardian and I give consent
-            for this child to use the app.
+          I agree to the Terms and Conditions{"\n"}
+          and the Privacy Policy
         </Text>
-    </TouchableOpacity>
-)}
+      </TouchableOpacity>
+    </ScrollView>
+  );
 
-
-            <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setAgreedToTerms(!agreedToTerms)}
-                activeOpacity={0.8}
-            >
-                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                    {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-
-                <Text style={styles.termsText}>
-                    I agree to the Terms and Conditions
-                    and the Privacy Policy
-                </Text>
-            </TouchableOpacity>
-        </ScrollView>
-    );
-
-    return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-        >
-            {Platform.OS === 'web' ? (
-                formContent
-            ) : (
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    {formContent}
-                </TouchableWithoutFeedback>
-            )}
-        </KeyboardAvoidingView>
-    );
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+    >
+      {Platform.OS === "web" ? (
+        formContent
+      ) : (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          {formContent}
+        </TouchableWithoutFeedback>
+      )}
+    </KeyboardAvoidingView>
+  );
 };
 
 export default RangerSignupScreen;

@@ -33,6 +33,13 @@ export class AdventuresController {
         return this.adventuresService.createAdventure(cohortId, dto, req.user);
     }
 
+    @Get('adventures')
+    getAllAdventures(
+        @Req() req: Request & { user: AuthUser },
+    ) {
+        return this.adventuresService.getAllAdventures(req.user);
+    }
+
     @Get('cohorts/:cohortId/adventures')
     getAdventuresByCohort(
         @Param('cohortId') cohortId: string,

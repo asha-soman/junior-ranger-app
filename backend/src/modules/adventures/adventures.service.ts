@@ -72,6 +72,54 @@ export class AdventuresService {
         };
     }
 
+    async getAllAdventures(user: AuthUser) {
+        // ADMIN → gets everything
+        if (user.role === 'admin') {
+            return this.db
+                .selectFrom('adventures')
+                .selectAll()
+                .where('is_deleted', '=', false)
+                .orderBy('created_at', 'desc')
+                .execute();
+        }
+
+        // RANGER → adventures from cohorts they manage
+        if (user.role === 'ranger') {
+            return this.db
+                .selectFrom('adventures')
+                .innerJoin(
+                    'cohorts',
+                    'cohorts.id',
+                    'adventures.cohort_id',
+                )
+                .selectAll('adventures')
+                .where('adventures.is_deleted', '=', false)
+                .where((eb) =>
+                    eb.or([
+                        eb('cohorts.created_by_ranger_id', '=', user.userId),
+                        eb('cohorts.assigned_ranger_id', '=', user.userId),
+                    ]),
+                )
+                .orderBy('adventures.created_at', 'desc')
+                .execute();
+        }
+
+        // JUNIOR RANGER → adventures from joined cohorts
+        return this.db
+            .selectFrom('adventures')
+            .innerJoin(
+                'cohort_members',
+                'cohort_members.cohort_id',
+                'adventures.cohort_id',
+            )
+            .selectAll('adventures')
+            .where('adventures.is_deleted', '=', false)
+            .where('cohort_members.user_id', '=', user.userId)
+            .where('cohort_members.is_deleted', '=', false)
+            .orderBy('adventures.created_at', 'desc')
+            .execute();
+    }
+
     async getAdventuresByCohort(cohortId: string, user: AuthUser) {
         await this.checkCohortAccess(cohortId, user);
 

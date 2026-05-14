@@ -19,6 +19,10 @@ import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
 import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
+import AdventureListScreen from '../screens/adventures/AdventureListScreen';
+import CreateAdventureScreen from '../screens/adventures/CreateAdventureScreen';
+import AdventureDetailsScreen from '../screens/adventures/AdventureDetailsScreen';
+import EditAdventureScreen from '../screens/adventures/EditAdventureScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -52,6 +56,15 @@ export type AuthStackParamList = {
     };
     RangerMenu: undefined;
     JuniorMenu: undefined;
+    AdventureList:
+    | {
+        cohortId?: string;
+        userRole?: 'ranger' | 'admin' | 'junior_ranger';
+    }
+    | undefined;
+    AdventureDetails: { adventureId: string };
+    CreateAdventure: { cohortId?: string } | undefined;
+    EditAdventure: { adventureId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -180,6 +193,30 @@ export default function AuthNavigator() {
                     ...authHeaderOptions,
                     title: "Edit Cohort",
                 }}
+            />
+
+            <Stack.Screen
+                name="AdventureList"
+                component={AdventureListScreen}
+                options={{ title: 'Adventures' }}
+            />
+
+            <Stack.Screen
+                name="CreateAdventure"
+                component={CreateAdventureScreen}
+                options={{ title: 'Create Adventure' }}
+            />
+
+            <Stack.Screen
+                name="AdventureDetails"
+                component={AdventureDetailsScreen}
+                options={{ title: 'Adventure Details' }}
+            />
+
+            <Stack.Screen
+                name="EditAdventure"
+                component={EditAdventureScreen}
+                options={{ title: 'Edit Adventure' }}
             />
 
             <Stack.Screen

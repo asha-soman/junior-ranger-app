@@ -11,7 +11,7 @@ import { AssignRangerDto } from './dto/assign-ranger.dto';
 
 @Injectable()
 export class CohortsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly db: DatabaseService) { }
 
   // Create a new Cohort
   async createCohort(
@@ -82,6 +82,35 @@ export class CohortsService {
           'cohorts.updated_at',
         ])
         .where('cohorts.is_deleted', '=', false)
+        .orderBy('cohorts.created_at', 'desc')
+        .execute();
+    } else if (user.role === 'ranger') {
+      cohorts = await this.db
+        .selectFrom('cohorts')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohorts.is_deleted', '=', false)
+        .where((eb) =>
+          eb.or([
+            eb('cohorts.created_by_ranger_id', '=', user.userId),
+            eb('cohorts.assigned_ranger_id', '=', user.userId),
+          ]),
+        )
         .orderBy('cohorts.created_at', 'desc')
         .execute();
     } else {

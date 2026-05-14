@@ -14,6 +14,11 @@ import RangerRequestDetailsScreen from "../screens/admin/RangerRequestDetailsScr
 import ManageUsersScreen from "../screens/admin/ManageUsersScreen";
 import AdminCohortsScreen from "../screens/admin/AdminCohortsScreen";
 import AdminCohortDetailsScreen from "../screens/admin/AdminCohortDetailsScreen";
+import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
+import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
+import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
+import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
+import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -30,8 +35,23 @@ export type AuthStackParamList = {
   PendingRangerRequests: { refresh?: boolean } | undefined;
   RangerRequestDetails: { rangerId: string };
   ManageUsers: { initialUsers?: AdminUser[] } | undefined;
-  AdminCohorts: undefined;
-  AdminCohortDetails: { cohortId: string };
+  AdminCohorts:
+    | {
+        userRole?: "admin" | "ranger" | "junior_ranger";
+      }
+    | undefined;
+  AdminCohortDetails: {
+    cohortId: string;
+    userRole?: "admin" | "ranger" | "junior_ranger";
+  };
+  CreateCohort: undefined;
+  EditCohort: { cohortId: string };
+  AssignRanger: {
+    cohortId: string;
+    assignedRangerId?: string | null;
+  };
+  RangerMenu: undefined;
+  JuniorMenu: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -142,6 +162,45 @@ export default function AuthNavigator() {
           ...authHeaderOptions,
           title: "Cohort Details",
         }}
+      />
+
+      <Stack.Screen
+        name="CreateCohort"
+        component={CreateCohortScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Create Cohort",
+        }}
+      />
+
+      <Stack.Screen
+        name="EditCohort"
+        component={EditCohortScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Edit Cohort",
+        }}
+      />
+
+      <Stack.Screen
+        name="AssignRanger"
+        component={AssignRangerScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Assign Ranger",
+        }}
+      />
+
+      <Stack.Screen
+        name="RangerMenu"
+        component={RangerMenuScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="JuniorMenu"
+        component={JuniorMenuScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

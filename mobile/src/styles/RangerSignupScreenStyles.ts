@@ -87,4 +87,35 @@ export const RangerSignupScreenStyles = StyleSheet.create({
         color: '#1E1E1E',
         lineHeight: 20,
     },
+
+juniorCard: {
+    backgroundColor: '#6F8F8B', // lighter orange
+},
+
+rangerCard: {
+    backgroundColor: '#6F8F8B', // keep existing look
+},
+
+juniorButton: {
+    backgroundColor: '#FB8C00',
+},
+
+rangerButton: {
+    backgroundColor: '#2D2D2D',
+},
+
+juniorLabel: {
+    color: '#E65100',
+},
+
+rangerLabel: {
+    color: '#1E1E1E',
+},
+
+consentText: {
+    fontSize: 14,
+    color: '#E65100',
+    fontWeight: '600',
+},
+
 });

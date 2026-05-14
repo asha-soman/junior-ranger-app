@@ -1,35 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { AdminUser, getAdminUsers } from '../../services/admin/adminService';
-import { adminStyles as styles } from '../../styles/AdminManagementStyles';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AdminUser, getAdminUsers } from "../../services/admin/adminService";
+import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
-type RouteProps = RouteProp<AuthStackParamList, 'ManageUsers'>;
+type RouteProps = RouteProp<AuthStackParamList, "ManageUsers">;
 
 export default function ManageUsersScreen() {
   const route = useRoute<RouteProps>();
   const initialUsers = route.params?.initialUsers ?? [];
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
   const [loading, setLoading] = useState(initialUsers.length === 0);
-  const [selectedRole, setSelectedRole] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [selectedRole, setSelectedRole] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [errorMessage, setErrorMessage] = useState("");
   const [statusDropdownVisible, setStatusDropdownVisible] = useState(false);
-  const [activeFilterSection, setActiveFilterSection] = useState<'search' | 'filters' | null>(null);
-  const [searchName, setSearchName] = useState('');
+  const [activeFilterSection, setActiveFilterSection] = useState<
+    "search" | "filters" | null
+  >(null);
+  const [searchName, setSearchName] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
 
-  const loadUsers = async (role = 'all', status = 'all', name = '') => {
+  const loadUsers = async (role = "all", status = "all", name = "") => {
     try {
-      setErrorMessage('');
+      setErrorMessage("");
       if (loading) {
         setLoading(true);
       } else {
         setIsFiltering(true);
-      };
+      }
 
       const data = await getAdminUsers(role, status, name);
       setUsers(data);
@@ -37,7 +47,7 @@ export default function ManageUsersScreen() {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
-          'Could not load users.'
+          "Could not load users.",
       );
     } finally {
       setLoading(false);
@@ -52,54 +62,52 @@ export default function ManageUsersScreen() {
   }, []);
 
   useEffect(() => {
-    if (activeFilterSection !== 'search') return;
+    if (activeFilterSection !== "search") return;
 
     const timeoutId = setTimeout(() => {
-        setSelectedRole('all');
-        setSelectedStatus('all');
-        loadUsers('all', 'all', searchName);
+      setSelectedRole("all");
+      setSelectedStatus("all");
+      loadUsers("all", "all", searchName);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-    }, [searchName]);
+  }, [searchName]);
 
   const openSearchSection = () => {
-    setActiveFilterSection(
-      activeFilterSection === 'search' ? null : 'search'
-    );
+    setActiveFilterSection(activeFilterSection === "search" ? null : "search");
 
-    setSelectedRole('all');
-    setSelectedStatus('all');
-    loadUsers('all', 'all', '');
+    setSelectedRole("all");
+    setSelectedStatus("all");
+    loadUsers("all", "all", "");
   };
 
   const openFilterSection = () => {
     setActiveFilterSection(
-      activeFilterSection === 'filters' ? null : 'filters'
+      activeFilterSection === "filters" ? null : "filters",
     );
 
-    setSearchName('');
-    loadUsers('all', 'all', '');
+    setSearchName("");
+    loadUsers("all", "all", "");
   };
 
   const handleSearchSubmit = () => {
-    setSelectedRole('all');
-    setSelectedStatus('all');
-    loadUsers('all', 'all', searchName);
+    setSelectedRole("all");
+    setSelectedStatus("all");
+    loadUsers("all", "all", searchName);
   };
 
   const handleRoleFilter = (role: string) => {
     setSelectedRole(role);
-    loadUsers(role, selectedStatus, '');
+    loadUsers(role, selectedStatus, "");
   };
 
   const handleStatusFilter = (status: string) => {
     setSelectedStatus(status);
-    loadUsers(selectedRole, status, '');
+    loadUsers(selectedRole, status, "");
   };
 
   const formatRole = (role: string) => {
-    if (role === 'junior_ranger') return 'Junior';
+    if (role === "junior_ranger") return "Junior";
     return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
@@ -108,8 +116,8 @@ export default function ManageUsersScreen() {
   };
 
   const getStatusBadgeStyle = (status: string) => {
-    if (status === 'approved') return styles.approvedBadge;
-    if (status === 'pending') return styles.pendingBadge;
+    if (status === "approved") return styles.approvedBadge;
+    if (status === "pending") return styles.pendingBadge;
     return styles.rejectedBadge;
   };
 
@@ -123,15 +131,14 @@ export default function ManageUsersScreen() {
           <TouchableOpacity
             style={[
               styles.topFilterButton,
-              activeFilterSection === 'search' &&
-                styles.activeTopFilterButton,
+              activeFilterSection === "search" && styles.activeTopFilterButton,
             ]}
             onPress={openSearchSection}
           >
             <Text
               style={[
                 styles.topFilterButtonText,
-                activeFilterSection === 'search' &&
+                activeFilterSection === "search" &&
                   styles.activeTopFilterButtonText,
               ]}
             >
@@ -142,15 +149,14 @@ export default function ManageUsersScreen() {
           <TouchableOpacity
             style={[
               styles.topFilterButton,
-              activeFilterSection === 'filters' &&
-                styles.activeTopFilterButton,
+              activeFilterSection === "filters" && styles.activeTopFilterButton,
             ]}
             onPress={openFilterSection}
           >
             <Text
               style={[
                 styles.topFilterButtonText,
-                activeFilterSection === 'filters' &&
+                activeFilterSection === "filters" &&
                   styles.activeTopFilterButtonText,
               ]}
             >
@@ -159,17 +165,16 @@ export default function ManageUsersScreen() {
           </TouchableOpacity>
         </View>
 
-        {activeFilterSection === 'search' && (
+        {activeFilterSection === "search" && (
           <View>
             <View style={styles.searchContainer}>
-
               <Ionicons
                 name="search"
                 size={22}
                 color="#777"
                 style={styles.searchIcon}
               />
-              
+
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name"
@@ -183,12 +188,12 @@ export default function ManageUsersScreen() {
           </View>
         )}
 
-        {activeFilterSection === 'filters' && (
+        {activeFilterSection === "filters" && (
           <>
             <Text style={styles.sectionTitle}>Role</Text>
 
             <View style={styles.filterRow}>
-              {['all', 'junior_ranger', 'ranger'].map((role) => (
+              {["all", "junior_ranger", "ranger"].map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={[
@@ -200,11 +205,10 @@ export default function ManageUsersScreen() {
                   <Text
                     style={[
                       styles.filterChipText,
-                      selectedRole === role &&
-                        styles.activeFilterChipText,
+                      selectedRole === role && styles.activeFilterChipText,
                     ]}
                   >
-                    {role === 'all' ? 'All' : formatRole(role)}
+                    {role === "all" ? "All" : formatRole(role)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -217,8 +221,8 @@ export default function ManageUsersScreen() {
               onPress={() => setStatusDropdownVisible(true)}
             >
               <Text style={styles.dropdownButtonText}>
-                {selectedStatus === 'all'
-                  ? 'All'
+                {selectedStatus === "all"
+                  ? "All"
                   : formatStatus(selectedStatus)}
               </Text>
             </TouchableOpacity>
@@ -233,24 +237,20 @@ export default function ManageUsersScreen() {
                 onPress={() => setStatusDropdownVisible(false)}
               >
                 <View style={styles.dropdownMenu}>
-                  {['all', 'approved', 'pending', 'rejected'].map(
-                    (status) => (
-                      <TouchableOpacity
-                        key={status}
-                        style={styles.dropdownOption}
-                        onPress={() => {
-                          handleStatusFilter(status);
-                          setStatusDropdownVisible(false);
-                        }}
-                      >
-                        <Text style={styles.dropdownOptionText}>
-                          {status === 'all'
-                            ? 'All'
-                            : formatStatus(status)}
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  )}
+                  {["all", "approved", "pending", "rejected"].map((status) => (
+                    <TouchableOpacity
+                      key={status}
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        handleStatusFilter(status);
+                        setStatusDropdownVisible(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>
+                        {status === "all" ? "All" : formatStatus(status)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </TouchableOpacity>
             </Modal>
@@ -264,11 +264,11 @@ export default function ManageUsersScreen() {
             <Text style={styles.emptyText}>No users found</Text>
           </View>
         ) : (
-          users.map((user) => (
-            <View key={user.id} style={styles.userCard}>
+          users.map((user, index) => (
+            <View key={`${user.id}-${index}`} style={styles.userCard}>
               <View style={styles.userCardHeader}>
                 <Text style={styles.userName}>
-                  {user.name || 'No name provided'}
+                  {user.name || "No name provided"}
                 </Text>
 
                 <View
@@ -295,7 +295,7 @@ export default function ManageUsersScreen() {
               <View style={styles.userInfoRow}>
                 <Text style={styles.userInfoLabel}>Cohort</Text>
                 <Text style={styles.userInfoValue}>
-                  {user.cohort_name || 'No cohort assigned'}
+                  {user.cohort_name || "No cohort assigned"}
                 </Text>
               </View>
             </View>

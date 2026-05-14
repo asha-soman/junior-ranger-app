@@ -24,7 +24,9 @@ export type AuthStackParamList = {
   Splash: undefined;
   Welcome: undefined;
   Login: undefined;
-  RangerSignup: undefined;
+  RangerSignup: {
+    role?: "ranger" | "junior_ranger";
+  };
   ForgotPassword: undefined;
   Verification: { email: string };
   JoinWithInvite: undefined;

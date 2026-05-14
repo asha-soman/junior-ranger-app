@@ -111,4 +111,11 @@ juniorLabel: {
 rangerLabel: {
     color: '#1E1E1E',
 },
+
+consentText: {
+    fontSize: 14,
+    color: '#E65100',
+    fontWeight: '600',
+},
+
 });

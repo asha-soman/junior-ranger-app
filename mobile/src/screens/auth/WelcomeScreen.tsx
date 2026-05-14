@@ -31,7 +31,7 @@ const WelcomeScreen = ({ navigation }: Props) => {
         onPress={() => handleRoleSelect('ranger')}
       >
         <Text style={styles.secondaryButtonText}>
-         🌿 Sign up as Ranger
+          Sign up as Ranger
         </Text>
       </TouchableOpacity>
 
@@ -41,7 +41,7 @@ const WelcomeScreen = ({ navigation }: Props) => {
         onPress={() => handleRoleSelect('junior_ranger')}
       >
         <Text style={styles.secondaryButtonText}>
-          🧒 Sign up as Junior Ranger
+           Sign up as Junior Ranger
         </Text>
       </TouchableOpacity>
 

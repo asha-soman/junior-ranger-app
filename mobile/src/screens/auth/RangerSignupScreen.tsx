@@ -14,27 +14,33 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 import { signupRanger } from "../../services/auth/authService";
 import { RangerSignupScreenStyles as styles } from "@/src/styles/RangerSignupScreenStyles";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "RangerSignup">;
+
 const RangerSignupScreen = ({ route, navigation }: Props) => {
+  const selectedRole = route.params?.role ?? "ranger";
+
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [parentConsent, setParentConsent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { role } = route.params;
-  const selectedRole = route.params?.role ?? "ranger";
 
   useEffect(() => {
     navigation.setOptions({
       title:
-        role === "junior_ranger" ? "Junior Ranger Sign Up" : "Ranger Sign Up",
+        selectedRole === "junior_ranger"
+          ? "Junior Ranger Sign Up"
+          : "Ranger Sign Up",
     });
-  }, [role]);
+  }, [navigation, selectedRole]);
 
   const validateForm = () => {
     if (!firstName.trim()) {
@@ -70,9 +76,14 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
     }
 
     if (password.trim().length < 6) {
+      Alert.alert("Validation Error", "Password must be at least 6 characters.");
+      return false;
+    }
+
+    if (selectedRole === "junior_ranger" && !parentConsent) {
       Alert.alert(
-        "Validation Error",
-        "Password must be at least 6 characters.",
+        "Consent Required",
+        "Parental consent is required for Junior Rangers.",
       );
       return false;
     }
@@ -88,6 +99,16 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
     return true;
   };
 
+  const resetForm = () => {
+    setFirstName("");
+    setSurname("");
+    setEmail("");
+    setPhoneNumber("");
+    setPassword("");
+    setAgreedToTerms(false);
+    setParentConsent(false);
+  };
+
   const handleSignup = async () => {
     if (!validateForm()) return;
 
@@ -95,24 +116,20 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
       name: `${firstName.trim()} ${surname.trim()}`.trim(),
       email: email.trim().toLowerCase(),
       password: password.trim(),
-      role: selectedRole, // dynamic now
+      role: selectedRole,
     };
 
     try {
       setLoading(true);
 
       const result = await signupRanger(payload);
+
       Alert.alert(
         "Success",
         result?.message || "Account created successfully.",
       );
 
-      setFirstName("");
-      setSurname("");
-      setEmail("");
-      setPhoneNumber("");
-      setPassword("");
-      setAgreedToTerms(false);
+      resetForm();
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
@@ -125,12 +142,20 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
     }
   };
 
+  const renderCheckboxIcon = (checked: boolean) => {
+    if (!checked) return null;
+
+    return <Ionicons name="checkmark" size={16} color="#FFFFFF" />;
+  };
+
   const formContent = (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View
         style={[
           styles.card,
-          role === "junior_ranger" ? styles.juniorCard : styles.rangerCard,
+          selectedRole === "junior_ranger"
+            ? styles.juniorCard
+            : styles.rangerCard,
         ]}
       >
         <Text style={styles.label}>Name</Text>
@@ -195,15 +220,40 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
         </TouchableOpacity>
       </View>
 
+      {selectedRole === "junior_ranger" && (
+        <TouchableOpacity
+          style={styles.checkboxRow}
+          onPress={() => setParentConsent((previous) => !previous)}
+          activeOpacity={0.8}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              parentConsent && styles.checkboxChecked,
+            ]}
+          >
+            {renderCheckboxIcon(parentConsent)}
+          </View>
+
+          <Text style={styles.termsText}>
+            I am a parent/guardian and I give consent for this child to use the
+            app.
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity
         style={styles.checkboxRow}
-        onPress={() => setAgreedToTerms(!agreedToTerms)}
+        onPress={() => setAgreedToTerms((previous) => !previous)}
         activeOpacity={0.8}
       >
         <View
-          style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}
+          style={[
+            styles.checkbox,
+            agreedToTerms && styles.checkboxChecked,
+          ]}
         >
-          {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+          {renderCheckboxIcon(agreedToTerms)}
         </View>
 
         <Text style={styles.termsText}>

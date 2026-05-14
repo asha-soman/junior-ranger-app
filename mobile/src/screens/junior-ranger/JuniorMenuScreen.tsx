@@ -13,6 +13,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 
 type NavigationProp = NativeStackNavigationProp<
     AuthStackParamList,
@@ -55,20 +56,8 @@ export default function JuniorMenuScreen() {
                         My Cohorts
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.menuOption}
-                    onPress={() => navigation.navigate("AdventureList")}
-                >
-                    <Image
-                        source={require("../../../assets/images/adventure.png")}
-                        style={styles.menuImage}
-                    />
-
-                    <Text style={styles.menuOptionText}>
-                        My Adventures
-                    </Text>
-                </TouchableOpacity>
             </ScrollView>
+            <AppBottomTabBar role="junior_ranger" activeTab="home" />
         </View>
     );
 }

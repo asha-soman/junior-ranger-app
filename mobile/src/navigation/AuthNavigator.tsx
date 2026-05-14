@@ -14,21 +14,19 @@ import RangerRequestDetailsScreen from "../screens/admin/RangerRequestDetailsScr
 import ManageUsersScreen from "../screens/admin/ManageUsersScreen";
 import AdminCohortsScreen from "../screens/admin/AdminCohortsScreen";
 import AdminCohortDetailsScreen from "../screens/admin/AdminCohortDetailsScreen";
-// import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
-// import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
-// import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
+import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
+import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
+import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
-import AdventureListScreen from "../screens/adventures/AdventureListScreen";
-import AdventureDetailsScreen from "../screens/adventures/AdventureDetailsScreen";
-import CreateAdventureScreen from "../screens/adventures/CreateAdventureScreen";
-import EditAdventureScreen from "../screens/adventures/EditAdventureScreen";
 
 export type AuthStackParamList = {
     Splash: undefined;
     Welcome: undefined;
     Login: undefined;
-    RangerSignup: undefined;
+    RangerSignup: {
+        role?: "ranger" | "junior_ranger";
+    };
     ForgotPassword: undefined;
     Verification: { email: string };
     JoinWithInvite: undefined;
@@ -54,10 +52,6 @@ export type AuthStackParamList = {
     };
     RangerMenu: undefined;
     JuniorMenu: undefined;
-    AdventureList: undefined;
-    AdventureDetails: { adventureId: string };
-    CreateAdventure: undefined;
-    EditAdventure: { adventureId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -169,24 +163,32 @@ export default function AuthNavigator() {
                     title: "Cohort Details",
                 }}
             />
+
             <Stack.Screen
-                name="AdventureList"
-                component={AdventureListScreen}
+                name="CreateCohort"
+                component={CreateCohortScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Create Cohort",
+                }}
             />
 
             <Stack.Screen
-                name="AdventureDetails"
-                component={AdventureDetailsScreen}
+                name="EditCohort"
+                component={EditCohortScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Edit Cohort",
+                }}
             />
 
             <Stack.Screen
-                name="CreateAdventure"
-                component={CreateAdventureScreen}
-            />
-
-            <Stack.Screen
-                name="EditAdventure"
-                component={EditAdventureScreen}
+                name="AssignRanger"
+                component={AssignRangerScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Assign Ranger",
+                }}
             />
 
             <Stack.Screen

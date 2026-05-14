@@ -13,6 +13,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 
 type NavigationProp = NativeStackNavigationProp<
     AuthStackParamList,
@@ -56,20 +57,6 @@ export default function RangerMenuScreen() {
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.menuOption}
-                    onPress={() => navigation.navigate("AdventureList")}
-                >
-                    <Image
-                        source={require("../../../assets/images/adventure.png")}
-                        style={styles.menuImage}
-                    />
-
-                    <Text style={styles.menuOptionText}>
-                        Manage Adventures
-                    </Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity style={styles.menuOption}>
                     <Image
                         source={require("../../../assets/images/feed.png")}
@@ -99,6 +86,7 @@ export default function RangerMenuScreen() {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
+            <AppBottomTabBar role="ranger" activeTab="home" />
         </View>
     );
 }

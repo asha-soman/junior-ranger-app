@@ -15,6 +15,30 @@ export interface UsersTable {
   approval_status: ApprovalStatus;
 }
 
+export interface CohortsTable {
+  id: string;
+  name: string;
+  description: string | null;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+  location: string | null;
+  created_by_ranger_id: string | null;
+  assigned_ranger_id: string | null;
+}
+
+export interface CohortMembersTable {
+  id: string;
+  user_id: string;
+  cohort_id: string;
+  role: string;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
+  cohorts: CohortsTable;
+  cohort_members: CohortMembersTable;
 }

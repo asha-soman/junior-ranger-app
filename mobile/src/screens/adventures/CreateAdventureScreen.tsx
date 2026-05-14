@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -8,12 +8,15 @@ import {
     ScrollView,
     TouchableWithoutFeedback,
     Keyboard,
+    TouchableOpacity,
+    ActivityIndicator,
 } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { createAdventure } from '../../services/adventures/adventureService';
+import { Cohort, getCohorts } from '../../services/cohorts/cohortService';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'CreateAdventure'>;
@@ -21,16 +24,54 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'CreateAdventure'>;
 export default function CreateAdventureScreen({ navigation, route }: Props) {
     const passedCohortId = route.params?.cohortId || '';
 
-    const [cohortId, setCohortId] = useState(passedCohortId);
+    const [cohorts, setCohorts] = useState<Cohort[]>([]);
+    const [selectedCohortId, setSelectedCohortId] = useState(passedCohortId);
+    const [selectedCohortName, setSelectedCohortName] = useState('');
+    const [showCohortDropdown, setShowCohortDropdown] = useState(false);
+    const [cohortLoading, setCohortLoading] = useState(false);
+    const [cohortError, setCohortError] = useState('');
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [taskInstructions, setTaskInstructions] = useState('');
     const [dueDate, setDueDate] = useState('');
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        fetchCohorts();
+    }, []);
+
+    const fetchCohorts = async () => {
+        try {
+            setCohortLoading(true);
+            setCohortError('');
+
+            const data = await getCohorts();
+            setCohorts(data);
+
+            if (passedCohortId) {
+                const matchedCohort = data.find((cohort) => cohort.id === passedCohortId);
+                if (matchedCohort) {
+                    setSelectedCohortName(matchedCohort.name);
+                }
+            }
+        } catch (error) {
+            console.log('Fetch cohorts error:', error);
+            setCohortError('Unable to load cohorts.');
+        } finally {
+            setCohortLoading(false);
+        }
+    };
+
+    const handleSelectCohort = (cohort: Cohort) => {
+        setSelectedCohortId(cohort.id);
+        setSelectedCohortName(cohort.name);
+        setShowCohortDropdown(false);
+    };
+
     const validate = () => {
-        if (!cohortId.trim()) {
-            Alert.alert('Validation Error', 'Please enter a cohort ID.');
+        if (!selectedCohortId.trim()) {
+            Alert.alert('Validation Error', 'Please select a cohort.');
             return false;
         }
 
@@ -63,7 +104,7 @@ export default function CreateAdventureScreen({ navigation, route }: Props) {
         try {
             setLoading(true);
 
-            await createAdventure(cohortId.trim(), {
+            await createAdventure(selectedCohortId.trim(), {
                 title: title.trim(),
                 description: description.trim(),
                 task_instructions: taskInstructions.trim(),
@@ -73,7 +114,6 @@ export default function CreateAdventureScreen({ navigation, route }: Props) {
             Alert.alert('Success', 'Adventure created successfully.');
 
             navigation.navigate('AdventureList', {
-                cohortId: cohortId.trim(),
                 userRole: 'ranger',
             });
         } catch (error: any) {
@@ -99,14 +139,54 @@ export default function CreateAdventureScreen({ navigation, route }: Props) {
             </View>
 
             <View style={styles.formCard}>
-                <TextInput
-                    label="Cohort ID"
-                    mode="outlined"
-                    value={cohortId}
-                    onChangeText={setCohortId}
-                    style={styles.input}
-                    autoCapitalize="none"
-                />
+                <Text style={styles.cardTitle}>Select Cohort</Text>
+
+                {cohortLoading ? (
+                    <ActivityIndicator size="small" />
+                ) : (
+                    <>
+                        <TouchableOpacity
+                            style={styles.dropdownBox}
+                            onPress={() => setShowCohortDropdown(!showCohortDropdown)}
+                        >
+                            <Text
+                                style={
+                                    selectedCohortName
+                                        ? styles.dropdownText
+                                        : styles.dropdownPlaceholder
+                                }
+                            >
+                                {selectedCohortName || 'Choose a cohort'}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {!!cohortError && (
+                            <Text style={styles.dropdownError}>{cohortError}</Text>
+                        )}
+
+                        {showCohortDropdown && (
+                            <View style={styles.dropdownList}>
+                                {cohorts.length === 0 ? (
+                                    <View style={styles.dropdownItem}>
+                                        <Text style={styles.dropdownItemText}>
+                                            No cohorts available
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    cohorts.map((cohort) => (
+                                        <TouchableOpacity
+                                            key={cohort.id}
+                                            style={styles.dropdownItem}
+                                            onPress={() => handleSelectCohort(cohort)}
+                                        >
+                                            <Text style={styles.dropdownItemText}>{cohort.name}</Text>
+                                        </TouchableOpacity>
+                                    ))
+                                )}
+                            </View>
+                        )}
+                    </>
+                )}
 
                 <TextInput
                     label="Adventure Title"

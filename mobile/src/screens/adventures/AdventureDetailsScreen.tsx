@@ -1,32 +1,103 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator, ScrollView } from 'react-native';
+import { Button, Chip } from 'react-native-paper';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-export default function AdventureDetailsScreen() {
+import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import {
+    Adventure,
+    getAdventureById,
+} from '../../services/adventures/adventureService';
+import { adventureStyles as styles } from '../../styles/AdventureStyles';
+
+type Props = NativeStackScreenProps<AuthStackParamList, 'AdventureDetails'>;
+
+export default function AdventureDetailsScreen({ navigation, route }: Props) {
+    const { adventureId } = route.params;
+
+    const [adventure, setAdventure] = useState<Adventure | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetchAdventureDetails();
+    }, [adventureId]);
+
+    const fetchAdventureDetails = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const data = await getAdventureById(adventureId);
+            setAdventure(data);
+        } catch (err) {
+            console.log('Fetch adventure details error:', err);
+            setError('Unable to load adventure details.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="large" style={styles.loader} />
+            </View>
+        );
+    }
+
+    if (error || !adventure) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>
+                    {error || 'Adventure details not found.'}
+                </Text>
+            </View>
+        );
+    }
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Adventure Details Screen</Text>
-            <Text style={styles.subtitle}>This is where adventure details will appear.</Text>
-        </View>
+        <ScrollView
+            style={styles.container}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+        >
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Adventure Details</Text>
+            </View>
+
+            <View style={styles.detailsCard}>
+                <Text style={styles.detailsTitle}>{adventure.title}</Text>
+
+                <Chip style={styles.statusChip} textStyle={styles.statusText}>
+                    {adventure.status}
+                </Chip>
+
+                <Text style={styles.detailsLabel}>Description</Text>
+                <Text style={styles.detailsText}>{adventure.description}</Text>
+
+                <Text style={styles.detailsLabel}>Task Instructions</Text>
+                <Text style={styles.detailsText}>{adventure.task_instructions}</Text>
+
+                <Text style={styles.detailsLabel}>Due Date</Text>
+                <Text style={styles.detailsText}>
+                    {adventure.due_date
+                        ? new Date(adventure.due_date).toDateString()
+                        : 'No due date'}
+                </Text>
+
+                <Button
+                    mode="contained"
+                    style={styles.editButton}
+                    onPress={() =>
+                        navigation.navigate('EditAdventure', {
+                            adventureId: adventure.id,
+                        })
+                    }
+                >
+                    Edit Adventure
+                </Button>
+            </View>
+        </ScrollView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        backgroundColor: '#F4F4F4',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#1E1E1E',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#555',
-        textAlign: 'center',
-    },
-});

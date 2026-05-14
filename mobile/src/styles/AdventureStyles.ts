@@ -117,4 +117,84 @@ export const adventureStyles = StyleSheet.create({
     cancelButton: {
         marginTop: 10,
     },
+    dropdownBox: {
+        borderWidth: 1,
+        borderColor: '#CFCFCF',
+        borderRadius: 6,
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 12,
+        paddingVertical: 14,
+        marginBottom: 14,
+    },
+
+    dropdownText: {
+        fontSize: 16,
+        color: '#1E1E1E',
+    },
+
+    dropdownPlaceholder: {
+        fontSize: 16,
+        color: '#777777',
+    },
+
+    dropdownList: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#CFCFCF',
+        borderRadius: 6,
+        marginTop: -8,
+        marginBottom: 14,
+        overflow: 'hidden',
+    },
+
+    dropdownItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEEEEE',
+    },
+
+    dropdownItemText: {
+        fontSize: 15,
+        color: '#1E1E1E',
+    },
+
+    dropdownError: {
+        color: '#B00020',
+        marginBottom: 10,
+        fontSize: 13,
+    },
+    detailsCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 18,
+        marginTop: 14,
+    },
+
+    detailsTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#1E1E1E',
+        marginBottom: 10,
+    },
+
+    detailsLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#3D786B',
+        marginTop: 14,
+        marginBottom: 4,
+    },
+
+    detailsText: {
+        fontSize: 15,
+        color: '#333333',
+        lineHeight: 22,
+    },
+
+    editButton: {
+        backgroundColor: '#3D786B',
+        borderRadius: 8,
+        marginTop: 22,
+    },
 });

@@ -183,7 +183,19 @@ export class CohortsService {
       throw new NotFoundException('Cohort not found');
     }
 
-    if (user.role !== 'admin') {
+    if (user.role === 'ranger') {
+      const canView =
+        cohort.created_by_ranger_id === user.userId ||
+        cohort.assigned_ranger_id === user.userId;
+
+      if (!canView) {
+        throw new ForbiddenException(
+          'You do not have permission to view this cohort',
+        );
+      }
+    }
+
+    if (user.role === 'junior_ranger') {
       const membership = await this.db
         .selectFrom('cohort_members')
         .selectAll()
@@ -237,7 +249,9 @@ export class CohortsService {
     }
 
     const canUpdate =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+      user.role === 'admin' ||
+      cohort.created_by_ranger_id === user.userId ||
+      cohort.assigned_ranger_id === user.userId;
 
     if (!canUpdate) {
       throw new ForbiddenException(
@@ -282,7 +296,9 @@ export class CohortsService {
     }
 
     const canViewMembers =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+      user.role === 'admin' ||
+      cohort.created_by_ranger_id === user.userId ||
+      cohort.assigned_ranger_id === user.userId;
 
     if (!canViewMembers) {
       throw new ForbiddenException(

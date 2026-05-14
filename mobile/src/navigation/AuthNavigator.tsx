@@ -1,19 +1,28 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { authHeaderOptions } from "./navigationStyles";
-import { AdminUser } from '../services/admin/adminService';
-import WelcomeScreen from '../screens/auth/WelcomeScreen';
-import RangerSignupScreen from '../screens/auth/RangerSignupScreen';
+import { AdminUser } from "../services/admin/adminService";
+import WelcomeScreen from "../screens/auth/WelcomeScreen";
+import RangerSignupScreen from "../screens/auth/RangerSignupScreen";
 import LoginScreen from "../screens/auth/loginScreen";
 import ForgotPasswordScreen from "../screens/auth/forgotPasswordScreen";
 import VerificationScreen from "../screens/auth/verificationScreen";
-import SplashScreen from '../screens/auth/SplashScreen';
-import AdminMenuScreen from '../screens/admin/AdminMenuScreen';
-import PendingRangerRequestsScreen from '../screens/admin/PendingRangerRequestsScreen';
-import RangerRequestDetailsScreen from '../screens/admin/RangerRequestDetailsScreen';
-import ManageUsersScreen from '../screens/admin/ManageUsersScreen';
-import AdminCohortsScreen from '../screens/admin/AdminCohortsScreen';
-import AdminCohortDetailsScreen from '../screens/admin/AdminCohortDetailsScreen';
+import SplashScreen from "../screens/auth/SplashScreen";
+import AdminMenuScreen from "../screens/admin/AdminMenuScreen";
+import PendingRangerRequestsScreen from "../screens/admin/PendingRangerRequestsScreen";
+import RangerRequestDetailsScreen from "../screens/admin/RangerRequestDetailsScreen";
+import ManageUsersScreen from "../screens/admin/ManageUsersScreen";
+import AdminCohortsScreen from "../screens/admin/AdminCohortsScreen";
+import AdminCohortDetailsScreen from "../screens/admin/AdminCohortDetailsScreen";
+// import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
+// import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
+// import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
+import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
+import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
+import AdventureListScreen from "../screens/adventures/AdventureListScreen";
+import AdventureDetailsScreen from "../screens/adventures/AdventureDetailsScreen";
+import CreateAdventureScreen from "../screens/adventures/CreateAdventureScreen";
+import EditAdventureScreen from "../screens/adventures/EditAdventureScreen";
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -28,8 +37,27 @@ export type AuthStackParamList = {
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
     ManageUsers: { initialUsers?: AdminUser[] } | undefined;
-    AdminCohorts: undefined;
-    AdminCohortDetails: { cohortId: string };
+    AdminCohorts:
+    | {
+        userRole?: "admin" | "ranger" | "junior_ranger";
+    }
+    | undefined;
+    AdminCohortDetails: {
+        cohortId: string;
+        userRole?: "admin" | "ranger" | "junior_ranger";
+    };
+    CreateCohort: undefined;
+    EditCohort: { cohortId: string };
+    AssignRanger: {
+        cohortId: string;
+        assignedRangerId?: string | null;
+    };
+    RangerMenu: undefined;
+    JuniorMenu: undefined;
+    AdventureList: undefined;
+    AdventureDetails: { adventureId: string };
+    CreateAdventure: undefined;
+    EditAdventure: { adventureId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -52,33 +80,37 @@ export default function AuthNavigator() {
             <Stack.Screen
                 name="Login"
                 component={LoginScreen}
-                options={{ 
-                ...authHeaderOptions,
-                title: "Sign In" }}
-            /> 
+                options={{
+                    ...authHeaderOptions,
+                    title: "Sign In",
+                }}
+            />
 
             <Stack.Screen
                 name="RangerSignup"
                 component={RangerSignupScreen}
-                options={{ 
-                ...authHeaderOptions,    
-                title: 'Sign Up' }}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Sign Up",
+                }}
             />
 
             <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}
-                options={{ 
-                ...authHeaderOptions,
-                title: 'Forgot Password' }}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Forgot Password",
+                }}
             />
 
             <Stack.Screen
                 name="Verification"
                 component={VerificationScreen}
-                options={{ 
-                ...authHeaderOptions,    
-                title: 'Verification' }}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Verification",
+                }}
             />
 
             {/*<Stack.Screen
@@ -92,13 +124,14 @@ export default function AuthNavigator() {
                 component={AdminMenuScreen}
                 options={{ headerShown: false }}
             />
-            
+
             <Stack.Screen
                 name="PendingRangerRequests"
                 component={PendingRangerRequestsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Signup Requests ' }}
+                    title: "Signup Requests ",
+                }}
             />
 
             <Stack.Screen
@@ -106,7 +139,8 @@ export default function AuthNavigator() {
                 component={RangerRequestDetailsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Request Details' }}
+                    title: "Request Details",
+                }}
             />
 
             <Stack.Screen
@@ -114,7 +148,8 @@ export default function AuthNavigator() {
                 component={ManageUsersScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Manage Users' }}
+                    title: "Manage Users",
+                }}
             />
 
             <Stack.Screen
@@ -122,17 +157,49 @@ export default function AuthNavigator() {
                 component={AdminCohortsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Cohorts' }}
-                />
+                    title: "Cohorts",
+                }}
+            />
 
             <Stack.Screen
                 name="AdminCohortDetails"
                 component={AdminCohortDetailsScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Cohort Details' }}
-                />
+                    title: "Cohort Details",
+                }}
+            />
+            <Stack.Screen
+                name="AdventureList"
+                component={AdventureListScreen}
+            />
 
+            <Stack.Screen
+                name="AdventureDetails"
+                component={AdventureDetailsScreen}
+            />
+
+            <Stack.Screen
+                name="CreateAdventure"
+                component={CreateAdventureScreen}
+            />
+
+            <Stack.Screen
+                name="EditAdventure"
+                component={EditAdventureScreen}
+            />
+
+            <Stack.Screen
+                name="RangerMenu"
+                component={RangerMenuScreen}
+                options={{ headerShown: false }}
+            />
+
+            <Stack.Screen
+                name="JuniorMenu"
+                component={JuniorMenuScreen}
+                options={{ headerShown: false }}
+            />
         </Stack.Navigator>
     );
 }

@@ -6,7 +6,6 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -21,56 +20,96 @@ export default function AppBottomTabBar({ role, activeTab }: Props) {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
 
-  const activeColor = "#555353";
-  const inactiveColor = "#131313";
-
   const getMenuRoute = () => {
     if (role === "admin") return "AdminMenu";
     if (role === "ranger") return "RangerMenu";
     return "JuniorMenu";
   };
 
+  const activeColor = "#1f6f5b";
+  const inactiveColor = "#222";
+
   return (
-    <View style={[styles.bottomTabContainer, { paddingBottom: insets.bottom - 4 }]}>
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+        backgroundColor: "#FFFFFF",
+        paddingTop: 10,
+        paddingBottom: Math.max(insets.bottom, 12),
+        borderTopWidth: 1,
+        borderTopColor: "#E5E7EB",
+      }}
+    >
       <TouchableOpacity
-        style={styles.bottomTabItem}
+        style={{ alignItems: "center", flex: 1 }}
         onPress={() => navigation.navigate(getMenuRoute() as any)}
       >
         <Ionicons
-          name="home"
-          size={24}
+          name="home-outline"
+          size={25}
           color={activeTab === "home" ? activeColor : inactiveColor}
         />
-        <Text style={[styles.bottomTabText, activeTab === "home" && styles.activeBottomTabText]}>
+        <Text
+          style={{
+            fontSize: 12,
+            color: activeTab === "home" ? activeColor : inactiveColor,
+            fontWeight: activeTab === "home" ? "700" : "500",
+            marginTop: 3,
+          }}
+        >
           Home
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.bottomTabItem}
+        style={{
+          alignItems: "center",
+          flex: 1,
+        }}
         onPress={() => navigation.navigate(getMenuRoute() as any)}
       >
-        <Ionicons
-          name="menu"
-          size={26}
-          color={activeTab === "menu" ? activeColor : inactiveColor}
-        />
-        <Text style={[styles.bottomTabText, activeTab === "menu" && styles.activeBottomTabText]}>
+        <View
+          style={{
+            backgroundColor: activeTab === "menu" ? "#E5F0E8" : "transparent",
+            paddingHorizontal: 18,
+            paddingVertical: 7,
+            borderRadius: 18,
+          }}
+        >
+          <Ionicons
+            name="grid"
+            size={25}
+            color={activeTab === "menu" ? activeColor : inactiveColor}
+          />
+        </View>
+        <Text
+          style={{
+            fontSize: 12,
+            color: activeTab === "menu" ? activeColor : inactiveColor,
+            fontWeight: activeTab === "menu" ? "700" : "500",
+            marginTop: 3,
+          }}
+        >
           Menu
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.bottomTabItem}>
+      <TouchableOpacity style={{ alignItems: "center", flex: 1 }}>
         <Ionicons
-          name="notifications"
-          size={24}
+          name="notifications-outline"
+          size={25}
           color={activeTab === "notifications" ? activeColor : inactiveColor}
         />
         <Text
-          style={[
-            styles.bottomTabText,
-            activeTab === "notifications" && styles.activeBottomTabText,
-          ]}
+          style={{
+            fontSize: 12,
+            color:
+              activeTab === "notifications" ? activeColor : inactiveColor,
+            fontWeight: activeTab === "notifications" ? "700" : "500",
+            marginTop: 3,
+          }}
         >
           Notifications
         </Text>

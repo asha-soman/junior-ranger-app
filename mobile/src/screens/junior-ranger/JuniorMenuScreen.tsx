@@ -13,7 +13,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
-import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -27,36 +27,60 @@ export default function JuniorMenuScreen() {
     <View style={styles.menuContainer}>
       <View style={styles.menuHeader}>
         <View style={styles.menuHeaderIcon}>
-          <Ionicons name="leaf" size={34} color="#FFFFFF" />
         </View>
 
         <Text style={styles.menuTitle}>Junior Ranger Menu</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.menuContent}>
+      <ScrollView
+        contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}
+      >
         <TouchableOpacity
-          style={[styles.menuOption, styles.menuOptionReverse]}
+          activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("AdminCohorts", {
               userRole: "junior_ranger",
             })
           }
+          style={[
+            styles.menuOption,
+            {
+              height: 135,
+              backgroundColor: "#DCEBE7",
+              justifyContent: "space-between",
+            },
+          ]}
         >
           <Image
             source={require("../../../assets/images/cohorts.png")}
             style={styles.menuImage}
           />
 
-          <Text
-            style={[
-              styles.menuOptionText,
-              styles.menuOptionTextLeft,
-            ]}
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
           >
-            My Cohorts
-          </Text>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#111",
+                flexShrink: 1,
+              }}
+            >
+              My Cohorts
+            </Text>
+
+            <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+          </View>
         </TouchableOpacity>
       </ScrollView>
+
       <AppBottomTabBar role="junior_ranger" activeTab="home" />
     </View>
   );

@@ -1,0 +1,72 @@
+import apiClient from '../api/client';
+
+export type AdventureStatus = 'draft' | 'published' | 'archived';
+
+export interface Adventure {
+    id: string;
+    title: string;
+    description: string;
+    task_instructions: string;
+    cohort_id: string;
+    due_date: string;
+    status: AdventureStatus;
+    created_by_user_id: string;
+    is_deleted: boolean;
+    created_at: string;
+    updated_at: string | null;
+}
+
+export interface CreateAdventurePayload {
+    title: string;
+    description: string;
+    task_instructions: string;
+    due_date: string;
+}
+
+export interface UpdateAdventurePayload {
+    title?: string;
+    description?: string;
+    task_instructions?: string;
+    due_date?: string;
+    status?: AdventureStatus;
+}
+
+export const getAllAdventures = async (): Promise<Adventure[]> => {
+    const response = await apiClient.get('/adventures');
+    return response.data;
+};
+
+export const getAdventuresByCohort = async (
+    cohortId: string
+): Promise<Adventure[]> => {
+    const response = await apiClient.get(`/cohorts/${cohortId}/adventures`);
+    return response.data;
+};
+
+export const createAdventure = async (
+    cohortId: string,
+    payload: CreateAdventurePayload
+): Promise<Adventure> => {
+    const response = await apiClient.post(
+        `/cohorts/${cohortId}/adventures`,
+        payload
+    );
+
+    return response.data.adventure;
+};
+
+export const getAdventureById = async (
+    adventureId: string
+): Promise<Adventure> => {
+    const response = await apiClient.get(`/adventures/${adventureId}`);
+    return response.data;
+};
+
+export const updateAdventure = async (
+    adventureId: string,
+    payload: UpdateAdventurePayload
+): Promise<Adventure> => {
+    const response = await apiClient.patch(`/adventures/${adventureId}`, payload);
+    return response.data.adventure;
+};
+

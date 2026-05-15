@@ -86,7 +86,7 @@ export default function LoginScreen() {
         navigation.replace("AdminMenu");
       } else if (profileResponse.data.role === "ranger") {
         navigation.replace("RangerMenu");
-      }  else if (profileResponse.data.role === "junior_ranger"){
+      } else if (profileResponse.data.role === "junior_ranger") {
         navigation.replace("JuniorMenu");
       } else {
         navigation.replace("Welcome");

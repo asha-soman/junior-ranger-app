@@ -1,10 +1,10 @@
 import React from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
+    View,
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    Image,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -16,12 +16,12 @@ import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 
 type NavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  "JuniorMenu"
+    AuthStackParamList,
+    "JuniorMenu"
 >;
 
 export default function JuniorMenuScreen() {
-  const navigation = useNavigation<NavigationProp>();
+    const navigation = useNavigation<NavigationProp>();
 
   return (
     <View style={styles.menuContainer}>
@@ -29,8 +29,8 @@ export default function JuniorMenuScreen() {
         <View style={styles.menuHeaderIcon}>
         </View>
 
-        <Text style={styles.menuTitle}>Junior Ranger Menu</Text>
-      </View>
+                <Text style={styles.menuTitle}>Junior Ranger Menu</Text>
+            </View>
 
       <ScrollView
         contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}

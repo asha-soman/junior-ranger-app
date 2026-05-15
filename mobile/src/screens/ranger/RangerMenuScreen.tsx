@@ -9,12 +9,12 @@ import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 
 type NavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  "RangerMenu"
+    AuthStackParamList,
+    "RangerMenu"
 >;
 
 export default function RangerMenuScreen() {
-  const navigation = useNavigation<NavigationProp>();
+    const navigation = useNavigation<NavigationProp>();
 
   return (
     <View style={styles.menuContainer}>
@@ -23,8 +23,8 @@ export default function RangerMenuScreen() {
           <Ionicons name="people-circle" size={34} color="#FFFFFF" />
         </View>
 
-        <Text style={styles.menuTitle}>Ranger Menu</Text>
-      </View>
+                <Text style={styles.menuTitle}>Ranger Menu</Text>
+            </View>
 
       <ScrollView
         contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}
@@ -62,6 +62,21 @@ export default function RangerMenuScreen() {
             <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
           </View>
         </TouchableOpacity>
+        <TouchableOpacity
+                    style={styles.menuOption}
+                    onPress={() =>
+                        navigation.navigate("AdventureList", {
+                            userRole: "ranger",
+                        })
+                    }
+                >
+                    <Image
+                        source={require("../../../assets/images/adventure.png")}
+                        style={styles.menuImage}
+                    />
+
+                    <Text style={styles.menuOptionText}>Manage Adventures</Text>
+                </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.menuOption, { justifyContent: "space-between" }]}

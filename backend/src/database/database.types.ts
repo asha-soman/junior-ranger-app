@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'ranger' | 'junior_ranger';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type AdventureStatus = 'draft' | 'published' | 'archived';
 export type CohortMemberRole = 'ranger' | 'junior_ranger';
 
 export interface UsersTable {
@@ -38,8 +39,23 @@ export interface CohortMembersTable {
   updated_at: Date | null;
 }
 
+export interface AdventuresTable {
+  id: string;
+  title: string;
+  description: string;
+  task_instructions: string | null;
+  cohort_id: string;
+  due_date: Date | null;
+  status: AdventureStatus;
+  created_by_user_id: string | null;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
   cohort_members: CohortMembersTable;
+  adventures: AdventuresTable;
 }

@@ -11,7 +11,7 @@ import { AssignRangerDto } from './dto/assign-ranger.dto';
 
 @Injectable()
 export class CohortsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly db: DatabaseService) { }
 
   // Create a new Cohort
   async createCohort(
@@ -84,6 +84,35 @@ export class CohortsService {
         .where('cohorts.is_deleted', '=', false)
         .orderBy('cohorts.created_at', 'desc')
         .execute();
+    } else if (user.role === 'ranger') {
+      cohorts = await this.db
+        .selectFrom('cohorts')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohorts.is_deleted', '=', false)
+        .where((eb) =>
+          eb.or([
+            eb('cohorts.created_by_ranger_id', '=', user.userId),
+            eb('cohorts.assigned_ranger_id', '=', user.userId),
+          ]),
+        )
+        .orderBy('cohorts.created_at', 'desc')
+        .execute();
     } else {
       cohorts = await this.db
         .selectFrom('cohort_members')
@@ -154,7 +183,19 @@ export class CohortsService {
       throw new NotFoundException('Cohort not found');
     }
 
-    if (user.role !== 'admin') {
+    if (user.role === 'ranger') {
+      const canView =
+        cohort.created_by_ranger_id === user.userId ||
+        cohort.assigned_ranger_id === user.userId;
+
+      if (!canView) {
+        throw new ForbiddenException(
+          'You do not have permission to view this cohort',
+        );
+      }
+    }
+
+    if (user.role === 'junior_ranger') {
       const membership = await this.db
         .selectFrom('cohort_members')
         .selectAll()
@@ -208,7 +249,9 @@ export class CohortsService {
     }
 
     const canUpdate =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+      user.role === 'admin' ||
+      cohort.created_by_ranger_id === user.userId ||
+      cohort.assigned_ranger_id === user.userId;
 
     if (!canUpdate) {
       throw new ForbiddenException(
@@ -253,7 +296,9 @@ export class CohortsService {
     }
 
     const canViewMembers =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+      user.role === 'admin' ||
+      cohort.created_by_ranger_id === user.userId ||
+      cohort.assigned_ranger_id === user.userId;
 
     if (!canViewMembers) {
       throw new ForbiddenException(

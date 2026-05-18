@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { HelperText, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -51,9 +51,10 @@ export default function VerificationScreen() {
 
       const result = await verifyCode({ email, code });
 
-      await AsyncStorage.setItem("token", result.access_token);
-
-      navigation.replace("Home");
+      //await AsyncStorage.setItem("token", result.access_token);
+      //navigation.replace("Home");
+      Alert.alert("Success", "Email verified successfully");
+      navigation.replace("Login");
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);

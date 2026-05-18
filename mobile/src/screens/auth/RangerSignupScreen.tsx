@@ -125,11 +125,12 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
       const result = await signupRanger(payload);
 
       Alert.alert(
-        "Success",
-        result?.message || "Account created successfully.",
-      );
+        "Success", "Account created successfully.");
+        navigation.navigate("Verification", {
+          email: email,
+        });
 
-      resetForm();
+        resetForm();
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||

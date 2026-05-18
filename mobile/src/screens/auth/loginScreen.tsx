@@ -81,6 +81,8 @@ export default function LoginScreen() {
       //   navigation.replace("Verification", { email });
       // }
 
+
+
       // JUST ADDING THIS LOGIC TO BYPASS THE VERIFICATION PAGE TO TEST ADMIN, RANGER AND JUNIOR RANGER PAGES
       if (profileResponse.data.role === "admin") {
         navigation.replace("AdminMenu");
@@ -89,17 +91,19 @@ export default function LoginScreen() {
       }  else if (profileResponse.data.role === "junior_ranger"){
         navigation.replace("JuniorMenu");
       } else {
+        navigation.replace("Verification", { email });
         navigation.replace("Welcome");
       }
 
 
-    } catch (error) {
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError("Something went wrong during login");
-      }
-    } finally {
+    } catch (error: any) {
+  const message =
+    error?.response?.data?.message ||
+    error?.message ||
+    "Something went wrong during login";
+
+  setApiError(message);
+}finally {
       setIsLoading(false);
     }
   };

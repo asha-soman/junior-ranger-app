@@ -55,17 +55,13 @@ export default function AdminCohortDetailsScreen() {
       const cohortData = await getCohortById(cohortId);
       setCohort(cohortData);
 
-      if (userRole === "admin" || userRole === "ranger") {
-        const membersData = await getCohortMembers(cohortId);
-        setMembers(membersData);
-      } else {
-        setMembers([]);
-      }
+      const membersData = await getCohortMembers(cohortId);
+      setMembers(membersData);
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
           error?.message ||
-          "Could not load cohort details.",
+          "Could not load cohort details."
       );
     } finally {
       setLoading(false);
@@ -76,7 +72,7 @@ export default function AdminCohortDetailsScreen() {
     useCallback(() => {
       setLoading(true);
       loadCohortDetails();
-    }, [cohortId]),
+    }, [cohortId])
   );
 
   if (loading) {
@@ -209,7 +205,7 @@ export default function AdminCohortDetailsScreen() {
                     marginLeft: 8,
                   }}
                 >
-                  Assigned Ranger
+                  Primary Ranger
                 </Text>
               </View>
 
@@ -258,7 +254,7 @@ export default function AdminCohortDetailsScreen() {
                   onPress={() =>
                     navigation.navigate("EditCohort", {
                       cohortId,
-                      userRole,
+                      userRole: userRole === "ranger" ? "ranger" : "admin",
                     })
                   }
                 >
@@ -335,128 +331,127 @@ export default function AdminCohortDetailsScreen() {
           )}
         </View>
 
-        {userRole !== "junior_ranger" && (
-          <>
-            <Text
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "700",
+            color: "#1F1F1F",
+            marginBottom: 14,
+          }}
+        >
+          Members
+        </Text>
+
+        {members.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>This cohort has no members</Text>
+          </View>
+        ) : (
+          members.map((member) => (
+            <View
+              key={member.id}
               style={{
-                fontSize: 22,
-                fontWeight: "700",
-                color: "#1F1F1F",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                padding: 18,
                 marginBottom: 14,
+                borderWidth: 1,
+                borderColor: "#EFEFEF",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 2,
               }}
             >
-              Members
-            </Text>
-
-            {members.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>This cohort has no members</Text>
-              </View>
-            ) : (
-              members.map((member) => (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <View
-                  key={member.id}
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 20,
-                    padding: 18,
-                    marginBottom: 14,
-                    borderWidth: 1,
-                    borderColor: "#EFEFEF",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 6,
-                    elevation: 2,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: "#DFF0EA",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 14,
                   }}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        backgroundColor: "#DFF0EA",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 14,
-                      }}
-                    >
-                      <Ionicons name="person" size={24} color="#2F6F61" />
-                    </View>
+                  <Ionicons name="person" size={24} color="#2F6F61" />
+                </View>
 
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 18,
-                          fontWeight: "700",
-                          color: "#1F1F1F",
-                        }}
-                      >
-                        {member.name || "No name provided"}
-                      </Text>
-
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          color: "#555",
-                          marginTop: 4,
-                        }}
-                      >
-                        {member.email || "No email provided"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View
+                <View style={{ flex: 1 }}>
+                  <Text
                     style={{
-                      height: 1,
-                      backgroundColor: "#E5E7EB",
-                      marginVertical: 14,
-                    }}
-                  />
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: "#1F1F1F",
                     }}
                   >
+                    {member.name || "No name provided"}
+                  </Text>
+
+                  {userRole !== "junior_ranger" && (
                     <Text
                       style={{
-                        fontSize: 15,
-                        fontWeight: "700",
-                        color: "#214C45",
+                        fontSize: 14,
+                        color: "#555",
+                        marginTop: 4,
                       }}
                     >
-                      Role
+                      {member.email || "No email provided"}
                     </Text>
-
-                    <View
-                      style={{
-                        backgroundColor: "#E5F0E8",
-                        borderRadius: 16,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "700",
-                          color: "#2F6F61",
-                        }}
-                      >
-                        {member.cohort_role.charAt(0).toUpperCase() +
-                          member.cohort_role.slice(1)}
-                      </Text>
-                    </View>
-                  </View>
+                  )}
                 </View>
-              ))
-            )}
-          </>
+              </View>
+
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: "#E5E7EB",
+                  marginVertical: 14,
+                }}
+              />
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: "#214C45",
+                  }}
+                >
+                  Role
+                </Text>
+
+                <View
+                  style={{
+                    backgroundColor: "#E5F0E8",
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#2F6F61",
+                    }}
+                  >
+                    {member.cohort_role === "junior_ranger"
+                      ? "Junior Ranger"
+                      : "Ranger"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))
         )}
       </ScrollView>
 

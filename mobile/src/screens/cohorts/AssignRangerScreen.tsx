@@ -14,9 +14,14 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { AdminUser, getAdminUsers } from "../../services/admin/adminService";
-import { assignRangerToCohort } from "../../services/cohorts/cohortService";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
+import {
+  assignRangerToCohort,
+  removeRangerFromCohort,
+  getCohortMembers,
+  CohortMember,
+} from "../../services/cohorts/cohortService";
 
 type RouteProps = RouteProp<AuthStackParamList, "AssignRanger">;
 
@@ -34,18 +39,24 @@ export default function AssignRangerScreen() {
   const [loading, setLoading] = useState(true);
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [members, setMembers] = useState<CohortMember[]>([]);
 
   const loadRangers = async () => {
     try {
       setErrorMessage("");
-      const data = await getAdminUsers("ranger", "approved");
 
-      const uniqueRangers = data.filter(
+      const [rangersData, membersData] = await Promise.all([
+        getAdminUsers("ranger", "approved"),
+        getCohortMembers(cohortId),
+      ]);
+
+      const uniqueRangers = rangersData.filter(
         (ranger, index, self) =>
           index === self.findIndex((item) => item.id === ranger.id),
       );
 
       setRangers(uniqueRangers);
+      setMembers(membersData);
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
@@ -68,7 +79,7 @@ export default function AssignRangerScreen() {
       await assignRangerToCohort(cohortId, rangerId);
 
       Alert.alert("Success", "Ranger assigned successfully");
-      navigation.goBack();
+      await loadRangers();
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -79,6 +90,39 @@ export default function AssignRangerScreen() {
     } finally {
       setAssigningId(null);
     }
+  };
+
+  const handleRemoveRanger = async (rangerId: string) => {
+    Alert.alert(
+      "Remove Ranger",
+      "Are you sure you want to remove this ranger from the cohort?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setAssigningId(rangerId);
+
+              await removeRangerFromCohort(cohortId, rangerId);
+
+              Alert.alert("Success", "Ranger removed successfully");
+              await loadRangers();
+            } catch (error: any) {
+              Alert.alert(
+                "Error",
+                error?.response?.data?.message ||
+                  error?.message ||
+                  "Failed to remove ranger",
+              );
+            } finally {
+              setAssigningId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (loading) {
@@ -114,7 +158,11 @@ export default function AssignRangerScreen() {
           </View>
         ) : (
           rangers.map((ranger) => {
-            const isAssigned = assignedRangerId === ranger.id;
+            const assignedRangerIds = members
+              .filter((member) => member.cohort_role === "ranger")
+              .map((member) => member.id);
+
+            const isAssigned = assignedRangerIds.includes(ranger.id);
 
             return (
               <View
@@ -173,7 +221,7 @@ export default function AssignRangerScreen() {
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: isAssigned ? "#A7AFB8" : "#376e62",
+                    backgroundColor: isAssigned ? "#C0392B" : "#376e62",
                     paddingVertical: 13,
                     borderRadius: 18,
                     marginTop: 16,
@@ -181,15 +229,19 @@ export default function AssignRangerScreen() {
                     justifyContent: "center",
                     flexDirection: "row",
                   }}
-                  onPress={() => handleAssignRanger(ranger.id)}
-                  disabled={assigningId === ranger.id || isAssigned}
+                  onPress={() =>
+                    isAssigned
+                      ? handleRemoveRanger(ranger.id)
+                      : handleAssignRanger(ranger.id)
+                  }
+                  disabled={assigningId === ranger.id}
                 >
                   {assigningId === ranger.id ? (
                     <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <>
                       <Ionicons
-                        name={isAssigned ? "checkmark-circle" : "person-add"}
+                        name={isAssigned ? "person-remove" : "person-add"}
                         size={20}
                         color="#FFFFFF"
                       />
@@ -201,7 +253,7 @@ export default function AssignRangerScreen() {
                           marginLeft: 8,
                         }}
                       >
-                        {isAssigned ? "Assigned" : "Assign Ranger"}
+                        {isAssigned ? "Remove Ranger" : "Assign Ranger"}
                       </Text>
                     </>
                   )}

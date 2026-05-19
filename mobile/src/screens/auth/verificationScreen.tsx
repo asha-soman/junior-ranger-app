@@ -10,6 +10,7 @@ import VerificationForm from "../../components/login/verificationForm";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { screenStyles, verificationStyles } from "../../styles/loginStyles";
 import { verifyCode, resendCode } from "../../services/auth/authService";
+import apiClient from "@/src/services/api/client";
 
 type VerificationErrors = { code?: string };
 
@@ -51,10 +52,20 @@ export default function VerificationScreen() {
 
       const result = await verifyCode({ email, code });
 
-      //await AsyncStorage.setItem("token", result.access_token);
-      //navigation.replace("Home");
       Alert.alert("Success", "Email verified successfully");
-      navigation.replace("Login");
+
+      const profileResponse = await apiClient.get("/auth/profile");
+      const role = profileResponse.data.role;
+
+      if (role === "admin") {
+        navigation.replace("AdminMenu");
+      } else if (role === "ranger") {
+        navigation.replace("RangerMenu");
+      } else if (role === "junior_ranger") {
+        navigation.replace("JuniorMenu");
+      } else {
+        navigation.replace("Login");
+      }
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);

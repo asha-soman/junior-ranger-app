@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AdventuresModule } from './modules/adventures/adventures.module';
 import { CohortsModule } from './modules/cohorts/cohorts.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CohortsModule } from './modules/cohorts/cohorts.module';
     AdminModule,
     AdventuresModule,
     CohortsModule,
+    SubmissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

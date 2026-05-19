@@ -56,6 +56,21 @@ export default function JuniorMenuScreen() {
                         My Cohorts
                     </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.menuOption}
+                    onPress={() =>
+                        navigation.navigate("AdventureList", {
+                            userRole: "ranger",
+                        })
+                    }
+                >
+                    <Image
+                        source={require("../../../assets/images/adventure.png")}
+                        style={styles.menuImage}
+                    />
+
+                    <Text style={styles.menuOptionText}>Manage Adventures</Text>
+                </TouchableOpacity>
             </ScrollView>
             <AppBottomTabBar role="junior_ranger" activeTab="home" />
         </View>

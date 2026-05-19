@@ -197,4 +197,81 @@ export const adventureStyles = StyleSheet.create({
         borderRadius: 8,
         marginTop: 22,
     },
+
+    submissionCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 18,
+        marginTop: 14,
+    },
+
+    helperText: {
+        fontSize: 13,
+        color: '#666666',
+        marginBottom: 14,
+        lineHeight: 19,
+    },
+    submissionListCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 14,
+    },
+
+    submissionUser: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#1E1E1E',
+        marginBottom: 6,
+    },
+
+    submissionText: {
+        fontSize: 14,
+        color: '#333333',
+        lineHeight: 20,
+        marginBottom: 8,
+    },
+
+    imageUrlText: {
+        fontSize: 13,
+        color: '#3D786B',
+        marginBottom: 8,
+    },
+
+    reviewButton: {
+        marginTop: 10,
+        borderRadius: 8,
+    },
+
+    reviewCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 18,
+        marginTop: 14,
+    },
+
+    statusButtonRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 14,
+    },
+
+    approveButton: {
+        flex: 1,
+        backgroundColor: '#3D786B',
+        borderRadius: 8,
+    },
+
+    rejectButton: {
+        flex: 1,
+        backgroundColor: '#9A3D3D',
+        borderRadius: 8,
+    },
+
+    selectedStatusText: {
+        fontSize: 14,
+        color: '#3D786B',
+        fontWeight: '700',
+        marginBottom: 12,
+    },
 });

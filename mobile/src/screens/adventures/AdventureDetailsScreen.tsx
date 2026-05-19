@@ -8,19 +8,24 @@ import {
     Adventure,
     getAdventureById,
 } from '../../services/adventures/adventureService';
+import apiClient from '../../services/api/client';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'AdventureDetails'>;
+
+type UserRole = 'admin' | 'ranger' | 'junior_ranger';
 
 export default function AdventureDetailsScreen({ navigation, route }: Props) {
     const { adventureId } = route.params;
 
     const [adventure, setAdventure] = useState<Adventure | null>(null);
+    const [userRole, setUserRole] = useState<UserRole | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
         fetchAdventureDetails();
+        fetchProfile();
     }, [adventureId]);
 
     const fetchAdventureDetails = async () => {
@@ -37,6 +42,18 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
             setLoading(false);
         }
     };
+
+    const fetchProfile = async () => {
+        try {
+            const response = await apiClient.get('/auth/profile');
+            setUserRole(response.data.role);
+        } catch (err) {
+            console.log('Fetch profile error:', err);
+        }
+    };
+
+    const canEditOrViewSubmissions = userRole === 'ranger' || userRole === 'admin';
+    const canSubmit = userRole === 'junior_ranger';
 
     if (loading) {
         return (
@@ -86,17 +103,47 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
                         : 'No due date'}
                 </Text>
 
-                <Button
-                    mode="contained"
-                    style={styles.editButton}
-                    onPress={() =>
-                        navigation.navigate('EditAdventure', {
-                            adventureId: adventure.id,
-                        })
-                    }
-                >
-                    Edit Adventure
-                </Button>
+                {canSubmit && (
+                    <Button
+                        mode="contained"
+                        style={styles.editButton}
+                        onPress={() =>
+                            navigation.navigate('SubmitAdventure', {
+                                adventureId: adventure.id,
+                            })
+                        }
+                    >
+                        Submit Adventure
+                    </Button>
+                )}
+
+                {canEditOrViewSubmissions && (
+                    <>
+                        <Button
+                            mode="contained"
+                            style={styles.editButton}
+                            onPress={() =>
+                                navigation.navigate('AdventureSubmissions', {
+                                    adventureId: adventure.id,
+                                })
+                            }
+                        >
+                            View Submissions
+                        </Button>
+
+                        <Button
+                            mode="outlined"
+                            style={styles.cancelButton}
+                            onPress={() =>
+                                navigation.navigate('EditAdventure', {
+                                    adventureId: adventure.id,
+                                })
+                            }
+                        >
+                            Edit Adventure
+                        </Button>
+                    </>
+                )}
             </View>
         </ScrollView>
     );

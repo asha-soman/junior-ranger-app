@@ -11,7 +11,22 @@ import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
 
 @Injectable()
+
 export class AuthService {
+
+  async resendCode(email: string) {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  this.verificationCodes[email] = code;
+
+  console.log(`Resent code for ${email}: ${code}`);
+
+  return {
+    message: 'Verification code resent successfully',
+  };
+}
+
+  private verificationCodes: Record<string, string> = {};
   constructor(
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,
@@ -48,6 +63,10 @@ export class AuthService {
       .returningAll()
       .executeTakeFirst();
 
+      //const code = Math.floor(100000 + Math.random() * 900000).toString();
+      //this.verificationCodes[email] = code;
+      //console.log(`Verification code for ${email}: ${code}`);
+
     return {
       message: isRanger
         ? 'Signup successful. Awaiting admin approval.'
@@ -75,9 +94,23 @@ export class AuthService {
       .where('email', '=', email)
       .executeTakeFirst();
 
+      // TEMP: auto-approve for testing
+      //await this.db
+      //.updateTable('users')
+      //.set({
+      //  is_active: true,
+      //  approval_status: 'approved',
+  //})
+     // .where('email', '=', email)
+      //.execute();
+
     if (!user || !user.password_hash) {
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.verificationCodes[email] = code;
+    console.log(`Verification code for ${email}: ${code}`);
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
@@ -115,4 +148,30 @@ export class AuthService {
       },
     };
   }
+  async verifyCode(email: string, code: string) {
+  const storedCode = this.verificationCodes[email];
+
+  if (!storedCode) {
+    throw new BadRequestException('No verification code found');
+  }
+
+  if (storedCode !== code) {
+    throw new BadRequestException('Invalid verification code');
+  }
+
+  // update DB
+  //await this.db
+    //.updateTable('users')
+    //.where('email', '=', email)
+    //.execute();
+
+    console.log(`Email ${email} verified successfully`);
+
+  // remove code after success
+  delete this.verificationCodes[email];
+
+  return {
+    message: 'Email verified successfully',
+  };
+}
 }

@@ -1,0 +1,123 @@
+[1mdiff --git a/backend/src/modules/auth/auth.controller.ts b/backend/src/modules/auth/auth.controller.ts[m
+[1mindex da9ea3c..3880327 100644[m
+[1m--- a/backend/src/modules/auth/auth.controller.ts[m
+[1m+++ b/backend/src/modules/auth/auth.controller.ts[m
+[36m@@ -8,6 +8,12 @@[m [mimport { Roles } from '../../common/decorators/roles.decorator';[m
+ [m
+ @Controller('auth')[m
+ export class AuthController {[m
+[32m+[m
+[32m+[m[32m  @Post('resend-code')[m
+[32m+[m[32m  resendCode(@Body() body: { email: string }) {[m
+[32m+[m[32m  return this.authService.resendCode(body.email);[m
+[32m+[m[32m}[m
+[32m+[m
+   constructor(private readonly authService: AuthService) {}[m
+ [m
+   @Post('signup')[m
+[36m@@ -20,6 +26,11 @@[m [mexport class AuthController {[m
+     return this.authService.login(dto);[m
+   }[m
+ [m
+[32m+[m[32m  @Post('verify-code')[m
+[32m+[m[32m  verifyCode(@Body() body: { email: string; code: string }) {[m
+[32m+[m[32m    return this.authService.verifyCode(body.email, body.code);[m
+[32m+[m[32m}[m
+[32m+[m
+   @UseGuards(JwtAuthGuard)[m
+   @Get('profile')[m
+   getProfile(@Req() req: Request & { user: unknown }) {[m
+[1mdiff --git a/backend/src/modules/auth/auth.service.ts b/backend/src/modules/auth/auth.service.ts[m
+[1mindex c767920..7edf676 100644[m
+[1m--- a/backend/src/modules/auth/auth.service.ts[m
+[1m+++ b/backend/src/modules/auth/auth.service.ts[m
+[36m@@ -11,7 +11,22 @@[m [mimport { LoginDto } from './dto/login.dto';[m
+ import { randomUUID } from 'crypto';[m
+ [m
+ @Injectable()[m
+[32m+[m
+ export class AuthService {[m
+[32m+[m
+[32m+[m[32m  async resendCode(email: string) {[m
+[32m+[m[32m  const code = Math.floor(100000 + Math.random() * 900000).toString();[m
+[32m+[m
+[32m+[m[32m  this.verificationCodes[email] = code;[m
+[32m+[m
+[32m+[m[32m  console.log(`Resent code for ${email}: ${code}`);[m
+[32m+[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    message: 'Verification code resent successfully',[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m  private verificationCodes: Record<string, string> = {};[m
+   constructor([m
+     private readonly db: DatabaseService,[m
+     private readonly jwtService: JwtService,[m
+[36m@@ -48,6 +63,10 @@[m [mexport class AuthService {[m
+       .returningAll()[m
+       .executeTakeFirst();[m
+ [m
+[32m+[m[32m      //const code = Math.floor(100000 + Math.random() * 900000).toString();[m
+[32m+[m[32m      //this.verificationCodes[email] = code;[m
+[32m+[m[32m      //console.log(`Verification code for ${email}: ${code}`);[m
+[32m+[m
+     return {[m
+       message: isRanger[m
+         ? 'Signup successful. Awaiting admin approval.'[m
+[36m@@ -75,10 +94,24 @@[m [mexport class AuthService {[m
+       .where('email', '=', email)[m
+       .executeTakeFirst();[m
+ [m
+[32m+[m[32m      // TEMP: auto-approve for testing[m
+[32m+[m[32m      //await this.db[m
+[32m+[m[32m      //.updateTable('users')[m
+[32m+[m[32m      //.set({[m
+[32m+[m[32m      //  is_active: true,[m
+[32m+[m[32m      //  approval_status: 'approved',[m
+[32m+[m[32m  //})[m
+[32m+[m[32m     // .where('email', '=', email)[m
+[32m+[m[32m      //.execute();[m
+[32m+[m
+     if (!user || !user.password_hash) {[m
+       throw new UnauthorizedException('Invalid email or password');[m
+     }[m
+ [m
+[32m+[m[32m    const code = Math.floor(100000 + Math.random() * 900000).toString();[m
+[32m+[m[32m    this.verificationCodes[email] = code;[m
+[32m+[m[32m    console.log(`Verification code for ${email}: ${code}`);[m
+[32m+[m
+     const isPasswordValid = await bcrypt.compare(password, user.password_hash);[m
+ [m
+     if (!isPasswordValid) {[m
+[36m@@ -115,4 +148,30 @@[m [mexport class AuthService {[m
+       },[m
+     };[m
+   }[m
+[32m+[m[32m  async verifyCode(email: string, code: string) {[m
+[32m+[m[32m  const storedCode = this.verificationCodes[email];[m
+[32m+[m
+[32m+[m[32m  if (!storedCode) {[m
+[32m+[m[32m    throw new BadRequestException('No verification code found');[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  if (storedCode !== code) {[m
+[32m+[m[32m    throw new BadRequestException('Invalid verification code');[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // update DB[m
+[32m+[m[32m  //await this.db[m
+[32m+[m[32m    //.updateTable('users')[m
+[32m+[m[32m    //.where('email', '=', email)[m
+[32m+[m[32m    //.execute();[m
+[32m+[m
+[32m+[m[32m    console.log(`Email ${email} verified successfully`);[m
+[32m+[m
+[32m+[m[32m  // remove code after success[m
+[32m+[m[32m  delete this.verificationCodes[email];[m
+[32m+[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    message: 'Email verified successfully',[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+ }[m

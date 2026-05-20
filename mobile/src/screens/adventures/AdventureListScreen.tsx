@@ -14,8 +14,7 @@ import { adventureStyles as styles } from '../../styles/AdventureStyles';
 type Props = NativeStackScreenProps<AuthStackParamList, 'AdventureList'>;
 
 export default function AdventureListScreen({ navigation, route }: Props) {
-    // const cohortId = route.params?.cohortId;
-    const userRole = route.params?.userRole || 'ranger';
+    const userRole = route.params?.userRole || "junior_ranger";
 
     const [adventures, setAdventures] = useState<Adventure[]>([]);
     const [loading, setLoading] = useState(false);

@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     TouchableWithoutFeedback,
     Keyboard,
+    ActivityIndicator,
 } from 'react-native';
-import { Button, TextInput } from 'react-native-paper';
+import { Button, TextInput, Snackbar } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { createSubmission } from '../../services/submissions/submissionService';
+import {
+    createSubmission,
+    getMySubmission,
+    updateMySubmission,
+} from '../../services/submissions/submissionService';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SubmitAdventure'>;
@@ -23,11 +27,44 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
 
     const [submissionText, setSubmissionText] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [existingSubmissionId, setExistingSubmissionId] = useState<string | null>(null);
+
+    const [fetching, setFetching] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+
+    useEffect(() => {
+        fetchExistingSubmission();
+    }, [adventureId]);
+
+    const showMessage = (message: string) => {
+        setSnackbarMessage(message);
+        setSnackbarVisible(true);
+    };
+
+    const fetchExistingSubmission = async () => {
+        try {
+            setFetching(true);
+
+            const existingSubmission = await getMySubmission(adventureId);
+
+            if (existingSubmission) {
+                setExistingSubmissionId(existingSubmission.id);
+                setSubmissionText(existingSubmission.submission_text);
+                setImageUrl(existingSubmission.image_url || '');
+            }
+        } catch (error) {
+            console.log('Fetch existing submission error:', error);
+        } finally {
+            setFetching(false);
+        }
+    };
 
     const validate = () => {
         if (!submissionText.trim()) {
-            Alert.alert('Validation Error', 'Please describe what you completed.');
+            showMessage('Please describe what you completed before submitting.');
             return false;
         }
 
@@ -40,23 +77,42 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
         try {
             setLoading(true);
 
-            await createSubmission(adventureId, {
+            const payload = {
                 submission_text: submissionText.trim(),
                 image_url: imageUrl.trim() || undefined,
-            });
+            };
 
-            Alert.alert('Success', 'Adventure submitted successfully.');
+            if (existingSubmissionId) {
+                await updateMySubmission(existingSubmissionId, payload);
+                showMessage('Adventure submission updated successfully.');
+            } else {
+                const submission = await createSubmission(adventureId, payload);
+                setExistingSubmissionId(submission.id);
+                showMessage('Adventure submitted successfully.');
+            }
 
-            navigation.navigate('AdventureDetails', {
-                adventureId,
-            });
+            setTimeout(() => {
+                navigation.navigate('AdventureDetails', {
+                    adventureId,
+                });
+            }, 800);
         } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error?.message ||
-                'Unable to submit adventure.';
+            const statusCode = error?.response?.data?.statusCode;
+            const backendMessage = error?.response?.data?.message;
 
-            Alert.alert('Submission Failed', message);
+            if (
+                statusCode === 403 &&
+                backendMessage === 'Approved submissions cannot be edited'
+            ) {
+                showMessage(
+                    'This submission has already been approved and can no longer be edited.'
+                );
+                return;
+            }
+
+            showMessage(
+                backendMessage || error?.message || 'Unable to submit adventure.'
+            );
         } finally {
             setLoading(false);
         }
@@ -69,56 +125,74 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Submit Adventure</Text>
+                <Text style={styles.headerTitle}>
+                    {existingSubmissionId
+                        ? 'Update Adventure Submission'
+                        : 'Submit Adventure'}
+                </Text>
             </View>
 
             <View style={styles.submissionCard}>
-                <Text style={styles.detailsLabel}>What did you complete?</Text>
-                <Text style={styles.helperText}>
-                    Write a short description of what you observed, completed, or learned.
-                </Text>
+                {fetching ? (
+                    <ActivityIndicator size="large" style={styles.loader} />
+                ) : (
+                    <>
+                        <Text style={styles.detailsLabel}>What did you complete?</Text>
+                        <Text style={styles.helperText}>
+                            Write a short description of what you observed, completed, or learned.
+                        </Text>
 
-                <TextInput
-                    label="Submission Description"
-                    mode="outlined"
-                    value={submissionText}
-                    onChangeText={setSubmissionText}
-                    multiline
-                    style={[styles.input, styles.textArea]}
-                />
+                        <TextInput
+                            label="Submission Description"
+                            mode="outlined"
+                            value={submissionText}
+                            onChangeText={setSubmissionText}
+                            multiline
+                            style={[styles.input, styles.textArea]}
+                        />
 
-                <Text style={styles.detailsLabel}>Image URL</Text>
-                <Text style={styles.helperText}>
-                    For now, paste an image link here. Later this can become a real image upload.
-                </Text>
+                        <Text style={styles.detailsLabel}>Image URL</Text>
+                        <Text style={styles.helperText}>
+                            For now, paste an image link here. Later this can become a real image upload.
+                        </Text>
 
-                <TextInput
-                    label="Image URL"
-                    mode="outlined"
-                    value={imageUrl}
-                    onChangeText={setImageUrl}
-                    style={styles.input}
-                    autoCapitalize="none"
-                />
+                        <TextInput
+                            label="Image URL"
+                            mode="outlined"
+                            value={imageUrl}
+                            onChangeText={setImageUrl}
+                            style={styles.input}
+                            autoCapitalize="none"
+                        />
 
-                <Button
-                    mode="contained"
-                    onPress={handleSubmitAdventure}
-                    loading={loading}
-                    disabled={loading}
-                    style={styles.submitButton}
-                >
-                    Submit Adventure
-                </Button>
+                        <Button
+                            mode="contained"
+                            onPress={handleSubmitAdventure}
+                            loading={loading}
+                            disabled={loading}
+                            style={styles.submitButton}
+                        >
+                            {existingSubmissionId ? 'Update Submission' : 'Submit Adventure'}
+                        </Button>
 
-                <Button
-                    mode="text"
-                    onPress={() => navigation.goBack()}
-                    style={styles.cancelButton}
-                >
-                    Cancel
-                </Button>
+                        <Button
+                            mode="text"
+                            onPress={() => navigation.goBack()}
+                            style={styles.cancelButton}
+                        >
+                            Cancel
+                        </Button>
+                    </>
+                )}
             </View>
+
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={3000}
+            >
+                {snackbarMessage}
+            </Snackbar>
         </ScrollView>
     );
 

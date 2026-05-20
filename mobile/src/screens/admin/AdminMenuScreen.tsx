@@ -13,23 +13,23 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'AdminMenu'>
 
 export default function AdminMenuScreen() {
   const [usersPreview, setUsersPreview] = useState<AdminUser[]>([]);
-    useEffect(() => {
+  useEffect(() => {
     getAdminUsers()
-        .then(setUsersPreview)
-        .catch(() => {});
-    }, []);
-  
-    const navigation = useNavigation<NavigationProp>();
+      .then(setUsersPreview)
+      .catch(() => { });
+  }, []);
+
+  const navigation = useNavigation<NavigationProp>();
 
   return (
     <View style={styles.menuContainer}>
-        <View style={styles.menuHeader}>
-            <View style={styles.menuHeaderIcon}>
-                <Ionicons name="person-circle" size={34} color="#FFFFFF" />
-            </View>
-
-            <Text style={styles.menuTitle}>Menu</Text>
+      <View style={styles.menuHeader}>
+        <View style={styles.menuHeaderIcon}>
+          <Ionicons name="person-circle" size={34} color="#FFFFFF" />
         </View>
+
+        <Text style={styles.menuTitle}>Menu</Text>
+      </View>
 
       <ScrollView contentContainerStyle={styles.menuContent}>
         <TouchableOpacity
@@ -38,17 +38,17 @@ export default function AdminMenuScreen() {
         >
           <Image source={require('../../../assets/images/pendingRequests.png')}
             style={styles.menuImage}
-            />
+          />
           <Text style={[styles.menuOptionText, styles.menuOptionTextLeft]}>Pending Signup Requests</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuOption}
-          onPress={() => navigation.navigate('ManageUsers', {initialUsers: usersPreview})}
+          onPress={() => navigation.navigate('ManageUsers', { initialUsers: usersPreview })}
         >
           <Image source={require('../../../assets/images/users.png')}
             style={styles.menuImage}
-            />
+          />
           <Text style={styles.menuOptionText}>Users</Text>
         </TouchableOpacity>
 
@@ -58,21 +58,37 @@ export default function AdminMenuScreen() {
         >
           <Image source={require('../../../assets/images/cohorts.png')}
             style={styles.menuImage}
-            />
+          />
           <Text style={[styles.menuOptionText, styles.menuOptionTextLeft]}>Cohorts</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuOption}
+          onPress={() =>
+            navigation.navigate("AdventureList", {
+              userRole: "admin",
+            })
+          }
+        >
+          <Image
+            source={require("../../../assets/images/adventure.png")}
+            style={styles.menuImage}
+          />
+
+          <Text style={styles.menuOptionText}>Manage Adventures</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuOption}>
           <Image source={require('../../../assets/images/feed.png')}
             style={styles.menuImage}
-            />
+          />
           <Text style={styles.menuOptionText}>Feed</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.menuOption, styles.menuOptionReverse]}>
           <Image source={require('../../../assets/images/announcements.png')}
             style={styles.menuImage}
-            />
+          />
           <Text style={[styles.menuOptionText, styles.menuOptionTextLeft]}>Notices & Events</Text>
         </TouchableOpacity>
       </ScrollView>

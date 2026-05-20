@@ -60,3 +60,21 @@ export const reviewSubmission = async (
 
     return response.data.submission;
 };
+
+export const getMySubmission = async (
+    adventureId: string
+): Promise<AdventureSubmission | null> => {
+    const response = await apiClient.get(
+        `/adventures/${adventureId}/my-submission`
+    );
+
+    return response.data.submission;
+};
+
+export const updateMySubmission = async (
+    submissionId: string,
+    payload: CreateSubmissionPayload
+): Promise<AdventureSubmission> => {
+    const response = await apiClient.patch(`/submissions/${submissionId}`, payload);
+    return response.data.submission;
+};

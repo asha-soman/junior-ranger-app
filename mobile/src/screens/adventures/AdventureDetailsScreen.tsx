@@ -52,7 +52,8 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
         }
     };
 
-    const canEditOrViewSubmissions = userRole === 'ranger' || userRole === 'admin';
+    const canEditAdventure = userRole === 'ranger' || userRole === 'admin';
+    const canViewSubmissions = userRole === 'ranger';
     const canSubmit = userRole === 'junior_ranger';
 
     if (loading) {
@@ -117,32 +118,32 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
                     </Button>
                 )}
 
-                {canEditOrViewSubmissions && (
-                    <>
-                        <Button
-                            mode="contained"
-                            style={styles.editButton}
-                            onPress={() =>
-                                navigation.navigate('AdventureSubmissions', {
-                                    adventureId: adventure.id,
-                                })
-                            }
-                        >
-                            View Submissions
-                        </Button>
+                {canViewSubmissions && (
+                    <Button
+                        mode="contained"
+                        style={styles.editButton}
+                        onPress={() =>
+                            navigation.navigate('AdventureSubmissions', {
+                                adventureId: adventure.id,
+                            })
+                        }
+                    >
+                        View Submissions
+                    </Button>
+                )}
 
-                        <Button
-                            mode="outlined"
-                            style={styles.cancelButton}
-                            onPress={() =>
-                                navigation.navigate('EditAdventure', {
-                                    adventureId: adventure.id,
-                                })
-                            }
-                        >
-                            Edit Adventure
-                        </Button>
-                    </>
+                {canEditAdventure && (
+                    <Button
+                        mode="outlined"
+                        style={styles.cancelButton}
+                        onPress={() =>
+                            navigation.navigate('EditAdventure', {
+                                adventureId: adventure.id,
+                            })
+                        }
+                    >
+                        Edit Adventure
+                    </Button>
                 )}
             </View>
         </ScrollView>

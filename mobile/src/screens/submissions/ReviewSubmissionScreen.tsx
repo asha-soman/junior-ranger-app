@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     TouchableWithoutFeedback,
     Keyboard,
 } from 'react-native';
-import { Button, TextInput } from 'react-native-paper';
+import { Button, TextInput, Snackbar } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -28,7 +27,28 @@ export default function ReviewSubmissionScreen({ navigation, route }: Props) {
     const [feedback, setFeedback] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+
+    const showMessage = (message: string) => {
+        setSnackbarMessage(message);
+        setSnackbarVisible(true);
+    };
+
+    const validateReview = () => {
+        if (status === 'rejected' && !feedback.trim()) {
+            showMessage(
+                'Please provide feedback when rejecting a submission so the Junior Ranger knows what to improve.'
+            );
+            return false;
+        }
+
+        return true;
+    };
+
     const handleReview = async () => {
+        if (!validateReview()) return;
+
         try {
             setLoading(true);
 
@@ -37,15 +57,17 @@ export default function ReviewSubmissionScreen({ navigation, route }: Props) {
                 feedback: feedback.trim() || undefined,
             });
 
-            Alert.alert('Success', 'Submission reviewed successfully.');
-            navigation.goBack();
-        } catch (error: any) {
-            const message =
-                error?.response?.data?.message ||
-                error?.message ||
-                'Unable to review submission.';
+            showMessage('Submission reviewed successfully.');
 
-            Alert.alert('Review Failed', message);
+            setTimeout(() => {
+                navigation.goBack();
+            }, 800);
+        } catch (error: any) {
+            const backendMessage = error?.response?.data?.message;
+
+            showMessage(
+                backendMessage || error?.message || 'Unable to review submission.'
+            );
         } finally {
             setLoading(false);
         }
@@ -113,6 +135,14 @@ export default function ReviewSubmissionScreen({ navigation, route }: Props) {
                     Cancel
                 </Button>
             </View>
+
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={3000}
+            >
+                {snackbarMessage}
+            </Snackbar>
         </ScrollView>
     );
 

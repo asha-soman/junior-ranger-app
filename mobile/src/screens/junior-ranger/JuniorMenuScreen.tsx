@@ -60,7 +60,7 @@ export default function JuniorMenuScreen() {
                     style={styles.menuOption}
                     onPress={() =>
                         navigation.navigate("AdventureList", {
-                            userRole: "ranger",
+                            userRole: "junior_ranger",
                         })
                     }
                 >

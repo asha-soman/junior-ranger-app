@@ -62,4 +62,26 @@ export class SubmissionsController {
             req.user,
         );
     }
+
+
+    @Get('adventures/:adventureId/my-submission')
+    getMySubmission(
+        @Param('adventureId') adventureId: string,
+        @Req() req: Request & { user: AuthUser },
+    ) {
+        return this.submissionsService.getMySubmission(adventureId, req.user);
+    }
+
+    @Patch('submissions/:submissionId')
+    updateMySubmission(
+        @Param('submissionId') submissionId: string,
+        @Body() dto: CreateSubmissionDto,
+        @Req() req: Request & { user: AuthUser },
+    ) {
+        return this.submissionsService.updateMySubmission(
+            submissionId,
+            dto,
+            req.user,
+        );
+    }
 }

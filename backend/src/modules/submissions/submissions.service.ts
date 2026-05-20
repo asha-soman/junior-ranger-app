@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     ForbiddenException,
     Injectable,
     NotFoundException,
@@ -144,6 +145,12 @@ export class SubmissionsService {
             throw new ForbiddenException('Only Rangers can review submissions');
         }
 
+        if (dto.status === 'rejected' && !dto.feedback?.trim()) {
+            throw new BadRequestException(
+                'Feedback is required when rejecting a submission',
+            );
+        }
+
         const submission = await this.db
             .selectFrom('adventure_submissions')
             .selectAll()
@@ -197,6 +204,71 @@ export class SubmissionsService {
 
         return {
             message: 'Submission reviewed successfully',
+            submission: updatedSubmission,
+        };
+    }
+
+    async getMySubmission(adventureId: string, user: AuthUser) {
+        if (user.role !== 'junior_ranger') {
+            throw new ForbiddenException('Only Junior Rangers can view their submission');
+        }
+
+        const submission = await this.db
+            .selectFrom('adventure_submissions')
+            .selectAll()
+            .where('adventure_id', '=', adventureId)
+            .where('junior_ranger_user_id', '=', user.userId)
+            .executeTakeFirst();
+
+        return {
+            submission: submission || null,
+        };
+    }
+
+    async updateMySubmission(
+        submissionId: string,
+        dto: CreateSubmissionDto,
+        user: AuthUser,
+    ) {
+        if (user.role !== 'junior_ranger') {
+            throw new ForbiddenException('Only Junior Rangers can update submissions');
+        }
+
+        const submission = await this.db
+            .selectFrom('adventure_submissions')
+            .selectAll()
+            .where('id', '=', submissionId)
+            .executeTakeFirst();
+
+        if (!submission) {
+            throw new NotFoundException('Submission not found');
+        }
+
+        if (submission.junior_ranger_user_id !== user.userId) {
+            throw new ForbiddenException('You can only update your own submission');
+        }
+
+        if (submission.status === 'approved') {
+            throw new ForbiddenException('Approved submissions cannot be edited');
+        }
+
+        const updatedSubmission = await this.db
+            .updateTable('adventure_submissions')
+            .set({
+                submission_text: dto.submission_text,
+                image_url: dto.image_url ?? null,
+                status: 'submitted',
+                feedback: null,
+                reviewed_by_ranger_id: null,
+                reviewed_at: null,
+                updated_at: new Date(),
+            })
+            .where('id', '=', submissionId)
+            .returningAll()
+            .executeTakeFirst();
+
+        return {
+            message: 'Submission updated successfully',
             submission: updatedSubmission,
         };
     }

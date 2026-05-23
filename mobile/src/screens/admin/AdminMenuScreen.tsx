@@ -75,7 +75,9 @@ export default function AdminMenuScreen() {
             style={styles.menuImage}
           />
 
-          <Text style={styles.menuOptionText}>Manage Adventures</Text>
+          <Text style={styles.menuOptionText}>
+            Adventures
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuOption}>

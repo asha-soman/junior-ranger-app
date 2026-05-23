@@ -31,6 +31,11 @@ export interface UpdateAdventurePayload {
     status?: AdventureStatus;
 }
 
+export interface AssignAdventurePayload {
+    adventureId: string;
+    cohortIds: string[];
+}
+
 export const getAllAdventures = async (): Promise<Adventure[]> => {
     const response = await apiClient.get('/adventures');
     return response.data;
@@ -68,5 +73,13 @@ export const updateAdventure = async (
 ): Promise<Adventure> => {
     const response = await apiClient.patch(`/adventures/${adventureId}`, payload);
     return response.data.adventure;
+};
+
+
+export const assignAdventureToCohorts = async (
+    payload: AssignAdventurePayload
+) => {
+    const response = await apiClient.post('/adventures/assign', payload);
+    return response.data;
 };
 

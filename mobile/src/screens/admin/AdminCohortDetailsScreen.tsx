@@ -51,8 +51,8 @@ export default function AdminCohortDetailsScreen() {
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Could not load cohort details.",
+        error?.message ||
+        "Could not load cohort details.",
       );
     } finally {
       setLoading(false);

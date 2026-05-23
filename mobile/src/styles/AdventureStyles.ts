@@ -274,4 +274,26 @@ export const adventureStyles = StyleSheet.create({
         fontWeight: '700',
         marginBottom: 12,
     },
+    submissionStatusCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 16,
+        marginTop: 14,
+        borderWidth: 1,
+        borderColor: '#DDEDEA',
+    },
+
+    feedbackBox: {
+        backgroundColor: '#F4F4F4',
+        borderRadius: 10,
+        padding: 12,
+        marginTop: 10,
+    },
+
+    statusMessage: {
+        fontSize: 14,
+        color: '#555555',
+        marginTop: 8,
+        lineHeight: 20,
+    },
 });

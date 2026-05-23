@@ -7,11 +7,24 @@ import { randomUUID } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { CreateAdventureDto } from './dto/create-adventure.dto';
 import { UpdateAdventureDto } from './dto/update-adventure.dto';
+import { AssignAdventureDto } from './dto/assign-adventure.dto';
 
 type AuthUser = {
     userId: string;
     email: string;
     role: 'admin' | 'ranger' | 'junior_ranger';
+};
+
+type CohortAdventureAssignment = {
+    id: string;
+    cohort_id: string;
+    adventure_id: string;
+    assigned_by_user_id: string;
+    assigned_by_role: 'admin' | 'ranger';
+    is_deleted: boolean;
+    assigned_at: Date;
+    created_at: Date;
+    updated_at: Date | null;
 };
 
 @Injectable()
@@ -238,5 +251,93 @@ export class AdventuresService {
         }
 
         throw new ForbiddenException('You do not have access to this cohort');
+    }
+
+    async assignAdventureToCohorts(
+        dto: AssignAdventureDto,
+        user: AuthUser,
+    ) {
+        if (user.role !== 'admin' && user.role !== 'ranger') {
+            throw new ForbiddenException('Only Admins and Rangers can assign adventures');
+        }
+
+        if (user.role === 'ranger' && dto.cohortIds.length > 1) {
+            throw new ForbiddenException(
+                'Rangers can only assign an adventure to one cohort',
+            );
+        }
+
+        const adventure = await this.db
+            .selectFrom('adventures')
+            .selectAll()
+            .where('id', '=', dto.adventureId)
+            .where('is_deleted', '=', false)
+            .executeTakeFirst();
+
+        if (!adventure) {
+            throw new NotFoundException('Adventure not found');
+        }
+
+        const assignedRecords: CohortAdventureAssignment[] = [];
+
+        for (const cohortId of dto.cohortIds) {
+            const cohort = await this.db
+                .selectFrom('cohorts')
+                .selectAll()
+                .where('id', '=', cohortId)
+                .where('is_deleted', '=', false)
+                .executeTakeFirst();
+
+            if (!cohort) {
+                throw new NotFoundException(`Cohort not found: ${cohortId}`);
+            }
+
+            if (
+                user.role === 'ranger' &&
+                cohort.created_by_ranger_id !== user.userId &&
+                cohort.assigned_ranger_id !== user.userId
+            ) {
+                throw new ForbiddenException(
+                    'You can only assign adventures to cohorts you manage',
+                );
+            }
+
+            const existingAssignment = await this.db
+                .selectFrom('cohort_adventures')
+                .selectAll()
+                .where('cohort_id', '=', cohortId)
+                .where('adventure_id', '=', dto.adventureId)
+                .where('is_deleted', '=', false)
+                .executeTakeFirst();
+
+            if (existingAssignment) {
+                continue;
+            }
+
+            const assignment = await this.db
+                .insertInto('cohort_adventures')
+                .values({
+                    id: randomUUID(),
+                    cohort_id: cohortId,
+                    adventure_id: dto.adventureId,
+                    assigned_by_user_id: user.userId,
+                    assigned_by_role: user.role,
+                    is_deleted: false,
+                    assigned_at: new Date(),
+                    created_at: new Date(),
+                    updated_at: null,
+                })
+                .returningAll()
+                .executeTakeFirst();
+
+            if (assignment) {
+                assignedRecords.push(assignment);
+            }
+        }
+
+        return {
+            message: 'Adventure assigned successfully',
+            assignments: assignedRecords,
+        };
     }
 }

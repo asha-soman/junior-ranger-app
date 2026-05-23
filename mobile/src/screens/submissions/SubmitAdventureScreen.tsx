@@ -8,9 +8,11 @@ import {
     TouchableWithoutFeedback,
     Keyboard,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { Button, TextInput, Snackbar } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import {
@@ -59,6 +61,27 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
             console.log('Fetch existing submission error:', error);
         } finally {
             setFetching(false);
+        }
+    };
+
+    const handlePickImage = async () => {
+        const permissionResult =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (!permissionResult.granted) {
+            showMessage('Permission is required to access your photos.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.7,
+        });
+
+        if (!result.canceled) {
+            setImageUrl(result.assets[0].uri);
+            showMessage('Image selected successfully.');
         }
     };
 
@@ -151,19 +174,32 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
                             style={[styles.input, styles.textArea]}
                         />
 
-                        <Text style={styles.detailsLabel}>Image URL</Text>
+                        <Text style={styles.detailsLabel}>Upload Image</Text>
                         <Text style={styles.helperText}>
-                            For now, paste an image link here. Later this can become a real image upload.
+                            Choose an image that shows your completed adventure activity.
                         </Text>
 
-                        <TextInput
-                            label="Image URL"
+                        <Button
                             mode="outlined"
-                            value={imageUrl}
-                            onChangeText={setImageUrl}
-                            style={styles.input}
-                            autoCapitalize="none"
-                        />
+                            onPress={handlePickImage}
+                            style={styles.cancelButton}
+                        >
+                            Choose Image
+                        </Button>
+
+                        {imageUrl ? (
+                            <Image
+                                source={{ uri: imageUrl }}
+                                style={{
+                                    width: '100%',
+                                    height: 180,
+                                    borderRadius: 12,
+                                    marginTop: 12,
+                                    marginBottom: 12,
+                                }}
+                                resizeMode="cover"
+                            />
+                        ) : null}
 
                         <Button
                             mode="contained"

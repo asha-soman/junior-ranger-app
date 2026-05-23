@@ -48,7 +48,7 @@ export default function AdventureSubmissionsScreen({ navigation, route }: Props)
                 <Text style={styles.submissionText}>{item.submission_text}</Text>
 
                 {item.image_url ? (
-                    <Text style={styles.imageUrlText}>Image: {item.image_url}</Text>
+                    <Text style={styles.imageUrlText}>Image URL: {item.image_url}</Text>
                 ) : null}
 
                 <Chip style={styles.statusChip} textStyle={styles.statusText}>

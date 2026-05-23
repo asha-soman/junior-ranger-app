@@ -8,6 +8,10 @@ import {
     Adventure,
     getAdventureById,
 } from '../../services/adventures/adventureService';
+import {
+    AdventureSubmission,
+    getMySubmission,
+} from '../../services/submissions/submissionService';
 import apiClient from '../../services/api/client';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
@@ -19,14 +23,24 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
     const { adventureId } = route.params;
 
     const [adventure, setAdventure] = useState<Adventure | null>(null);
+    const [mySubmission, setMySubmission] = useState<AdventureSubmission | null>(
+        null
+    );
     const [userRole, setUserRole] = useState<UserRole | null>(null);
     const [loading, setLoading] = useState(false);
+    const [submissionLoading, setSubmissionLoading] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
         fetchAdventureDetails();
         fetchProfile();
     }, [adventureId]);
+
+    useEffect(() => {
+        if (userRole === 'junior_ranger') {
+            fetchMySubmission();
+        }
+    }, [userRole, adventureId]);
 
     const fetchAdventureDetails = async () => {
         try {
@@ -52,9 +66,51 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
         }
     };
 
+    const fetchMySubmission = async () => {
+        try {
+            setSubmissionLoading(true);
+            const submission = await getMySubmission(adventureId);
+            setMySubmission(submission);
+        } catch (err) {
+            console.log('Fetch my submission error:', err);
+        } finally {
+            setSubmissionLoading(false);
+        }
+    };
+
     const canEditAdventure = userRole === 'ranger' || userRole === 'admin';
     const canViewSubmissions = userRole === 'ranger';
     const canSubmit = userRole === 'junior_ranger';
+
+    const getSubmissionMessage = () => {
+        if (!mySubmission) {
+            return 'You have not submitted this adventure yet.';
+        }
+
+        if (mySubmission.status === 'submitted') {
+            return 'Your submission has been submitted and is waiting for Ranger review.';
+        }
+
+        if (mySubmission.status === 'approved') {
+            return 'Your submission has been approved. Great work!';
+        }
+
+        if (mySubmission.status === 'rejected') {
+            return 'Your submission needs changes. Please check the feedback and update your submission.';
+        }
+
+        return '';
+    };
+
+    const getSubmitButtonLabel = () => {
+        if (!mySubmission) return 'Submit Adventure';
+
+        if (mySubmission.status === 'approved') return 'Submission Approved';
+
+        return 'Update Submission';
+    };
+
+    const isSubmitButtonDisabled = mySubmission?.status === 'approved';
 
     if (loading) {
         return (
@@ -105,17 +161,45 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
                 </Text>
 
                 {canSubmit && (
-                    <Button
-                        mode="contained"
-                        style={styles.editButton}
-                        onPress={() =>
-                            navigation.navigate('SubmitAdventure', {
-                                adventureId: adventure.id,
-                            })
-                        }
-                    >
-                        Submit Adventure
-                    </Button>
+                    <View style={styles.submissionStatusCard}>
+                        <Text style={styles.detailsLabel}>My Submission Status</Text>
+
+                        {submissionLoading ? (
+                            <ActivityIndicator size="small" />
+                        ) : (
+                            <>
+                                <Chip style={styles.statusChip} textStyle={styles.statusText}>
+                                    {mySubmission?.status || 'not submitted'}
+                                </Chip>
+
+                                <Text style={styles.statusMessage}>
+                                    {getSubmissionMessage()}
+                                </Text>
+
+                                {mySubmission?.feedback ? (
+                                    <View style={styles.feedbackBox}>
+                                        <Text style={styles.detailsLabel}>Ranger Feedback</Text>
+                                        <Text style={styles.detailsText}>
+                                            {mySubmission.feedback}
+                                        </Text>
+                                    </View>
+                                ) : null}
+
+                                <Button
+                                    mode="contained"
+                                    style={styles.editButton}
+                                    disabled={isSubmitButtonDisabled}
+                                    onPress={() =>
+                                        navigation.navigate('SubmitAdventure', {
+                                            adventureId: adventure.id,
+                                        })
+                                    }
+                                >
+                                    {getSubmitButtonLabel()}
+                                </Button>
+                            </>
+                        )}
+                    </View>
                 )}
 
                 {canViewSubmissions && (

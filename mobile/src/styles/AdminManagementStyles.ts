@@ -22,11 +22,13 @@ export const adminStyles = StyleSheet.create({
     top: 40,
   },
 
-  menuTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
+ menuTitle: {
+  fontSize: 22,
+  fontWeight: "600",
+  color: "#FFFFFF",
+  letterSpacing: 0.3,
+  marginLeft: 4,
+},
 
   menuContent: {
     paddingHorizontal: 20,

@@ -48,8 +48,13 @@ export type AuthStackParamList = {
         cohortId: string;
         userRole?: "admin" | "ranger" | "junior_ranger";
     };
-    CreateCohort: undefined;
-    EditCohort: { cohortId: string };
+    CreateCohort: {
+    userRole?: "admin" | "ranger";
+  };
+    EditCohort: {
+    cohortId: string;
+    userRole?: "admin" | "ranger";
+  };
     AssignRanger: {
         cohortId: string;
         assignedRangerId?: string | null;

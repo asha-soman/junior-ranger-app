@@ -1,4 +1,4 @@
-import apiClient from '../api/client';
+import apiClient from "../api/client";
 
 export interface Cohort {
   id: string;
@@ -18,8 +18,8 @@ export interface CohortMember {
   id: string;
   name: string | null;
   email: string;
-  role: 'admin' | 'ranger' | 'junior_ranger';
-  cohort_role: 'ranger' | 'junior_ranger';
+  role: "admin" | "ranger" | "junior_ranger";
+  cohort_role: "ranger" | "junior_ranger";
   joined_at: string | null;
 }
 
@@ -36,7 +36,7 @@ export interface UpdateCohortPayload {
 }
 
 export const getCohorts = async (): Promise<Cohort[]> => {
-  const response = await apiClient.get('/cohorts');
+  const response = await apiClient.get("/cohorts");
   return response.data.cohorts;
 };
 
@@ -48,7 +48,7 @@ export const getCohortById = async (id: string): Promise<Cohort> => {
 export const createCohort = async (
   payload: CreateCohortPayload,
 ): Promise<Cohort> => {
-  const response = await apiClient.post('/cohorts', payload);
+  const response = await apiClient.post("/cohorts", payload);
   return response.data.cohort;
 };
 
@@ -60,9 +60,7 @@ export const updateCohort = async (
   return response.data.cohort;
 };
 
-export const getCohortMembers = async (
-  id: string,
-): Promise<CohortMember[]> => {
+export const getCohortMembers = async (id: string): Promise<CohortMember[]> => {
   const response = await apiClient.get(`/cohorts/${id}/members`);
   return response.data.members;
 };
@@ -76,4 +74,13 @@ export const assignRangerToCohort = async (
   });
 
   return response.data.cohort;
+};
+
+export const removeRangerFromCohort = async (
+  id: string,
+  rangerId: string,
+): Promise<void> => {
+  await apiClient.patch(`/cohorts/${id}/remove-ranger`, {
+    rangerId,
+  });
 };

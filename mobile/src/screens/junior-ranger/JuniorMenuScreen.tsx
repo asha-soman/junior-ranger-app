@@ -260,6 +260,55 @@ export default function JuniorMenuScreen() {
             <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
           </View>
         </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("AdventureList", {
+              userRole: "junior_ranger",
+            })
+          }
+          style={[
+            styles.menuOption,
+            {
+              height: 135,
+              backgroundColor: "#E5F0E8",
+              justifyContent: "space-between",
+              marginTop: 16,
+            },
+          ]}
+        >
+          <Image
+            source={require("../../../assets/images/adventure.png")}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#111",
+                flexShrink: 1,
+              }}
+            >
+              My Adventures
+            </Text>
+
+            <Ionicons
+              name="chevron-forward"
+              size={28}
+              color="#2F6F61"
+            />
+          </View>
+        </TouchableOpacity>
       </ScrollView>
 
       <AppBottomTabBar role="junior_ranger" activeTab="home" />

@@ -20,7 +20,11 @@ type AuthUser = {
 export class SubmissionsService {
     constructor(private readonly db: DatabaseService) { }
 
-    async createSubmission(adventureId: string, dto: CreateSubmissionDto, user: AuthUser) {
+    async createSubmission(
+        adventureId: string,
+        dto: CreateSubmissionDto,
+        user: AuthUser,
+    ) {
         if (user.role !== 'junior_ranger') {
             throw new ForbiddenException('Only Junior Rangers can submit adventures');
         }
@@ -36,17 +40,36 @@ export class SubmissionsService {
             throw new NotFoundException('Adventure not found');
         }
 
-        const membership = await this.db
-            .selectFrom('cohort_members')
-            .selectAll()
-            .where('cohort_id', '=', adventure.cohort_id)
-            .where('user_id', '=', user.userId)
-            .where('is_deleted', '=', false)
+        const assignedCohortMembership = await this.db
+            .selectFrom('cohort_adventures')
+            .innerJoin(
+                'cohort_members',
+                'cohort_members.cohort_id',
+                'cohort_adventures.cohort_id',
+            )
+            .select('cohort_adventures.cohort_id')
+            .where('cohort_adventures.adventure_id', '=', adventureId)
+            .where('cohort_adventures.is_deleted', '=', false)
+            .where('cohort_members.user_id', '=', user.userId)
+            .where('cohort_members.is_deleted', '=', false)
             .executeTakeFirst();
 
-        if (!membership) {
+        if (!assignedCohortMembership) {
             throw new ForbiddenException(
                 'You can only submit adventures assigned to your cohort',
+            );
+        }
+
+        const existingSubmission = await this.db
+            .selectFrom('adventure_submissions')
+            .selectAll()
+            .where('adventure_id', '=', adventureId)
+            .where('junior_ranger_user_id', '=', user.userId)
+            .executeTakeFirst();
+
+        if (existingSubmission) {
+            throw new ForbiddenException(
+                'You have already submitted this adventure. Please update your existing submission.',
             );
         }
 
@@ -55,7 +78,7 @@ export class SubmissionsService {
             .values({
                 id: randomUUID(),
                 adventure_id: adventureId,
-                cohort_id: adventure.cohort_id,
+                cohort_id: assignedCohortMembership.cohort_id,
                 junior_ranger_user_id: user.userId,
                 submission_text: dto.submission_text,
                 image_url: dto.image_url ?? null,
@@ -92,28 +115,44 @@ export class SubmissionsService {
             throw new NotFoundException('Adventure not found');
         }
 
-        if (user.role === 'ranger') {
-            const cohort = await this.db
-                .selectFrom('cohorts')
-                .selectAll()
-                .where('id', '=', adventure.cohort_id)
-                .where('is_deleted', '=', false)
-                .executeTakeFirst();
-
-            if (
-                !cohort ||
-                (cohort.created_by_ranger_id !== user.userId &&
-                    cohort.assigned_ranger_id !== user.userId)
-            ) {
-                throw new ForbiddenException(
-                    'You do not have permission to view submissions for this adventure',
-                );
-            }
+        // Admin should not review submissions based on client requirement
+        if (user.role === 'admin') {
+            throw new ForbiddenException('Admins cannot review adventure submissions');
         }
 
-        return this.db
+        // Find cohorts this ranger manages where this adventure is assigned
+        const managedAssignedCohorts = await this.db
+            .selectFrom('cohort_adventures')
+            .innerJoin('cohorts', 'cohorts.id', 'cohort_adventures.cohort_id')
+            .select('cohort_adventures.cohort_id')
+            .where('cohort_adventures.adventure_id', '=', adventureId)
+            .where('cohort_adventures.is_deleted', '=', false)
+            .where('cohorts.is_deleted', '=', false)
+            .where((eb) =>
+                eb.or([
+                    eb('cohorts.created_by_ranger_id', '=', user.userId),
+                    eb('cohorts.assigned_ranger_id', '=', user.userId),
+                ]),
+            )
+            .execute();
+
+        const managedCohortIds = managedAssignedCohorts.map(
+            (item) => item.cohort_id,
+        );
+
+        if (managedCohortIds.length === 0 && adventure.created_by_user_id !== user.userId) {
+            throw new ForbiddenException(
+                'You do not have permission to view submissions for this adventure',
+            );
+        }
+
+        let query = this.db
             .selectFrom('adventure_submissions')
-            .innerJoin('users', 'users.id', 'adventure_submissions.junior_ranger_user_id')
+            .innerJoin(
+                'users',
+                'users.id',
+                'adventure_submissions.junior_ranger_user_id',
+            )
             .select([
                 'adventure_submissions.id',
                 'adventure_submissions.adventure_id',
@@ -131,7 +170,18 @@ export class SubmissionsService {
                 'users.name as junior_ranger_name',
                 'users.email as junior_ranger_email',
             ])
-            .where('adventure_submissions.adventure_id', '=', adventureId)
+            .where('adventure_submissions.adventure_id', '=', adventureId);
+
+        // If the ranger manages assigned cohorts, show only submissions from those cohorts
+        if (managedCohortIds.length > 0) {
+            query = query.where(
+                'adventure_submissions.cohort_id',
+                'in',
+                managedCohortIds,
+            );
+        }
+
+        return query
             .orderBy('adventure_submissions.submitted_at', 'desc')
             .execute();
     }

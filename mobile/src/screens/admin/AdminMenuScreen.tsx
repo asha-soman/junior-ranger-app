@@ -80,6 +80,14 @@ export default function AdminMenuScreen() {
       onPress: () => navigation.navigate("AdminCohorts", { userRole: "admin" }),
     },
     {
+      title: "Adventures",
+      image: require("../../../assets/images/adventure.png"),
+      onPress: () =>
+        navigation.navigate("AdventureList", {
+          userRole: "admin",
+        }),
+    },
+    {
       title: "Feed",
       image: require("../../../assets/images/feed.png"),
       onPress: () => { },
@@ -210,80 +218,88 @@ export default function AdminMenuScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.menuHeaderIcon}
-              onPress={() => setAccountMenuVisible(true)}
-              activeOpacity={0.8}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                marginTop: 8,
+              }}
+              onPress={handleLogout}
             >
-              <Ionicons name="person-circle" size={34} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuOption}
-              onPress={() =>
-                navigation.navigate("AdventureList", {
-                  userRole: "admin",
-                })
-              }
-            >
-              <Image
-                source={require("../../../assets/images/adventure.png")}
-                style={styles.menuImage}
-              />
-
-              <Text style={styles.menuOptionText}>
-                Adventures
+              <Ionicons name="log-out-outline" size={22} color="#C0392B" />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#C0392B",
+                  marginLeft: 12,
+                }}
+              >
+                Logout
               </Text>
             </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
-            <Text style={styles.menuTitle}>Admin Dashboard</Text>
-          </View>
+      <View style={styles.menuHeader}>
+        <TouchableOpacity
+          style={styles.menuHeaderIcon}
+          onPress={() => setAccountMenuVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="person-circle" size={34} color="#FFFFFF" />
+        </TouchableOpacity>
 
-          <ScrollView
-            contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}
+        <Text style={styles.menuTitle}>Admin Dashboard</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}
+      >
+        {menuItems.map((item) => (
+          <TouchableOpacity
+            key={item.title}
+            activeOpacity={0.85}
+            onPress={item.onPress}
+            style={[
+              styles.menuOption,
+              {
+                height: 135,
+                backgroundColor: "#DCEBE7",
+                justifyContent: "space-between",
+              },
+            ]}
           >
-            {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.title}
-                activeOpacity={0.85}
-                onPress={item.onPress}
-                style={[
-                  styles.menuOption,
-                  {
-                    height: 135,
-                    backgroundColor: "#DCEBE7",
-                    justifyContent: "space-between",
-                  },
-                ]}
+            <Image source={item.image} style={styles.menuImage} />
+
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "700",
+                  color: "#111",
+                  flexShrink: 1,
+                }}
               >
-                <Image source={item.image} style={styles.menuImage} />
+                {item.title}
+              </Text>
 
-                <View
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingHorizontal: 12,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "700",
-                      color: "#111",
-                      flexShrink: 1,
-                    }}
-                  >
-                    {item.title}
-                  </Text>
+              <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
-                  <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <AppBottomTabBar role="admin" activeTab="menu" />
-        </View>
-        );
+      <AppBottomTabBar role="admin" activeTab="menu" />
+    </View>
+  );
 }

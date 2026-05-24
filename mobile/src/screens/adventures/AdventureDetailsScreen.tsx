@@ -30,6 +30,7 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
     const [loading, setLoading] = useState(false);
     const [submissionLoading, setSubmissionLoading] = useState(false);
     const [error, setError] = useState('');
+    const [userId, setUserId] = useState('');
 
     useEffect(() => {
         fetchAdventureDetails();
@@ -61,6 +62,7 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
         try {
             const response = await apiClient.get('/auth/profile');
             setUserRole(response.data.role);
+            setUserId(response.data.userId);
         } catch (err) {
             console.log('Fetch profile error:', err);
         }
@@ -78,7 +80,9 @@ export default function AdventureDetailsScreen({ navigation, route }: Props) {
         }
     };
 
-    const canEditAdventure = userRole === 'ranger' || userRole === 'admin';
+    const canEditAdventure =
+        userRole === 'admin' ||
+        (userRole === 'ranger' && adventure?.created_by_user_id === userId);
     const canViewSubmissions = userRole === 'ranger';
     const canSubmit = userRole === 'junior_ranger';
 

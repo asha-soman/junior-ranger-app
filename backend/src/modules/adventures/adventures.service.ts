@@ -4,6 +4,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+
 import { DatabaseService } from '../../database/database.service';
 import { CreateAdventureDto } from './dto/create-adventure.dto';
 import { UpdateAdventureDto } from './dto/update-adventure.dto';
@@ -79,6 +80,26 @@ export class AdventuresService {
             .returningAll()
             .executeTakeFirst();
 
+        if (adventure) {
+            await this.db
+                .insertInto('cohort_adventures')
+                .values({
+                    id: randomUUID(),
+                    cohort_id: cohortId,
+                    adventure_id: adventure.id,
+                    assigned_by_user_id: user.userId,
+                    assigned_by_role: user.role,
+                    is_deleted: false,
+                    assigned_at: new Date(),
+                    created_at: new Date(),
+                    updated_at: null,
+                })
+                .onConflict((oc) =>
+                    oc.columns(['cohort_id', 'adventure_id']).doNothing(),
+                )
+                .execute();
+        }
+
         return {
             message: 'Adventure created successfully',
             adventure,
@@ -86,7 +107,6 @@ export class AdventuresService {
     }
 
     async getAllAdventures(user: AuthUser) {
-        // ADMIN → gets everything
         if (user.role === 'admin') {
             return this.db
                 .selectFrom('adventures')
@@ -96,40 +116,48 @@ export class AdventuresService {
                 .execute();
         }
 
-        // RANGER → adventures from cohorts they manage
         if (user.role === 'ranger') {
             return this.db
                 .selectFrom('adventures')
-                .innerJoin(
-                    'cohorts',
-                    'cohorts.id',
-                    'adventures.cohort_id',
+                .leftJoin(
+                    'cohort_adventures',
+                    'cohort_adventures.adventure_id',
+                    'adventures.id',
                 )
+                .leftJoin('cohorts', 'cohorts.id', 'cohort_adventures.cohort_id')
                 .selectAll('adventures')
                 .where('adventures.is_deleted', '=', false)
                 .where((eb) =>
                     eb.or([
+                        eb('adventures.created_by_user_id', '=', user.userId),
                         eb('cohorts.created_by_ranger_id', '=', user.userId),
                         eb('cohorts.assigned_ranger_id', '=', user.userId),
                     ]),
                 )
                 .orderBy('adventures.created_at', 'desc')
+                .distinct()
                 .execute();
         }
 
-        // JUNIOR RANGER → adventures from joined cohorts
         return this.db
             .selectFrom('adventures')
             .innerJoin(
+                'cohort_adventures',
+                'cohort_adventures.adventure_id',
+                'adventures.id',
+            )
+            .innerJoin(
                 'cohort_members',
                 'cohort_members.cohort_id',
-                'adventures.cohort_id',
+                'cohort_adventures.cohort_id',
             )
             .selectAll('adventures')
             .where('adventures.is_deleted', '=', false)
-            .where('cohort_members.user_id', '=', user.userId)
+            .where('cohort_adventures.is_deleted', '=', false)
             .where('cohort_members.is_deleted', '=', false)
+            .where('cohort_members.user_id', '=', user.userId)
             .orderBy('adventures.created_at', 'desc')
+            .distinct()
             .execute();
     }
 
@@ -145,6 +173,35 @@ export class AdventuresService {
             .execute();
     }
 
+    async getAssignedAdventuresByCohort(cohortId: string, user: AuthUser) {
+        await this.checkCohortAccess(cohortId, user);
+
+        return this.db
+            .selectFrom('cohort_adventures')
+            .innerJoin('adventures', 'adventures.id', 'cohort_adventures.adventure_id')
+            .select([
+                'adventures.id',
+                'adventures.title',
+                'adventures.description',
+                'adventures.task_instructions',
+                'adventures.cohort_id',
+                'adventures.due_date',
+                'adventures.status',
+                'adventures.created_by_user_id',
+                'adventures.is_deleted',
+                'adventures.created_at',
+                'adventures.updated_at',
+                'cohort_adventures.assigned_at',
+                'cohort_adventures.assigned_by_user_id',
+                'cohort_adventures.assigned_by_role',
+            ])
+            .where('cohort_adventures.cohort_id', '=', cohortId)
+            .where('cohort_adventures.is_deleted', '=', false)
+            .where('adventures.is_deleted', '=', false)
+            .orderBy('cohort_adventures.assigned_at', 'desc')
+            .execute();
+    }
+
     async getAdventureById(adventureId: string, user: AuthUser) {
         const adventure = await this.db
             .selectFrom('adventures')
@@ -157,7 +214,53 @@ export class AdventuresService {
             throw new NotFoundException('Adventure not found');
         }
 
-        await this.checkCohortAccess(adventure.cohort_id, user);
+        if (user.role === 'admin') {
+            return adventure;
+        }
+
+        if (user.role === 'ranger') {
+            const hasAssignedCohortAccess = await this.db
+                .selectFrom('cohort_adventures')
+                .innerJoin('cohorts', 'cohorts.id', 'cohort_adventures.cohort_id')
+                .select('cohort_adventures.id')
+                .where('cohort_adventures.adventure_id', '=', adventureId)
+                .where('cohort_adventures.is_deleted', '=', false)
+                .where('cohorts.is_deleted', '=', false)
+                .where((eb) =>
+                    eb.or([
+                        eb('cohorts.created_by_ranger_id', '=', user.userId),
+                        eb('cohorts.assigned_ranger_id', '=', user.userId),
+                    ]),
+                )
+                .executeTakeFirst();
+
+            if (
+                !hasAssignedCohortAccess &&
+                adventure.created_by_user_id !== user.userId
+            ) {
+                throw new ForbiddenException('You do not have access to this adventure');
+            }
+
+            return adventure;
+        }
+
+        const membershipAccess = await this.db
+            .selectFrom('cohort_adventures')
+            .innerJoin(
+                'cohort_members',
+                'cohort_members.cohort_id',
+                'cohort_adventures.cohort_id',
+            )
+            .select('cohort_adventures.id')
+            .where('cohort_adventures.adventure_id', '=', adventureId)
+            .where('cohort_adventures.is_deleted', '=', false)
+            .where('cohort_members.user_id', '=', user.userId)
+            .where('cohort_members.is_deleted', '=', false)
+            .executeTakeFirst();
+
+        if (!membershipAccess) {
+            throw new ForbiddenException('You do not have access to this adventure');
+        }
 
         return adventure;
     }
@@ -182,9 +285,10 @@ export class AdventuresService {
             throw new NotFoundException('Adventure not found');
         }
 
-        await this.checkCohortAccess(adventure.cohort_id, user);
-
-        if (user.role === 'ranger' && adventure.created_by_user_id !== user.userId) {
+        if (
+            user.role === 'ranger' &&
+            adventure.created_by_user_id !== user.userId
+        ) {
             throw new ForbiddenException(
                 'Only the creator or admin can update this adventure',
             );
@@ -216,47 +320,7 @@ export class AdventuresService {
         };
     }
 
-    private async checkCohortAccess(cohortId: string, user: AuthUser) {
-        const cohort = await this.db
-            .selectFrom('cohorts')
-            .selectAll()
-            .where('id', '=', cohortId)
-            .where('is_deleted', '=', false)
-            .executeTakeFirst();
-
-        if (!cohort) {
-            throw new NotFoundException('Cohort not found');
-        }
-
-        if (user.role === 'admin') return;
-
-        if (
-            user.role === 'ranger' &&
-            (cohort.created_by_ranger_id === user.userId ||
-                cohort.assigned_ranger_id === user.userId)
-        ) {
-            return;
-        }
-
-        if (user.role === 'junior_ranger') {
-            const membership = await this.db
-                .selectFrom('cohort_members')
-                .selectAll()
-                .where('cohort_id', '=', cohortId)
-                .where('user_id', '=', user.userId)
-                .where('is_deleted', '=', false)
-                .executeTakeFirst();
-
-            if (membership) return;
-        }
-
-        throw new ForbiddenException('You do not have access to this cohort');
-    }
-
-    async assignAdventureToCohorts(
-        dto: AssignAdventureDto,
-        user: AuthUser,
-    ) {
+    async assignAdventureToCohorts(dto: AssignAdventureDto, user: AuthUser) {
         if (user.role !== 'admin' && user.role !== 'ranger') {
             throw new ForbiddenException('Only Admins and Rangers can assign adventures');
         }
@@ -302,18 +366,6 @@ export class AdventuresService {
                 );
             }
 
-            const existingAssignment = await this.db
-                .selectFrom('cohort_adventures')
-                .selectAll()
-                .where('cohort_id', '=', cohortId)
-                .where('adventure_id', '=', dto.adventureId)
-                .where('is_deleted', '=', false)
-                .executeTakeFirst();
-
-            if (existingAssignment) {
-                continue;
-            }
-
             const assignment = await this.db
                 .insertInto('cohort_adventures')
                 .values({
@@ -327,6 +379,9 @@ export class AdventuresService {
                     created_at: new Date(),
                     updated_at: null,
                 })
+                .onConflict((oc) =>
+                    oc.columns(['cohort_id', 'adventure_id']).doNothing(),
+                )
                 .returningAll()
                 .executeTakeFirst();
 
@@ -339,5 +394,42 @@ export class AdventuresService {
             message: 'Adventure assigned successfully',
             assignments: assignedRecords,
         };
+    }
+
+    private async checkCohortAccess(cohortId: string, user: AuthUser) {
+        const cohort = await this.db
+            .selectFrom('cohorts')
+            .selectAll()
+            .where('id', '=', cohortId)
+            .where('is_deleted', '=', false)
+            .executeTakeFirst();
+
+        if (!cohort) {
+            throw new NotFoundException('Cohort not found');
+        }
+
+        if (user.role === 'admin') return;
+
+        if (
+            user.role === 'ranger' &&
+            (cohort.created_by_ranger_id === user.userId ||
+                cohort.assigned_ranger_id === user.userId)
+        ) {
+            return;
+        }
+
+        if (user.role === 'junior_ranger') {
+            const membership = await this.db
+                .selectFrom('cohort_members')
+                .selectAll()
+                .where('cohort_id', '=', cohortId)
+                .where('user_id', '=', user.userId)
+                .where('is_deleted', '=', false)
+                .executeTakeFirst();
+
+            if (membership) return;
+        }
+
+        throw new ForbiddenException('You do not have access to this cohort');
     }
 }

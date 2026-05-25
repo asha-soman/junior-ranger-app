@@ -30,7 +30,7 @@ export default function AdminMenuScreen() {
   useEffect(() => {
     getAdminUsers()
       .then(setUsersPreview)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const confirmLogout = async () => {
@@ -80,14 +80,22 @@ export default function AdminMenuScreen() {
       onPress: () => navigation.navigate("AdminCohorts", { userRole: "admin" }),
     },
     {
+      title: "Adventures",
+      image: require("../../../assets/images/adventure.png"),
+      onPress: () =>
+        navigation.navigate("AdventureList", {
+          userRole: "admin",
+        }),
+    },
+    {
       title: "Feed",
       image: require("../../../assets/images/feed.png"),
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       title: "Notices & Events",
       image: require("../../../assets/images/announcements.png"),
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 

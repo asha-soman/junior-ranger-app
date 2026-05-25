@@ -12,6 +12,7 @@ import { AdventuresService } from './adventures.service';
 import { CreateAdventureDto } from './dto/create-adventure.dto';
 import { UpdateAdventureDto } from './dto/update-adventure.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AssignAdventureDto } from './dto/assign-adventure.dto';
 
 type AuthUser = {
     userId: string;
@@ -63,5 +64,13 @@ export class AdventuresController {
         @Req() req: Request & { user: AuthUser },
     ) {
         return this.adventuresService.updateAdventure(id, dto, req.user);
+    }
+
+    @Post('adventures/assign')
+    assignAdventureToCohorts(
+        @Body() dto: AssignAdventureDto,
+        @Req() req: Request & { user: AuthUser },
+    ) {
+        return this.adventuresService.assignAdventureToCohorts(dto, req.user);
     }
 }

@@ -128,6 +128,7 @@ export default function CreateAdventureScreen({ navigation, route }: Props) {
         }
     };
 
+
     const formContent = (
         <ScrollView
             contentContainerStyle={styles.content}

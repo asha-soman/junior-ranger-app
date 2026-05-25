@@ -23,6 +23,9 @@ import AdventureListScreen from '../screens/adventures/AdventureListScreen';
 import CreateAdventureScreen from '../screens/adventures/CreateAdventureScreen';
 import AdventureDetailsScreen from '../screens/adventures/AdventureDetailsScreen';
 import EditAdventureScreen from '../screens/adventures/EditAdventureScreen';
+import SubmitAdventureScreen from '../screens/submissions/SubmitAdventureScreen';
+import AdventureSubmissionsScreen from '../screens/submissions/AdventureSubmissionsScreen';
+import ReviewSubmissionScreen from '../screens/submissions/ReviewSubmissionScreen';
 
 export type AuthStackParamList = {
     Splash: undefined;
@@ -70,6 +73,9 @@ export type AuthStackParamList = {
     AdventureDetails: { adventureId: string };
     CreateAdventure: { cohortId?: string } | undefined;
     EditAdventure: { adventureId: string };
+    SubmitAdventure: { adventureId: string };
+    AdventureSubmissions: { adventureId: string };
+    ReviewSubmission: { submissionId: string };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -222,6 +228,24 @@ export default function AuthNavigator() {
                 name="EditAdventure"
                 component={EditAdventureScreen}
                 options={{ title: 'Edit Adventure' }}
+            />
+
+            <Stack.Screen
+                name="SubmitAdventure"
+                component={SubmitAdventureScreen}
+                options={{ title: 'Submit Adventure' }}
+            />
+
+            <Stack.Screen
+                name="AdventureSubmissions"
+                component={AdventureSubmissionsScreen}
+                options={{ title: 'Adventure Submissions' }}
+            />
+
+            <Stack.Screen
+                name="ReviewSubmission"
+                component={ReviewSubmissionScreen}
+                options={{ title: 'Review Submission' }}
             />
 
             <Stack.Screen

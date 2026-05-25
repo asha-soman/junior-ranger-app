@@ -16,6 +16,7 @@ import {
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { Snackbar } from "react-native-paper";
 
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
@@ -26,6 +27,12 @@ import {
   getCohortById,
   getCohortMembers,
 } from "../../services/cohorts/cohortService";
+
+import {
+  Adventure,
+  getAllAdventures,
+  assignAdventureToCohorts,
+} from "../../services/adventures/adventureService";
 
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
@@ -48,6 +55,20 @@ export default function AdminCohortDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [adventures, setAdventures] = useState<Adventure[]>([]);
+  const [selectedAdventureId, setSelectedAdventureId] = useState("");
+  const [selectedAdventureTitle, setSelectedAdventureTitle] = useState("");
+  const [showAdventureDropdown, setShowAdventureDropdown] = useState(false);
+  const [assigningAdventure, setAssigningAdventure] = useState(false);
+
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+
+  const showMessage = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
+  };
+
   const loadCohortDetails = async () => {
     try {
       setErrorMessage("");
@@ -60,11 +81,21 @@ export default function AdminCohortDetailsScreen() {
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
-          error?.message ||
-          "Could not load cohort details."
+        error?.message ||
+        "Could not load cohort details."
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAdventures = async () => {
+    try {
+      const data = await getAllAdventures();
+      setAdventures(data);
+    } catch (error) {
+      console.log("Fetch adventures error:", error);
+      showMessage("Could not load adventures.");
     }
   };
 
@@ -72,8 +103,39 @@ export default function AdminCohortDetailsScreen() {
     useCallback(() => {
       setLoading(true);
       loadCohortDetails();
+      loadAdventures();
     }, [cohortId])
   );
+
+  const handleAssignAdventure = async () => {
+    if (!selectedAdventureId) {
+      showMessage("Please select an adventure first.");
+      return;
+    }
+
+    try {
+      setAssigningAdventure(true);
+
+      await assignAdventureToCohorts({
+        adventureId: selectedAdventureId,
+        cohortIds: [cohortId],
+      });
+
+      showMessage("Adventure assigned successfully.");
+
+      setSelectedAdventureId("");
+      setSelectedAdventureTitle("");
+      setShowAdventureDropdown(false);
+    } catch (error: any) {
+      showMessage(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to assign adventure."
+      );
+    } finally {
+      setAssigningAdventure(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -327,6 +389,101 @@ export default function AdminCohortDetailsScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#DCEBE7",
+                  borderRadius: 18,
+                  paddingVertical: 16,
+                  alignItems: "center",
+                  marginTop: 12,
+                }}
+                onPress={() => setShowAdventureDropdown(!showAdventureDropdown)}
+              >
+                <Ionicons name="map-outline" size={24} color="#2F6F61" />
+                <Text
+                  style={{
+                    marginTop: 8,
+                    fontWeight: "700",
+                    color: "#214C45",
+                  }}
+                >
+                  Assign Adventure
+                </Text>
+              </TouchableOpacity>
+
+              {showAdventureDropdown && (
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    marginTop: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  {adventures.length === 0 ? (
+                    <View style={{ padding: 14 }}>
+                      <Text>No adventures available</Text>
+                    </View>
+                  ) : (
+                    adventures.map((adventure) => (
+                      <TouchableOpacity
+                        key={adventure.id}
+                        style={{
+                          padding: 14,
+                          borderBottomWidth: 1,
+                          borderBottomColor: "#EFEFEF",
+                        }}
+                        onPress={() => {
+                          setSelectedAdventureId(adventure.id);
+                          setSelectedAdventureTitle(
+                            adventure.title || "Untitled Adventure"
+                          );
+                          setShowAdventureDropdown(false);
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            color: "#1F1F1F",
+                          }}
+                        >
+                          {adventure.title || "Untitled Adventure"}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
+
+              {selectedAdventureId ? (
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#376e62",
+                    borderRadius: 18,
+                    paddingVertical: 16,
+                    alignItems: "center",
+                    marginTop: 12,
+                    opacity: assigningAdventure ? 0.7 : 1,
+                  }}
+                  disabled={assigningAdventure}
+                  onPress={handleAssignAdventure}
+                >
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "700",
+                      fontSize: 15,
+                    }}
+                  >
+                    {assigningAdventure
+                      ? "Assigning..."
+                      : `Assign "${selectedAdventureTitle}"`}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           )}
         </View>
@@ -454,6 +611,14 @@ export default function AdminCohortDetailsScreen() {
           ))
         )}
       </ScrollView>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
 
       <AppBottomTabBar role={userRole} activeTab="menu" />
     </View>

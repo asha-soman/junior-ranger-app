@@ -62,7 +62,7 @@ export class CohortsController {
   //Get all members of a particular cohort
   @Get(':id/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'ranger')
+  @Roles('admin', 'ranger', 'junior_ranger')
   async findCohortMembers(
     @Param('id') id: string,
     @Req()
@@ -123,5 +123,14 @@ export class CohortsController {
     },
   ) {
     return this.cohortsService.updateCohort(id, dto, req.user);
+  }
+
+  @Patch(':id/remove-ranger')
+  @Roles('admin')
+  removeRangerFromCohort(
+    @Param('id') cohortId: string,
+    @Body('rangerId') rangerId: string,
+  ) {
+    return this.cohortsService.removeRangerFromCohort(cohortId, rangerId);
   }
 }

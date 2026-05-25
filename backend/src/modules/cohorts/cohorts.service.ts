@@ -2,6 +2,7 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { CreateCohortDto } from './dto/create-cohort.dto';
@@ -13,6 +14,26 @@ import { AssignRangerDto } from './dto/assign-ranger.dto';
 export class CohortsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private async ensureUserNotInAnotherCohort(userId: string) {
+    const existingMembership = await this.db
+      .selectFrom('cohort_members')
+      .selectAll()
+      .where('user_id', '=', userId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (existingMembership) {
+      throw new BadRequestException(
+        'This user is already assigned to another cohort',
+      );
+    }
+  }
+
+  private getFirstName(fullName?: string | null) {
+    if (!fullName) return 'Member';
+    return fullName.trim().split(' ')[0];
+  }
+
   // Create a new Cohort
   async createCohort(
     dto: CreateCohortDto,
@@ -22,6 +43,10 @@ export class CohortsService {
       role: string;
     },
   ) {
+    if (user.role === 'ranger') {
+      await this.ensureUserNotInAnotherCohort(user.userId);
+    }
+
     const cohortId = randomUUID();
 
     const newCohort = await this.db
@@ -84,6 +109,33 @@ export class CohortsService {
         .where('cohorts.is_deleted', '=', false)
         .orderBy('cohorts.created_at', 'desc')
         .execute();
+    } else if (user.role === 'ranger') {
+      cohorts = await this.db
+        .selectFrom('cohort_members')
+        .innerJoin('cohorts', 'cohorts.id', 'cohort_members.cohort_id')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohort_members.user_id', '=', user.userId)
+        .where('cohort_members.role', '=', 'ranger')
+        .where('cohort_members.is_deleted', '=', false)
+        .where('cohorts.is_deleted', '=', false)
+        .orderBy('cohorts.created_at', 'desc')
+        .execute();
     } else {
       cohorts = await this.db
         .selectFrom('cohort_members')
@@ -106,6 +158,7 @@ export class CohortsService {
           'cohorts.updated_at',
         ])
         .where('cohort_members.user_id', '=', user.userId)
+        .where('cohort_members.role', '=', 'junior_ranger')
         .where('cohort_members.is_deleted', '=', false)
         .where('cohorts.is_deleted', '=', false)
         .orderBy('cohorts.created_at', 'desc')
@@ -145,21 +198,55 @@ export class CohortsService {
   ) {
     const cohort = await this.db
       .selectFrom('cohorts')
-      .selectAll()
-      .where('id', '=', cohortId)
-      .where('is_deleted', '=', false)
+      .leftJoin(
+        'users as assigned_ranger',
+        'assigned_ranger.id',
+        'cohorts.assigned_ranger_id',
+      )
+      .select([
+        'cohorts.id',
+        'cohorts.name',
+        'cohorts.description',
+        'cohorts.location',
+        'cohorts.created_by_ranger_id',
+        'cohorts.assigned_ranger_id',
+        'assigned_ranger.name as assigned_ranger_name',
+        'assigned_ranger.email as assigned_ranger_email',
+        'cohorts.created_at',
+        'cohorts.updated_at',
+      ])
+      .where('cohorts.id', '=', cohortId)
+      .where('cohorts.is_deleted', '=', false)
       .executeTakeFirst();
 
     if (!cohort) {
       throw new NotFoundException('Cohort not found');
     }
 
-    if (user.role !== 'admin') {
+    if (user.role === 'ranger') {
       const membership = await this.db
         .selectFrom('cohort_members')
         .selectAll()
         .where('cohort_id', '=', cohortId)
         .where('user_id', '=', user.userId)
+        .where('role', '=', 'ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      if (!membership) {
+        throw new ForbiddenException(
+          'You do not have permission to view this cohort',
+        );
+      }
+    }
+
+    if (user.role === 'junior_ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .selectAll()
+        .where('cohort_id', '=', cohortId)
+        .where('user_id', '=', user.userId)
+        .where('role', '=', 'junior_ranger')
         .where('is_deleted', '=', false)
         .executeTakeFirst();
 
@@ -207,8 +294,20 @@ export class CohortsService {
       throw new NotFoundException('Cohort not found');
     }
 
-    const canUpdate =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+    let canUpdate = user.role === 'admin';
+
+    if (user.role === 'ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .selectAll()
+        .where('cohort_id', '=', cohortId)
+        .where('user_id', '=', user.userId)
+        .where('role', '=', 'ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      canUpdate = !!membership;
+    }
 
     if (!canUpdate) {
       throw new ForbiddenException(
@@ -232,7 +331,7 @@ export class CohortsService {
     };
   }
 
-  //Get all mebers of the Cohort
+  // Get all members of the Cohort
   async findCohortMembers(
     cohortId: string,
     user: {
@@ -252,16 +351,70 @@ export class CohortsService {
       throw new NotFoundException('Cohort not found');
     }
 
-    const canViewMembers =
-      user.role === 'admin' || cohort.assigned_ranger_id === user.userId;
+    if (user.role === 'admin') {
+      const members = await this.getFullCohortMembers(cohortId);
 
-    if (!canViewMembers) {
+      return {
+        message: 'Cohort members fetched successfully',
+        members,
+      };
+    }
+
+    const membership = await this.db
+      .selectFrom('cohort_members')
+      .selectAll()
+      .where('cohort_id', '=', cohortId)
+      .where('user_id', '=', user.userId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!membership) {
       throw new ForbiddenException(
         'You do not have permission to view cohort members',
       );
     }
 
+    if (user.role === 'ranger') {
+      const members = await this.getFullCohortMembers(cohortId);
+
+      return {
+        message: 'Cohort members fetched successfully',
+        members,
+      };
+    }
+
     const members = await this.db
+      .selectFrom('cohort_members')
+      .innerJoin('users', 'users.id', 'cohort_members.user_id')
+      .select([
+        'users.id',
+        'users.name',
+        'users.role',
+        'cohort_members.role as cohort_role',
+        'cohort_members.created_at as joined_at',
+      ])
+      .where('cohort_members.cohort_id', '=', cohortId)
+      .where('cohort_members.is_deleted', '=', false)
+      .where('users.is_deleted', '=', false)
+      .orderBy('cohort_members.created_at', 'desc')
+      .execute();
+
+    const anonymousMembers = members.map((member) => ({
+      id: member.id,
+      name: this.getFirstName(member.name),
+      role: member.role,
+      cohort_role: member.cohort_role,
+      joined_at: member.joined_at,
+    }));
+
+    return {
+      message: 'Cohort members fetched successfully',
+      members: anonymousMembers,
+    };
+  }
+
+  private async getFullCohortMembers(cohortId: string) {
+    return await this.db
       .selectFrom('cohort_members')
       .innerJoin('users', 'users.id', 'cohort_members.user_id')
       .select([
@@ -277,14 +430,9 @@ export class CohortsService {
       .where('users.is_deleted', '=', false)
       .orderBy('cohort_members.created_at', 'desc')
       .execute();
-
-    return {
-      message: 'Cohort members fetched successfully',
-      members,
-    };
   }
 
-  //Admin assigning a ranger to a cohort
+  // Admin assigning a ranger to a cohort
   async assignRangerToCohort(cohortId: string, dto: AssignRangerDto) {
     const cohort = await this.db
       .selectFrom('cohorts')
@@ -309,10 +457,12 @@ export class CohortsService {
       throw new NotFoundException('Ranger not found');
     }
 
+    await this.ensureUserNotInAnotherCohort(dto.rangerId);
+
     const updatedCohort = await this.db
       .updateTable('cohorts')
       .set({
-        assigned_ranger_id: dto.rangerId,
+        assigned_ranger_id: cohort.assigned_ranger_id ?? dto.rangerId,
         updated_at: new Date(),
       })
       .where('id', '=', cohortId)
@@ -320,39 +470,69 @@ export class CohortsService {
       .executeTakeFirst();
 
     await this.db
+      .insertInto('cohort_members')
+      .values({
+        id: randomUUID(),
+        user_id: dto.rangerId,
+        cohort_id: cohortId,
+        role: 'ranger',
+        is_deleted: false,
+      })
+      .execute();
+
+    return {
+      message: 'Ranger added to cohort successfully',
+      cohort: updatedCohort,
+    };
+  }
+
+  async removeRangerFromCohort(cohortId: string, rangerId: string) {
+    const cohort = await this.db
+      .selectFrom('cohorts')
+      .selectAll()
+      .where('id', '=', cohortId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!cohort) {
+      throw new NotFoundException('Cohort not found');
+    }
+
+    const membership = await this.db
+      .selectFrom('cohort_members')
+      .selectAll()
+      .where('cohort_id', '=', cohortId)
+      .where('user_id', '=', rangerId)
+      .where('role', '=', 'ranger')
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!membership) {
+      throw new NotFoundException('Ranger is not assigned to this cohort');
+    }
+
+    await this.db
       .updateTable('cohort_members')
       .set({
         is_deleted: true,
         updated_at: new Date(),
       })
-      .where('cohort_id', '=', cohortId)
-      .where('role', '=', 'ranger')
+      .where('id', '=', membership.id)
       .execute();
 
-    const existingMembership = await this.db
-      .selectFrom('cohort_members')
-      .selectAll()
-      .where('cohort_id', '=', cohortId)
-      .where('user_id', '=', dto.rangerId)
-      .where('is_deleted', '=', false)
-      .executeTakeFirst();
-
-    if (!existingMembership) {
+    if (cohort.assigned_ranger_id === rangerId) {
       await this.db
-        .insertInto('cohort_members')
-        .values({
-          id: randomUUID(),
-          user_id: dto.rangerId,
-          cohort_id: cohortId,
-          role: 'ranger',
-          is_deleted: false,
+        .updateTable('cohorts')
+        .set({
+          assigned_ranger_id: null,
+          updated_at: new Date(),
         })
+        .where('id', '=', cohortId)
         .execute();
     }
 
     return {
-      message: 'Ranger assigned to cohort successfully',
-      cohort: updatedCohort,
+      message: 'Ranger removed from cohort successfully',
     };
   }
 }

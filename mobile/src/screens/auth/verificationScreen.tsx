@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { HelperText, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,6 +10,7 @@ import VerificationForm from "../../components/login/verificationForm";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { screenStyles, verificationStyles } from "../../styles/loginStyles";
 import { verifyCode, resendCode } from "../../services/auth/authService";
+import apiClient from "@/src/services/api/client";
 
 type VerificationErrors = { code?: string };
 
@@ -51,9 +52,20 @@ export default function VerificationScreen() {
 
       const result = await verifyCode({ email, code });
 
-      await AsyncStorage.setItem("token", result.access_token);
+      Alert.alert("Success", "Email verified successfully");
 
-      navigation.replace("Home");
+      const profileResponse = await apiClient.get("/auth/profile");
+      const role = profileResponse.data.role;
+
+      if (role === "admin") {
+        navigation.replace("AdminMenu");
+      } else if (role === "ranger") {
+        navigation.replace("RangerMenu");
+      } else if (role === "junior_ranger") {
+        navigation.replace("JuniorMenu");
+      } else {
+        navigation.replace("Login");
+      }
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);

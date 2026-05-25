@@ -62,8 +62,11 @@ export default function LoginScreen() {
       setIsLoading(true);
 
       const result = await loginUser({ email, password });
-
       await saveToken(result.access_token);
+      navigation.navigate("Verification", { email });
+      return;
+
+      
 
       // to be removed later, just checks if it returns the profile of the user after logging in with the proper token code
       const profileResponse = await apiClient.get("/auth/profile");
@@ -81,25 +84,29 @@ export default function LoginScreen() {
       //   navigation.replace("Verification", { email });
       // }
 
+
+
       // JUST ADDING THIS LOGIC TO BYPASS THE VERIFICATION PAGE TO TEST ADMIN, RANGER AND JUNIOR RANGER PAGES
-      if (profileResponse.data.role === "admin") {
-        navigation.replace("AdminMenu");
-      } else if (profileResponse.data.role === "ranger") {
-        navigation.replace("RangerMenu");
-      } else if (profileResponse.data.role === "junior_ranger") {
-        navigation.replace("JuniorMenu");
-      } else {
-        navigation.replace("Welcome");
-      }
+      //if (profileResponse.data.role === "admin") {
+      //  navigation.replace("AdminMenu");
+      //} else if (profileResponse.data.role === "ranger") {
+      //  navigation.replace("RangerMenu");
+      //}  else if (profileResponse.data.role === "junior_ranger"){
+      //  navigation.replace("JuniorMenu");
+      //} else {
+      //  navigation.replace("Verification", { email });
+      // navigation.replace("Welcome");
+      //}
 
 
-    } catch (error) {
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError("Something went wrong during login");
-      }
-    } finally {
+    } catch (error: any) {
+  const message =
+    error?.response?.data?.message ||
+    error?.message ||
+    "Something went wrong during login";
+
+  setApiError(message);
+}finally {
       setIsLoading(false);
     }
   };

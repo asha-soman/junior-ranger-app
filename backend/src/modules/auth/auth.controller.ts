@@ -8,6 +8,12 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('auth')
 export class AuthController {
+
+  @Post('resend-code')
+  resendCode(@Body() body: { email: string }) {
+  return this.authService.resendCode(body.email);
+}
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
@@ -19,6 +25,11 @@ export class AuthController {
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
+
+  @Post('verify-code')
+  verifyCode(@Body() body: { email: string; code: string }) {
+    return this.authService.verifyCode(body.email, body.code);
+}
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')

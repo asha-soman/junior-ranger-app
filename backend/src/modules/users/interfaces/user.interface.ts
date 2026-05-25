@@ -4,9 +4,15 @@ import { UserRole } from '../../../common/enums/user-role.enum';
 export interface UserTable {
   id: Generated<string>;
   email: string;
-  password: string;
-  role: UserRole;
+  name: string | null;
+  role: string;
+  avatarUrl: string | null;
+  isDeleted: Generated<boolean>;
   createdAt: Generated<Date>;
+  updatedAt: Generated<Date>;
+  passwordHash: string | null;
+  isActive: Generated<boolean>;
+  approvalStatus: Generated<string>;
 }
 
 export type User = Selectable<UserTable>;

@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Kysely, PostgresDialect } from 'kysely';
+import { Kysely, PostgresDialect, CamelCasePlugin } from 'kysely';
 import { Pool } from 'pg';
 import { Database } from './interfaces/database.interface';
 
@@ -22,6 +22,7 @@ import { Database } from './interfaces/database.interface';
 
         return new Kysely<Database>({
           dialect: new PostgresDialect({ pool }),
+          plugins: [new CamelCasePlugin()],
         });
       },
     },

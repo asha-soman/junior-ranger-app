@@ -6,20 +6,25 @@ import {
   TouchableOpacity, 
   Modal, 
   Alert, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Share
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { inviteCodeService, InviteCode } from '../../services/invite-code.service';
 
 const CohortDetailsScreen = ({ route }: any) => {
-  const cohortId = route?.params?.cohortId || 'mock-cohort-id';
-  const cohortName = route?.params?.cohortName || 'Mock Cohort';
+  const cohortId = route?.params?.cohortId;
+  const cohortName = route?.params?.cohortName || 'Cohort Details';
   
   const [loading, setLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState<InviteCode | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleGenerateCode = async () => {
+    if (!cohortId) {
+      Alert.alert('Error', 'No cohort ID provided');
+      return;
+    }
     setLoading(true);
     try {
       const code = await inviteCodeService.generateInviteCode(cohortId, {});
@@ -36,6 +41,19 @@ const CohortDetailsScreen = ({ route }: any) => {
     if (inviteCode) {
       await Clipboard.setStringAsync(inviteCode.code);
       Alert.alert('Success', 'Invite code copied to clipboard');
+    }
+  };
+
+  const shareCode = async () => {
+    if (inviteCode) {
+      try {
+        await Share.share({
+          message: `Join our cohort "${cohortName}" on the Junior Ranger App! Use invite code: ${inviteCode.code}`,
+          title: 'Join our Cohort',
+        });
+      } catch (error: any) {
+        Alert.alert('Error', error.message);
+      }
     }
   };
 
@@ -79,6 +97,10 @@ const CohortDetailsScreen = ({ route }: any) => {
 
             <TouchableOpacity style={styles.copyButton} onPress={copyToClipboard}>
               <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.shareButton} onPress={shareCode}>
+              <Text style={styles.shareButtonText}>Share Invite Code</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -173,6 +195,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   copyButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    backgroundColor: '#1b5e20',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  shareButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },

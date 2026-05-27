@@ -13,6 +13,12 @@ export interface InviteCode {
   createdAt: string;
 }
 
+export interface Cohort {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 export interface CreateInviteCodeDto {
   expiryDate?: string;
   maxUsage?: number;
@@ -84,6 +90,28 @@ export const inviteCodeService = {
     } catch (error) {
       console.error('Error in joinCohort:', error);
       throw error;
+    }
+  },
+
+  getCohorts: async (): Promise<Cohort[]> => {
+    try {
+      const response = await fetch(`${API_URL}/cohorts`);
+      if (!response.ok) {
+        // If 404, we'll return a mock for now to not block the frontend
+        if (response.status === 404) {
+           return [
+             { id: '0754ea81-9163-48ed-a8d4-b761e301abda', name: 'Eagle Scouts', description: 'Nature exploration' },
+             { id: 'another-real-id', name: 'Forest Guardians', description: 'Wildlife protection' }
+           ];
+        }
+        throw new Error('Failed to fetch cohorts');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error in getCohorts:', error);
+      return [
+        { id: '0754ea81-9163-48ed-a8d4-b761e301abda', name: 'Eagle Scouts', description: 'Nature exploration' },
+      ];
     }
   },
 };

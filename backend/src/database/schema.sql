@@ -38,3 +38,13 @@ CREATE TABLE invite_codes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_by UUID NOT NULL REFERENCES users(id)
 );
+
+CREATE TABLE cohort_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    cohort_id UUID NOT NULL REFERENCES cohorts(id),
+    role CHARACTER VARYING NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, cohort_id)
+);
+

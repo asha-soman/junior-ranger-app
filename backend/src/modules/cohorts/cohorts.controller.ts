@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
   Patch,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -19,10 +20,17 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 import { AssignRangerDto } from './dto/assign-ranger.dto';
+import { InviteCodeService } from './invite-code.service';
+import { CreateInviteCodeDto } from './dto/create-invite-code.dto';
+import { DatabaseService } from '../../database/database.service';
 
 @Controller('cohorts')
 export class CohortsController {
-  constructor(private readonly cohortsService: CohortsService) {}
+  constructor(
+    private readonly cohortsService: CohortsService,
+    private readonly inviteCodeService: InviteCodeService,
+    private readonly db: DatabaseService,
+  ) {}
 
   //Create a new Cohort
   @Post()
@@ -132,5 +140,39 @@ export class CohortsController {
     @Body('rangerId') rangerId: string,
   ) {
     return this.cohortsService.removeRangerFromCohort(cohortId, rangerId);
+  }
+
+  @Post(':id/invite-codes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ranger')
+  async createInviteCode(
+    @Param('id') cohortId: string,
+    @Body() dto: CreateInviteCodeDto,
+    @Req()
+    req: Request & {
+      user: {
+        userId: string;
+        email: string;
+        role: string;
+      };
+    },
+  ) {
+    const user = req.user;
+
+    if (user.role !== 'admin') {
+      const cohort = await this.db
+        .selectFrom('cohorts')
+        .select('assigned_ranger_id')
+        .where('id', '=', cohortId)
+        .executeTakeFirst();
+
+      if (!cohort || cohort.assigned_ranger_id !== user.userId) {
+        throw new ForbiddenException(
+          'You are not authorized to generate invite codes for this cohort',
+        );
+      }
+    }
+
+    return this.inviteCodeService.generateInviteCode(cohortId, user.userId, dto);
   }
 }

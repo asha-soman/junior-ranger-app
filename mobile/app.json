@@ -42,6 +42,7 @@
       "expo-secure-store"
     ],
     "experiments": {
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }

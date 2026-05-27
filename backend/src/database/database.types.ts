@@ -83,6 +83,18 @@ export interface CohortAdventuresTable {
   updated_at: Date | null;
 }
 
+export interface InviteCodesTable {
+  id: string;
+  cohort_id: string;
+  code: string;
+  expiry_date: Date;
+  max_usage: number;
+  used_count: number;
+  active: boolean;
+  created_at: Date;
+  created_by: string;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
@@ -90,4 +102,5 @@ export interface Database {
   adventures: AdventuresTable;
   adventure_submissions: AdventureSubmissionsTable;
   cohort_adventures: CohortAdventuresTable;
+  invite_codes: InviteCodesTable;
 }

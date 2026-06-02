@@ -9,7 +9,7 @@ async function bootstrap() {
     process.env.CORS_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
 
   app.enableCors({
-    origin: origins.length > 0 ? origins : true,
+    origin: origins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -23,7 +23,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  await app.listen(process.env.PORT ?? 3000);
 }
 
 bootstrap();

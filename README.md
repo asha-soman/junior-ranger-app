@@ -14,27 +14,53 @@ This project was developed as an interim Phase 1 solution focusing on foundation
 
 ## Frontend
 
-* React Native
-* Expo
-* TypeScript
+- React Native
+- Expo
+- TypeScript
 
 ## Backend
 
-* NestJS
-* Node.js
+- NestJS
+- Node.js
 
 ## Database
 
-* PostgreSQL
-* Kysely ORM
+- PostgreSQL
+- Kysely ORM
 
 ## Tools & Platforms
 
-* GitHub
-* Jira
-* Figma
-* Postman
-* Draw.io
+- GitHub
+- Jira
+- Figma
+- Postman
+- Draw.io
+
+---
+
+## System Architecture
+
+The platform follows a mobile-first client-server architecture.
+
+```plaintext
+Junior Ranger Mobile App
+(React Native + Expo)
+            ↓
+    REST API Requests
+            ↓
+     NestJS Backend API
+            ↓
+ ┌─────────────────────┐
+ │ Authentication      │
+ │ Cohort Management   │
+ │ Adventure Management│
+ │ Invite Code System  │
+ └─────────────────────┘
+            ↓
+    PostgreSQL Database
+            ↓
+         Kysely ORM
+```
 
 ---
 
@@ -42,31 +68,30 @@ This project was developed as an interim Phase 1 solution focusing on foundation
 
 ## Authentication & User Management
 
-* JWT-based authentication
-* Role-based access control (RBAC)
-* User approval workflows
-* Secure protected routes
+- JWT-based authentication
+- Role-based access control (RBAC)
+- User approval workflows
+- Secure protected routes
 
 ## Cohort Management
 
-* Create and manage cohorts
-* Assign Rangers to cohorts
-* Manage cohort members
-* Role-based visibility restrictions
+- Create and manage cohorts
+- Assign Rangers to cohorts
+- Manage cohort members
+- Role-based visibility restrictions
 
 ## Adventure / Mission Management
 
-* Create adventures and missions
-* Assign activities to Junior Rangers
-* Submission and feedback workflows
-* Approval and review process
-
+- Create adventures and missions
+- Assign activities to Junior Rangers
+- Submission and feedback workflows
+- Approval and review process
 
 ## Mobile Workflows
 
-* Mobile-first user experience
-* Separate dashboards for each role
-* Responsive navigation flows
+- Mobile-first user experience
+- Separate dashboards for each role
+- Responsive navigation flows
 
 ---
 
@@ -74,24 +99,24 @@ This project was developed as an interim Phase 1 solution focusing on foundation
 
 ## Admin
 
-* Manage users and approvals
-* Create and manage cohorts
-* Assign Rangers
-* Monitor platform activities
+- Manage users and approvals
+- Create and manage cohorts
+- Assign Rangers
+- Monitor platform activities
 
 ## Ranger
 
-* Manage assigned cohorts
-* Create and monitor adventures
-* Review Junior Ranger submissions
-* Provide feedback
+- Manage assigned cohorts
+- Create and monitor adventures
+- Review Junior Ranger submissions
+- Provide feedback
 
 ## Junior Ranger
 
-* View assigned cohorts
-* Participate in adventures
-* Submit responses and images
-* View feedback and updates
+- View assigned cohorts
+- Participate in adventures
+- Submit responses and images
+- View feedback and updates
 
 ---
 
@@ -130,10 +155,10 @@ project-root/
 
 Ensure the following tools are installed:
 
-* Node.js
-* npm
-* PostgreSQL
-* Expo Go (Mobile App)
+- Node.js
+- npm
+- PostgreSQL
+- Expo Go (Mobile App)
 
 ---
 
@@ -167,21 +192,21 @@ The backend uses RESTful APIs built with NestJS.
 
 ## Main API Modules
 
-* Authentication APIs
-* User Management APIs
-* Cohort Management APIs
-* Adventure Management APIs
-* Invite Code APIs
+- Authentication APIs
+- User Management APIs
+- Cohort Management APIs
+- Adventure Management APIs
+- Invite Code APIs
 
 ---
 
 # Security Features
 
-* JWT Authentication
-* Role-Based Access Control
-* Protected API Endpoints
-* Permission Validation
-* Secure User Access Management
+- JWT Authentication
+- Role-Based Access Control
+- Protected API Endpoints
+- Permission Validation
+- Secure User Access Management
 
 ---
 
@@ -189,11 +214,11 @@ The backend uses RESTful APIs built with NestJS.
 
 The project includes:
 
-* API testing using Postman
-* Role-based workflow testing
-* Frontend navigation testing
-* Validation and permission testing
-* Integration testing between frontend and backend
+- API testing using Postman
+- Role-based workflow testing
+- Frontend navigation testing
+- Validation and permission testing
+- Integration testing between frontend and backend
 
 ---
 
@@ -201,11 +226,11 @@ The project includes:
 
 The current Phase 1 implementation includes foundational functionality. The following features are planned for future development:
 
-* Real-time notifications
-* Cloud image upload integration
-* Invite code feature
-* Gamification features
-* Real time email verification
+- Real-time notifications
+- Cloud image upload integration
+- Invite code feature
+- Gamification features
+- Real time email verification
 
 ---
 
@@ -213,11 +238,11 @@ The current Phase 1 implementation includes foundational functionality. The foll
 
 Planned Phase 2 improvements include:
 
-* Real-time activity notifications
-* Improved adventure engagement features
-* Cloud storage integration
-* Enhanced approval workflows
-* Expanded user communication features
+- Real-time activity notifications
+- Improved adventure engagement features
+- Cloud storage integration
+- Enhanced approval workflows
+- Expanded user communication features
 
 ---
 

@@ -10,6 +10,7 @@ import VerificationForm from "../../components/login/verificationForm";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { screenStyles, verificationStyles } from "../../styles/loginStyles";
 import { verifyCode, resendCode } from "../../services/auth/authService";
+import { getCohorts } from "../../services/cohorts/cohortService";
 import apiClient from "@/src/services/api/client";
 
 type VerificationErrors = { code?: string };
@@ -62,7 +63,18 @@ export default function VerificationScreen() {
       } else if (role === "ranger") {
         navigation.replace("RangerMenu");
       } else if (role === "junior_ranger") {
-        navigation.replace("JuniorMenu");
+        // Check if Junior Ranger is in a cohort
+        try {
+          const cohorts = await getCohorts();
+          if (cohorts.length === 0) {
+            navigation.replace("JoinCohort");
+          } else {
+            navigation.replace("JuniorMenu");
+          }
+        } catch (error) {
+          // Fallback to JoinCohort if check fails
+          navigation.replace("JoinCohort");
+        }
       } else {
         navigation.replace("Login");
       }

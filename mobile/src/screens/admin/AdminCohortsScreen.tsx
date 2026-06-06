@@ -121,7 +121,19 @@ export default function AdminCohortsScreen() {
           <Text style={styles.errorText}>{errorMessage}</Text>
         ) : filteredCohorts.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No cohorts found</Text>
+            <Text style={styles.emptyText}>
+              {userRole === 'junior_ranger' && searchName === '' 
+                ? "You haven't joined a club yet." 
+                : "No cohorts found"}
+            </Text>
+            {userRole === 'junior_ranger' && searchName === '' && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.approveButton, { marginTop: 20, paddingHorizontal: 24, paddingVertical: 10 }]}
+                onPress={() => navigation.navigate("JoinCohort" as never)}
+              >
+                <Text style={styles.actionButtonText}>Join a Club</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           filteredCohorts.map((cohort) => (

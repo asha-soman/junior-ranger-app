@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { CreateCohortDto } from './dto/create-cohort.dto';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 import { AssignRangerDto } from './dto/assign-ranger.dto';
+import { CreateInviteCodeDto } from './dto/create-invite-code.dto';
 
 @Injectable()
 export class CohortsService {
@@ -533,6 +534,153 @@ export class CohortsService {
 
     return {
       message: 'Ranger removed from cohort successfully',
+    };
+  }
+
+  // Generate an invite code for a cohort
+  async generateInviteCode(
+    cohortId: string,
+    dto: CreateInviteCodeDto,
+    user: { userId: string; email: string; role: string },
+  ) {
+    const cohort = await this.db
+      .selectFrom('cohorts')
+      .selectAll()
+      .where('id', '=', cohortId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!cohort) {
+      throw new NotFoundException('Cohort not found');
+    }
+
+    // Check permissions: Admin or assigned Ranger
+    let hasPermission = user.role === 'admin';
+    if (user.role === 'ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .selectAll()
+        .where('cohort_id', '=', cohortId)
+        .where('user_id', '=', user.userId)
+        .where('role', '=', 'ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+      hasPermission = !!membership;
+    }
+
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have permission to generate invite codes for this cohort',
+      );
+    }
+
+    // Generate a unique 8-character alphanumeric code
+    const code = randomBytes(4).toString('hex').toUpperCase();
+
+    const expiryDate = dto.expiry_date
+      ? new Date(dto.expiry_date)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+
+    const inviteCode = await this.db
+      .insertInto('invite_codes')
+      .values({
+        id: randomUUID(),
+        cohort_id: cohortId,
+        code,
+        expiry_date: expiryDate,
+        max_usage: dto.max_usage ?? 10,
+        used_count: 0,
+        active: true,
+        created_by: user.userId,
+        created_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirst();
+
+    return {
+      message: 'Invite code generated successfully',
+      inviteCode,
+    };
+  }
+
+  // Validate an invite code
+  async validateInviteCode(code: string) {
+    const inviteCode = await this.db
+      .selectFrom('invite_codes')
+      .innerJoin('cohorts', 'cohorts.id', 'invite_codes.cohort_id')
+      .select([
+        'invite_codes.id',
+        'invite_codes.code',
+        'invite_codes.expiry_date',
+        'invite_codes.max_usage',
+        'invite_codes.used_count',
+        'invite_codes.active',
+        'cohorts.id as cohort_id',
+        'cohorts.name as cohort_name',
+        'cohorts.description as cohort_description',
+      ])
+      .where('invite_codes.code', '=', code.toUpperCase())
+      .executeTakeFirst();
+
+    if (!inviteCode) {
+      throw new NotFoundException('Invalid invite code');
+    }
+
+    if (!inviteCode.active) {
+      throw new BadRequestException('This invite code is no longer active');
+    }
+
+    if (new Date(inviteCode.expiry_date) < new Date()) {
+      throw new BadRequestException('This invite code has expired');
+    }
+
+    if (inviteCode.used_count >= inviteCode.max_usage) {
+      throw new BadRequestException('This invite code has reached its maximum usage limit');
+    }
+
+    return {
+      message: 'Invite code is valid',
+      cohort: {
+        id: inviteCode.cohort_id,
+        name: inviteCode.cohort_name,
+        description: inviteCode.cohort_description,
+      },
+    };
+  }
+
+  // Join a cohort using an invite code
+  async joinCohort(code: string, userId: string) {
+    // 1. Validate the code
+    const validation = await this.validateInviteCode(code);
+    const cohortId = validation.cohort.id;
+
+    // 2. Ensure user is not already in a cohort
+    await this.ensureUserNotInAnotherCohort(userId);
+
+    // 3. Add user to cohort_members
+    await this.db
+      .insertInto('cohort_members')
+      .values({
+        id: randomUUID(),
+        user_id: userId,
+        cohort_id: cohortId,
+        role: 'junior_ranger',
+        is_deleted: false,
+      })
+      .execute();
+
+    // 4. Increment used_count
+    await this.db
+      .updateTable('invite_codes')
+      .set((eb) => ({
+        used_count: eb('used_count', '+', 1),
+      }))
+      .where('code', '=', code.toUpperCase())
+      .execute();
+
+    return {
+      message: 'Successfully joined the cohort',
+      cohort: validation.cohort,
     };
   }
 }

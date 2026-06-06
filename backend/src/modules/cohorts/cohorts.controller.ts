@@ -19,6 +19,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 import { AssignRangerDto } from './dto/assign-ranger.dto';
+import { CreateInviteCodeDto } from './dto/create-invite-code.dto';
+import { JoinCohortDto } from './dto/join-cohort.dto';
 
 @Controller('cohorts')
 export class CohortsController {
@@ -132,5 +134,38 @@ export class CohortsController {
     @Body('rangerId') rangerId: string,
   ) {
     return this.cohortsService.removeRangerFromCohort(cohortId, rangerId);
+  }
+
+  @Post(':id/invite-codes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'ranger')
+  async generateInviteCode(
+    @Param('id') id: string,
+    @Body() dto: CreateInviteCodeDto,
+    @Req()
+    req: Request & {
+      user: {
+        userId: string;
+        email: string;
+        role: string;
+      };
+    },
+  ) {
+    return this.cohortsService.generateInviteCode(id, dto, req.user);
+  }
+
+  @Post('join')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('junior_ranger')
+  async joinCohort(
+    @Body() dto: JoinCohortDto,
+    @Req()
+    req: Request & {
+      user: {
+        userId: string;
+      };
+    },
+  ) {
+    return this.cohortsService.joinCohort(dto.code, req.user.userId);
   }
 }

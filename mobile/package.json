@@ -3,7 +3,7 @@
   "main": "node_modules/expo/AppEntry.js",
   "version": "1.0.0",
   "scripts": {
-    "prestart": "lsof -ti:8081 | xargs kill -9 || true",
+    "prestart": "",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",

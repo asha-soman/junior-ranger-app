@@ -17,8 +17,10 @@ import AdminCohortDetailsScreen from "../screens/admin/AdminCohortDetailsScreen"
 import CreateCohortScreen from "../screens/cohorts/CreateCohortScreen";
 import EditCohortScreen from "../screens/cohorts/EditCohortScreen";
 import AssignRangerScreen from "../screens/cohorts/AssignRangerScreen";
+import GenerateInviteCodeScreen from "../screens/cohorts/GenerateInviteCodeScreen";
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
+import JoinCohortScreen from "../screens/junior-ranger/JoinCohortScreen";
 import AdventureListScreen from '../screens/adventures/AdventureListScreen';
 import CreateAdventureScreen from '../screens/adventures/CreateAdventureScreen';
 import AdventureDetailsScreen from '../screens/adventures/AdventureDetailsScreen';
@@ -36,6 +38,7 @@ export type AuthStackParamList = {
     };
     ForgotPassword: undefined;
     Verification: { email: string };
+    JoinCohort: undefined;
     JoinWithInvite: undefined;
     Home: undefined;
     AdminMenu: undefined;
@@ -61,6 +64,9 @@ export type AuthStackParamList = {
     AssignRanger: {
         cohortId: string;
         assignedRangerId?: string | null;
+    };
+    GenerateInviteCode: {
+        cohortId: string;
     };
     RangerMenu: undefined;
     JuniorMenu: undefined;
@@ -128,6 +134,15 @@ export default function AuthNavigator() {
                 options={{
                     ...authHeaderOptions,
                     title: "Verification",
+                }}
+            />
+
+            <Stack.Screen
+                name="JoinCohort"
+                component={JoinCohortScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Join Cohort",
                 }}
             />
 
@@ -254,6 +269,15 @@ export default function AuthNavigator() {
                 options={{
                     ...authHeaderOptions,
                     title: "Assign Ranger",
+                }}
+            />
+
+            <Stack.Screen
+                name="GenerateInviteCode"
+                component={GenerateInviteCodeScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Generate Invite Code",
                 }}
             />
 

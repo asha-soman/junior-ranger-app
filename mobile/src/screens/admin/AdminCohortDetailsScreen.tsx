@@ -341,7 +341,7 @@ export default function AdminCohortDetailsScreen() {
                     alignItems: "center",
                   }}
                   onPress={() =>
-                    console.log("Generate invite code for cohort:", cohortId)
+                    navigation.navigate("GenerateInviteCode", { cohortId })
                   }
                 >
                   <Ionicons name="ticket-outline" size={24} color="#2F6F61" />

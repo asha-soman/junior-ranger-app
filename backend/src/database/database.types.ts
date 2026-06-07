@@ -29,6 +29,7 @@ export interface CohortsTable {
   location: string | null;
   created_by_ranger_id: string | null;
   assigned_ranger_id: string | null;
+  image_url: string | null;
 }
 
 export interface CohortMembersTable {
@@ -83,6 +84,65 @@ export interface CohortAdventuresTable {
   updated_at: Date | null;
 }
 
+export interface InviteCodesTable {
+  id: string;
+  cohort_id: string;
+  code: string;
+  expiry_date: Date;
+  max_usage: number;
+  used_count: number;
+  active: boolean;
+  created_at: Date;
+  created_by: string;
+}
+
+export interface AuthChallengesTable {
+  id: string;
+  email: string;
+  code: string;
+  expires_at: Date;
+  created_at: Date;
+}
+
+export interface BadgesTable {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface UserBadgesTable {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  is_deleted: boolean;
+  earned_at: Date;
+  updated_at: Date | null;
+}
+
+export interface SessionsTable {
+  id: string;
+  user_id: string;
+  token: string;
+  expires_at: Date;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface ObservationsTable {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  notes: string;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
@@ -90,4 +150,10 @@ export interface Database {
   adventures: AdventuresTable;
   adventure_submissions: AdventureSubmissionsTable;
   cohort_adventures: CohortAdventuresTable;
+  invite_codes: InviteCodesTable;
+  auth_challenges: AuthChallengesTable;
+  badges: BadgesTable;
+  user_badges: UserBadgesTable;
+  sessions: SessionsTable;
+  observations: ObservationsTable;
 }

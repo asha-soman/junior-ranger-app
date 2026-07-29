@@ -15,7 +15,10 @@ export class DatabaseService extends Kysely<Database> implements OnModuleDestroy
           user: configService.get<string>('DB_USER'),
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_NAME'),
-          ssl: false,
+          ssl:
+            configService.get<string>('DB_SSL') === 'true'
+              ? { rejectUnauthorized: false }
+              : false,
         }),
       }),
     });

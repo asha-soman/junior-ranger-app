@@ -4,6 +4,8 @@ export type AdventureStatus = 'draft' | 'published' | 'archived';
 export type CohortMemberRole = 'ranger' | 'junior_ranger';
 export type SubmissionStatus = 'submitted' | 'approved' | 'rejected';
 export type AdventureAssignedByRole = 'admin' | 'ranger';
+export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
+export type EventRegistrationStatus = 'registered' | 'cancelled';
 
 export interface UsersTable {
   id: string;
@@ -143,6 +145,34 @@ export interface ObservationsTable {
   updated_at: Date | null;
 }
 
+export interface EventsTable {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  start_time: Date;
+  end_time: Date;
+  registration_deadline: Date | null;
+  capacity: number | null;
+  status: EventStatus;
+  cohort_id: string;
+  created_by_user_id: string;
+  is_deleted: boolean | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface EventRegistrationsTable {
+  id: string;
+  event_id: string;
+  junior_ranger_user_id: string;
+  status: EventRegistrationStatus;
+  registered_at: Date | null;
+  cancelled_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
@@ -156,4 +186,7 @@ export interface Database {
   user_badges: UserBadgesTable;
   sessions: SessionsTable;
   observations: ObservationsTable;
+  events: EventsTable;
+  event_registrations: EventRegistrationsTable;
 }
+

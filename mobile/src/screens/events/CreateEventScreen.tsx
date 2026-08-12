@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { DatePickerModal, TimePickerModal} from 'react-native-paper-dates';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -224,333 +225,362 @@ export default function CreateEventScreen({
   };
 
   const content = (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View style={{ flex: 1, backgroundColor: '#F4F4F4' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : Platform.OS === 'android'
+              ? 'height'
+              : undefined
+        }
+      >
 
-      <View style={styles.formCard}>
-        <Text style={styles.sectionTitle}>
-          Cohort
-        </Text>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
 
-        {cohortLoading ? (
-          <ActivityIndicator />
-        ) : (
-          <>
-            <TouchableOpacity
-              style={styles.dropdownBox}
-              onPress={() =>
-                setShowCohortDropdown(
-                  !showCohortDropdown,
-                )
-              }
-            >
-              <Text
-                style={
-                  selectedCohortName
-                    ? styles.dropdownText
-                    : styles.dropdownPlaceholder
-                }
-              >
-                {selectedCohortName ||
-                  'Choose a cohort'}
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.formCard}>
+            <Text style={styles.sectionTitle}>
+              Event Details
+            </Text>
 
-            {showCohortDropdown && (
-              <View style={styles.dropdownList}>
-                {cohorts.map((cohort) => (
-                  <TouchableOpacity
-                    key={cohort.id}
-                    style={styles.dropdownItem}
-                    onPress={() =>
-                      selectCohort(cohort)
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.dropdownItemText
+            {cohortLoading ? (
+              <ActivityIndicator />
+            ) : (
+              <>
+                <View>
+                  <TextInput
+                    label="Cohort *"
+                    mode="outlined"
+                    value={selectedCohortName}
+                    placeholder="Choose a cohort"
+                    editable={false}
+                    style={styles.input}
+                    onPressIn={() => {
+                      if (!showCohortDropdown) {
+                        setShowCohortDropdown(true);
                       }
+                    }}
+                    right={
+                      <TextInput.Icon
+                        icon={
+                          showCohortDropdown
+                            ? "chevron-up"
+                            : "chevron-down"
+                        }
+                        forceTextInputFocus={false}
+                        onPress={() => {
+                          setShowCohortDropdown(
+                            (current) => !current
+                          );
+                        }}
+                      />
+                    }
+                  />
+                </View>
+
+                {showCohortDropdown && (
+                  <View style={styles.dropdownList}>
+                    <ScrollView
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={true}
                     >
-                      {cohort.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      {cohorts.map((cohort) => (
+                        <TouchableOpacity
+                          key={cohort.id}
+                          style={styles.dropdownItem}
+                          onPress={() => selectCohort(cohort)}
+                        >
+                          <Text style={styles.dropdownItemText}>
+                            {cohort.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </>
             )}
-          </>
-        )}
 
-        <TextInput
-          label="Event Title *"
-          mode="outlined"
-          value={title}
-          onChangeText={setTitle}
-          style={styles.input}
-        />
-
-        <TextInput
-          label="Description"
-          mode="outlined"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          style={[styles.input, styles.textArea]}
-        />
-
-        <TextInput
-          label="Location"
-          mode="outlined"
-          value={location}
-          onChangeText={setLocation}
-          style={styles.input}
-        />
-
-        <Text style={styles.sectionTitle}>
-          Start
-        </Text>
-        <View style={styles.row}>
-          <TouchableOpacity
-            onPress={() => setStartDatePickerOpen(true)}
-            activeOpacity={0.8}
-            style={styles.dateInput}
-          >
             <TextInput
-              label="Start Date *"
+              label="Event Title *"
               mode="outlined"
-              value={startDate}
-              placeholder="Select date"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="calendar" />}
+              value={title}
+              onChangeText={setTitle}
               style={styles.input}
             />
-          </TouchableOpacity>
 
-          <DatePickerModal
-            locale="en"
-            mode="single"
-            visible={startDatePickerOpen}
-            date={dateStringToDate(startDate)}
-            onDismiss={() =>
-              setStartDatePickerOpen(false)
-            }
-            onConfirm={({ date }) => {
-              setStartDatePickerOpen(false);
-
-              if (date) {
-                setStartDate(
-                  formatDateForState(date),
-                );
-              }
-            }}
-          />
-
-          <TouchableOpacity
-            onPress={() => setStartTimePickerOpen(true)}
-            activeOpacity={0.8}
-            style={styles.timeInput}
-          >
             <TextInput
-              label="Time *"
-              value={startTime}
-              placeholder="Select time"
+              label="Description"
               mode="outlined"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="clock-outline" />}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              style={[styles.input, styles.textArea]}
+            />
+
+            <TextInput
+              label="Location"
+              mode="outlined"
+              value={location}
+              onChangeText={setLocation}
               style={styles.input}
             />
-          </TouchableOpacity>
 
-          <TimePickerModal
-            visible={startTimePickerOpen}
-            onDismiss={() => setStartTimePickerOpen(false)}
-            onConfirm={({ hours, minutes }) => {
-              setStartTimePickerOpen(false);
-              setStartTime(formatTime(hours, minutes));
-            }}
-            hours={getTimeParts(startTime).hours}
-            minutes={getTimeParts(startTime).minutes}
-            locale="en"
-          />
-        </View>
+            <Text style={styles.sectionTitle}>
+              Start
+            </Text>
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => setStartDatePickerOpen(true)}
+                activeOpacity={0.8}
+                style={styles.dateInput}
+              >
+                <TextInput
+                  label="Start Date *"
+                  mode="outlined"
+                  value={startDate}
+                  placeholder="Select date"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="calendar" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>
-          End
-        </Text>
+              <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={startDatePickerOpen}
+                date={dateStringToDate(startDate)}
+                onDismiss={() =>
+                  setStartDatePickerOpen(false)
+                }
+                onConfirm={({ date }) => {
+                  setStartDatePickerOpen(false);
 
-        <View style={styles.row}>
-          <TouchableOpacity
-            onPress={() => setEndDatePickerOpen(true)}
-            activeOpacity={0.8}
-            style={styles.dateInput}
-          >
+                  if (date) {
+                    setStartDate(
+                      formatDateForState(date),
+                    );
+                  }
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setStartTimePickerOpen(true)}
+                activeOpacity={0.8}
+                style={styles.timeInput}
+              >
+                <TextInput
+                  label="Time *"
+                  value={startTime}
+                  placeholder="Select time"
+                  mode="outlined"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="clock-outline" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
+
+              <TimePickerModal
+                visible={startTimePickerOpen}
+                onDismiss={() => setStartTimePickerOpen(false)}
+                onConfirm={({ hours, minutes }) => {
+                  setStartTimePickerOpen(false);
+                  setStartTime(formatTime(hours, minutes));
+                }}
+                hours={getTimeParts(startTime).hours}
+                minutes={getTimeParts(startTime).minutes}
+                locale="en"
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              End
+            </Text>
+
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => setEndDatePickerOpen(true)}
+                activeOpacity={0.8}
+                style={styles.dateInput}
+              >
+                <TextInput
+                  label="End Date *"
+                  mode="outlined"
+                  value={endDate}
+                  placeholder="Select date"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="calendar" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
+
+              <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={endDatePickerOpen}
+                date={dateStringToDate(endDate)}
+                onDismiss={() =>
+                  setEndDatePickerOpen(false)
+                }
+                onConfirm={({ date }) => {
+                  setEndDatePickerOpen(false);
+
+                  if (date) {
+                    setEndDate(
+                      formatDateForState(date),
+                    );
+                  }
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setEndTimePickerOpen(true)}
+                activeOpacity={0.8}
+                style={styles.timeInput}
+              >
+                <TextInput
+                  label="Time *"
+                  value={endTime}
+                  placeholder="Select time"
+                  mode="outlined"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="clock-outline" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
+
+              <TimePickerModal
+                visible={endTimePickerOpen}
+                onDismiss={() => setEndTimePickerOpen(false)}
+                onConfirm={({ hours, minutes }) => {
+                  setEndTimePickerOpen(false);
+                  setEndTime(formatTime(hours, minutes));
+                }}
+                hours={getTimeParts(endTime).hours}
+                minutes={getTimeParts(endTime).minutes}
+                locale="en"
+              />
+            </View>
+
+            <Text style={styles.sectionTitle}>
+              Registration Deadline
+            </Text>
+
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() =>
+                  setDeadlineDatePickerOpen(true)
+                }
+                activeOpacity={0.8}
+                style={styles.dateInput}
+              >
+                <TextInput
+                  label="Deadline *"
+                  mode="outlined"
+                  value={deadlineDate}
+                  placeholder="Select date"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="calendar" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
+
+              <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={deadlineDatePickerOpen}
+                date={dateStringToDate(deadlineDate)}
+                onDismiss={() =>
+                  setDeadlineDatePickerOpen(false)
+                }
+                onConfirm={({ date }) => {
+                  setDeadlineDatePickerOpen(false);
+
+                  if (date) {
+                    setDeadlineDate(
+                      formatDateForState(date),
+                    );
+                  }
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setDeadlineTimePickerOpen(true)}
+                activeOpacity={0.8}
+                style={styles.timeInput}
+              >
+                <TextInput
+                  label="Time *"
+                  value={deadlineTime}
+                  placeholder="Select time"
+                  mode="outlined"
+                  editable={false}
+                  pointerEvents="none"
+                  right={<TextInput.Icon icon="clock-outline" />}
+                  style={styles.input}
+                />
+              </TouchableOpacity>
+
+              <TimePickerModal
+                visible={deadlineTimePickerOpen}
+                onDismiss={() => setDeadlineTimePickerOpen(false)}
+                onConfirm={({ hours, minutes }) => {
+                  setDeadlineTimePickerOpen(false);
+                  setDeadlineTime(formatTime(hours, minutes));
+                }}
+                hours={getTimeParts(deadlineTime).hours}
+                minutes={getTimeParts(deadlineTime).minutes}
+                locale="en"
+              />
+            </View>
+
             <TextInput
-              label="End Date *"
+              label="Capacity"
               mode="outlined"
-              value={endDate}
-              placeholder="Select date"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="calendar" />}
+              keyboardType="numeric"
+              value={capacity}
+              onChangeText={setCapacity}
               style={styles.input}
             />
-          </TouchableOpacity>
 
-          <DatePickerModal
-            locale="en"
-            mode="single"
-            visible={endDatePickerOpen}
-            date={dateStringToDate(endDate)}
-            onDismiss={() =>
-              setEndDatePickerOpen(false)
-            }
-            onConfirm={({ date }) => {
-              setEndDatePickerOpen(false);
+            <Button
+              mode="contained"
+              onPress={() => createNewEvent(false)}
+              loading={loading}
+              disabled={loading}
+              style={styles.submitButton}
+            >
+              Save as Draft
+            </Button>
 
-              if (date) {
-                setEndDate(
-                  formatDateForState(date),
-                );
-              }
-            }}
-          />
+            <Button
+              mode="contained"
+              onPress={() => createNewEvent(true)}
+              disabled={loading}
+              style={styles.publishButton}
+            >
+              Publish Event
+            </Button>
 
-          <TouchableOpacity
-            onPress={() => setEndTimePickerOpen(true)}
-            activeOpacity={0.8}
-            style={styles.timeInput}
-          >
-            <TextInput
-              label="Time *"
-              value={endTime}
-              placeholder="Select time"
-              mode="outlined"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="clock-outline" />}
-              style={styles.input}
-            />
-          </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          <TimePickerModal
-            visible={endTimePickerOpen}
-            onDismiss={() => setEndTimePickerOpen(false)}
-            onConfirm={({ hours, minutes }) => {
-              setEndTimePickerOpen(false);
-              setEndTime(formatTime(hours, minutes));
-            }}
-            hours={getTimeParts(endTime).hours}
-            minutes={getTimeParts(endTime).minutes}
-            locale="en"
-          />
-        </View>
-
-        <Text style={styles.sectionTitle}>
-          Registration Deadline
-        </Text>
-
-        <View style={styles.row}>
-          <TouchableOpacity
-            onPress={() =>
-              setDeadlineDatePickerOpen(true)
-            }
-            activeOpacity={0.8}
-            style={styles.dateInput}
-          >
-            <TextInput
-              label="Deadline *"
-              mode="outlined"
-              value={deadlineDate}
-              placeholder="Select date"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="calendar" />}
-              style={styles.input}
-            />
-          </TouchableOpacity>
-
-          <DatePickerModal
-            locale="en"
-            mode="single"
-            visible={deadlineDatePickerOpen}
-            date={dateStringToDate(deadlineDate)}
-            onDismiss={() =>
-              setDeadlineDatePickerOpen(false)
-            }
-            onConfirm={({ date }) => {
-              setDeadlineDatePickerOpen(false);
-
-              if (date) {
-                setDeadlineDate(
-                  formatDateForState(date),
-                );
-              }
-            }}
-          />
-
-          <TouchableOpacity
-            onPress={() => setDeadlineTimePickerOpen(true)}
-            activeOpacity={0.8}
-            style={styles.timeInput}
-          >
-            <TextInput
-              label="Time *"
-              value={deadlineTime}
-              placeholder="Select time"
-              mode="outlined"
-              editable={false}
-              pointerEvents="none"
-              right={<TextInput.Icon icon="clock-outline" />}
-              style={styles.input}
-            />
-          </TouchableOpacity>
-
-          <TimePickerModal
-            visible={deadlineTimePickerOpen}
-            onDismiss={() => setDeadlineTimePickerOpen(false)}
-            onConfirm={({ hours, minutes }) => {
-              setDeadlineTimePickerOpen(false);
-              setDeadlineTime(formatTime(hours, minutes));
-            }}
-            hours={getTimeParts(deadlineTime).hours}
-            minutes={getTimeParts(deadlineTime).minutes}
-            locale="en"
-          />
-        </View>
-
-        <TextInput
-          label="Capacity"
-          mode="outlined"
-          keyboardType="numeric"
-          value={capacity}
-          onChangeText={setCapacity}
-          style={styles.input}
-        />
-
-        <Button
-          mode="contained"
-          onPress={() => createNewEvent(false)}
-          loading={loading}
-          disabled={loading}
-          style={styles.submitButton}
-        >
-          Save as Draft
-        </Button>
-
-        <Button
-          mode="contained"
-          onPress={() => createNewEvent(true)}
-          disabled={loading}
-          style={styles.publishButton}
-        >
-          Publish Event
-        </Button>
-
-      </View>
-    </ScrollView>
+      <AppBottomTabBar
+        role={route.params?.userRole ?? 'ranger'}
+        activeTab="menu"
+      />
+    </View>
   );
 
   return (

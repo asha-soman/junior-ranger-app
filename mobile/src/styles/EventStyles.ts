@@ -8,7 +8,7 @@ export const eventStyles = StyleSheet.create({
 
   content: {
     padding: 14,
-    paddingBottom: 60,
+    paddingBottom: 30,
   },
 
   header: {
@@ -91,9 +91,12 @@ export const eventStyles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 14,
     overflow: 'hidden',
+
+    maxHeight: 200,
   },
 
   dropdownItem: {
+    minHeight: 48,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderBottomWidth: 1,

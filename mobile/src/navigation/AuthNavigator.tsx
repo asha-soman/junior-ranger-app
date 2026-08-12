@@ -97,7 +97,11 @@ export type AuthStackParamList = {
         }
     | undefined;
 
-    EditEvent: { eventId: string };
+    EditEvent: 
+    | {
+        eventId: string;
+        userRole: 'admin' | 'ranger';
+    };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -320,7 +324,7 @@ export default function AuthNavigator() {
                 component={EditEventScreen}
                 options={{
                     ...authHeaderOptions,
-                    title: 'Manage Event',
+                    title: 'Edit Event',
                 }}
             />
 

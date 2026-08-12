@@ -218,6 +218,7 @@ export default function EventsHubScreen({
           onPress={() =>
             navigation.navigate('EditEvent', {
               eventId: item.id,
+              userRole,
             })
           }
         >

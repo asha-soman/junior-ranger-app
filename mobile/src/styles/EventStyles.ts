@@ -8,7 +8,7 @@ export const eventStyles = StyleSheet.create({
 
   content: {
     padding: 14,
-    paddingBottom: 90,
+    paddingBottom: 60,
   },
 
   header: {
@@ -49,6 +49,14 @@ export const eventStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 10,
+  },
+
+  dateInput: {
+    flex: 1.4,
+  },
+
+  timeInput: {
+    flex: 1,
   },
 
   rowInput: {
@@ -108,7 +116,8 @@ export const eventStyles = StyleSheet.create({
   },
 
   publishButton: {
-    marginTop: 18,
+    marginTop: 10,
+    backgroundColor: '#4a8797',
     borderRadius: 8,
   },
 
@@ -124,6 +133,7 @@ export const eventStyles = StyleSheet.create({
 
   statusText: {
     fontWeight: '700',
+    fontSize: 16,
     color: '#3D786B',
     marginBottom: 14,
   },

@@ -1,32 +1,11 @@
 import React, { useEffect, useState } from 'react';
-
-import {
-  ActivityIndicator,
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
-
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
+import { DatePickerModal, TimePickerModal} from 'react-native-paper-dates';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-
-import {
-  Cohort,
-  getCohorts,
-} from '../../services/cohorts/cohortService';
-
-import {
-  createEvent,
-} from '../../services/events/eventService';
-
+import { Cohort, getCohorts } from '../../services/cohorts/cohortService';
+import { createEvent, publishEvent } from '../../services/events/eventService';
 import { eventStyles as styles } from '../../styles/EventStyles';
 
 type Props = NativeStackScreenProps<
@@ -48,32 +27,26 @@ export default function CreateEventScreen({
   const passedCohortId = route.params?.cohortId || '';
 
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [selectedCohortId, setSelectedCohortId] =
-    useState(passedCohortId);
-  const [selectedCohortName, setSelectedCohortName] =
-    useState('');
-
-  const [showCohortDropdown, setShowCohortDropdown] =
-    useState(false);
-
-  const [cohortLoading, setCohortLoading] =
-    useState(false);
-
+  const [selectedCohortId, setSelectedCohortId] = useState(passedCohortId);
+  const [selectedCohortName, setSelectedCohortName] = useState('');
+  const [showCohortDropdown, setShowCohortDropdown] = useState(false);
+  const [cohortLoading, setCohortLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
-
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
-
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
-
   const [deadlineDate, setDeadlineDate] = useState('');
   const [deadlineTime, setDeadlineTime] = useState('');
-
+  const [startDatePickerOpen, setStartDatePickerOpen] = useState(false);
+  const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
+  const [deadlineDatePickerOpen, setDeadlineDatePickerOpen] = useState(false);
+  const [startTimePickerOpen, setStartTimePickerOpen] = useState(false);
+  const [endTimePickerOpen, setEndTimePickerOpen] = useState(false);
+  const [deadlineTimePickerOpen, setDeadlineTimePickerOpen] = useState(false);
   const [capacity, setCapacity] = useState('');
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -160,7 +133,9 @@ export default function CreateEventScreen({
     return true;
   };
 
-  const handleCreate = async () => {
+  const createNewEvent = async (
+    shouldPublish: boolean,
+  ) => {
     if (!validate()) return;
 
     try {
@@ -196,17 +171,21 @@ export default function CreateEventScreen({
         cohort_id: selectedCohortId,
       });
 
+      if (shouldPublish) {
+        await publishEvent(event.id);
+      }
+
       Alert.alert(
         'Success',
-        'Event created successfully as a draft.',
+        shouldPublish
+          ? 'Event published successfully.'
+          : 'Event saved as draft.',
       );
 
-      navigation.replace('EditEvent', {
-        eventId: event.id,
-      });
+      navigation.goBack();
     } catch (error: any) {
       Alert.alert(
-        'Create Event Failed',
+        'Event Creation Failed',
         error?.response?.data?.message ||
           'Unable to create event.',
       );
@@ -215,16 +194,40 @@ export default function CreateEventScreen({
     }
   };
 
+  const formatDateForState = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const dateStringToDate = (value: string) => {
+    if (!value) {
+      return new Date();
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+  };
+
+  const formatTime = (hours: number, minutes: number) => {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  const getTimeParts = (time: string) => {
+    if (!time) { return { hours: 9, minutes: 0} }
+
+    const [hours, minutes] = time.split(':').map(Number);
+    return { hours, minutes};
+  };
+
   const content = (
     <ScrollView
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Create Event
-        </Text>
-      </View>
 
       <View style={styles.formCard}>
         <Text style={styles.sectionTitle}>
@@ -307,24 +310,70 @@ export default function CreateEventScreen({
         <Text style={styles.sectionTitle}>
           Start
         </Text>
-
         <View style={styles.row}>
-          <TextInput
-            label="Date *"
-            placeholder="YYYY-MM-DD"
-            mode="outlined"
-            value={startDate}
-            onChangeText={setStartDate}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() => setStartDatePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="Start Date *"
+              mode="outlined"
+              value={startDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={startDatePickerOpen}
+            date={dateStringToDate(startDate)}
+            onDismiss={() =>
+              setStartDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setStartDatePickerOpen(false);
+
+              if (date) {
+                setStartDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
           />
 
-          <TextInput
-            label="Time *"
-            placeholder="09:00"
-            mode="outlined"
-            value={startTime}
-            onChangeText={setStartTime}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() => setStartTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={startTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={startTimePickerOpen}
+            onDismiss={() => setStartTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setStartTimePickerOpen(false);
+              setStartTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(startTime).hours}
+            minutes={getTimeParts(startTime).minutes}
+            locale="en"
           />
         </View>
 
@@ -333,22 +382,69 @@ export default function CreateEventScreen({
         </Text>
 
         <View style={styles.row}>
-          <TextInput
-            label="Date *"
-            placeholder="YYYY-MM-DD"
-            mode="outlined"
-            value={endDate}
-            onChangeText={setEndDate}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() => setEndDatePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="End Date *"
+              mode="outlined"
+              value={endDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={endDatePickerOpen}
+            date={dateStringToDate(endDate)}
+            onDismiss={() =>
+              setEndDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setEndDatePickerOpen(false);
+
+              if (date) {
+                setEndDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
           />
 
-          <TextInput
-            label="Time *"
-            placeholder="12:00"
-            mode="outlined"
-            value={endTime}
-            onChangeText={setEndTime}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() => setEndTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={endTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={endTimePickerOpen}
+            onDismiss={() => setEndTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setEndTimePickerOpen(false);
+              setEndTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(endTime).hours}
+            minutes={getTimeParts(endTime).minutes}
+            locale="en"
           />
         </View>
 
@@ -357,22 +453,71 @@ export default function CreateEventScreen({
         </Text>
 
         <View style={styles.row}>
-          <TextInput
-            label="Date"
-            placeholder="YYYY-MM-DD"
-            mode="outlined"
-            value={deadlineDate}
-            onChangeText={setDeadlineDate}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() =>
+              setDeadlineDatePickerOpen(true)
+            }
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="Deadline *"
+              mode="outlined"
+              value={deadlineDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={deadlineDatePickerOpen}
+            date={dateStringToDate(deadlineDate)}
+            onDismiss={() =>
+              setDeadlineDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setDeadlineDatePickerOpen(false);
+
+              if (date) {
+                setDeadlineDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
           />
 
-          <TextInput
-            label="Time"
-            placeholder="17:00"
-            mode="outlined"
-            value={deadlineTime}
-            onChangeText={setDeadlineTime}
-            style={[styles.input, styles.rowInput]}
+          <TouchableOpacity
+            onPress={() => setDeadlineTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={deadlineTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={deadlineTimePickerOpen}
+            onDismiss={() => setDeadlineTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setDeadlineTimePickerOpen(false);
+              setDeadlineTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(deadlineTime).hours}
+            minutes={getTimeParts(deadlineTime).minutes}
+            locale="en"
           />
         </View>
 
@@ -387,21 +532,23 @@ export default function CreateEventScreen({
 
         <Button
           mode="contained"
-          onPress={handleCreate}
+          onPress={() => createNewEvent(false)}
           loading={loading}
           disabled={loading}
           style={styles.submitButton}
         >
-          Create Event
+          Save as Draft
         </Button>
 
         <Button
-          mode="text"
-          onPress={() => navigation.goBack()}
-          style={styles.secondaryButton}
+          mode="contained"
+          onPress={() => createNewEvent(true)}
+          disabled={loading}
+          style={styles.publishButton}
         >
-          Cancel
+          Publish Event
         </Button>
+
       </View>
     </ScrollView>
   );

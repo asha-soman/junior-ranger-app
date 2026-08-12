@@ -29,22 +29,32 @@ export class EventsService {
       throw new NotFoundException('Cohort not found');
     }
 
-    // Admins can manage events for any cohort
     if (user.role === 'admin') {
       return cohort;
     }
 
-    // Rangers can only manage their own/assigned cohort
-    if (
-      cohort.created_by_ranger_id !== user.userId &&
-      cohort.assigned_ranger_id !== user.userId
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to manage events for this cohort',
-      );
+    if (user.role === 'ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .select(['id'])
+        .where('user_id', '=', user.userId)
+        .where('cohort_id', '=', cohortId)
+        .where('role', '=', 'ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      if (!membership) {
+        throw new ForbiddenException(
+          'You do not have permission to manage events for this cohort',
+        );
+      }
+
+      return cohort;
     }
 
-    return cohort;
+    throw new ForbiddenException(
+      'You do not have permission to manage events',
+    );
   }
 
   private async getManageableEvent(
@@ -86,6 +96,105 @@ export class EventsService {
         'Registration deadline must be before the event starts',
       );
     }
+  }
+
+  async getEvents(user: AuthUser) {
+  // Admin can see all non-deleted events
+  if (user.role === 'admin') {
+    return this.db
+      .selectFrom('events')
+      .innerJoin('cohorts', 'cohorts.id', 'events.cohort_id')
+      .select([
+        'events.id',
+        'events.title',
+        'events.description',
+        'events.location',
+        'events.start_time',
+        'events.end_time',
+        'events.registration_deadline',
+        'events.capacity',
+        'events.status',
+        'events.cohort_id',
+        'events.created_by_user_id',
+        'events.is_deleted',
+        'events.created_at',
+        'events.updated_at',
+        'cohorts.name as cohort_name',
+      ])
+      .where('events.is_deleted', '=', false)
+      .orderBy('events.start_time', 'asc')
+      .execute();
+  }
+
+  // Ranger can see events belonging to cohorts they manage.
+  if (user.role === 'ranger') {
+    return this.db
+      .selectFrom('events')
+      .innerJoin('cohorts', 'cohorts.id', 'events.cohort_id')
+      .innerJoin(
+      'cohort_members',
+      'cohort_members.cohort_id',
+      'events.cohort_id',
+      )
+      .select([
+        'events.id',
+        'events.title',
+        'events.description',
+        'events.location',
+        'events.start_time',
+        'events.end_time',
+        'events.registration_deadline',
+        'events.capacity',
+        'events.status',
+        'events.cohort_id',
+        'events.created_by_user_id',
+        'events.is_deleted',
+        'events.created_at',
+        'events.updated_at',
+        'cohorts.name as cohort_name',
+      ])
+      .where('cohort_members.user_id', '=', user.userId)
+      .where('cohort_members.role', '=', 'ranger')
+      .where('cohort_members.is_deleted', '=', false)
+      .where('events.is_deleted', '=', false)
+      .orderBy('events.start_time', 'asc')
+      .execute();
+  }
+
+  // Juniors can only see published events belonging to cohorts they are a member of.
+  return this.db
+    .selectFrom('events')
+    .innerJoin('cohorts', 'cohorts.id', 'events.cohort_id')
+    .innerJoin(
+      'cohort_members',
+      'cohort_members.cohort_id',
+      'events.cohort_id',
+    )
+    .select([
+      'events.id',
+      'events.title',
+      'events.description',
+      'events.location',
+      'events.start_time',
+      'events.end_time',
+      'events.registration_deadline',
+      'events.capacity',
+      'events.status',
+      'events.cohort_id',
+      'events.created_by_user_id',
+      'events.is_deleted',
+      'events.created_at',
+      'events.updated_at',
+      'cohorts.name as cohort_name',
+    ])
+    .where('cohort_members.user_id', '=', user.userId)
+    .where('cohort_members.role', '=', 'junior_ranger')
+    .where('cohort_members.is_deleted', '=', false)
+    .where('events.is_deleted', '=', false)
+    .where('events.status', '=', 'published')
+    .where('events.end_time', '>=', new Date())
+    .orderBy('events.start_time', 'asc')
+    .execute();
   }
 
   async createEvent(dto: CreateEventDto, user: AuthUser) {
@@ -136,6 +245,8 @@ export class EventsService {
       event,
     };
   }
+
+
 
   async getEventForManagement(
     eventId: string,
@@ -248,23 +359,31 @@ export class EventsService {
     eventId: string,
     user: AuthUser,
   ) {
-    const event = await this.getManageableEvent(eventId, user);
+    const event = await this.db
+      .selectFrom('events')
+      .selectAll()
+      .where('id', '=', eventId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
 
-    if (event.status === 'cancelled') {
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    await this.validateCohortPermission(
+      event.cohort_id,
+      user,
+    );
+
+    if (event.status === 'published') {
       throw new BadRequestException(
-        'A cancelled event cannot be published',
+        'Event is already published',
       );
     }
 
     if (event.status === 'completed') {
       throw new BadRequestException(
-        'A completed event cannot be published',
-      );
-    }
-
-    if (event.status === 'published') {
-      throw new BadRequestException(
-        'Event is already published',
+        'A completed event cannot be published again',
       );
     }
 
@@ -275,13 +394,11 @@ export class EventsService {
         updated_at: new Date(),
       })
       .where('id', '=', eventId)
+      .where('is_deleted', '=', false)
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    return {
-      message: 'Event published successfully',
-      event: updatedEvent,
-    };
+    return updatedEvent;
   }
 
   async cancelEvent(

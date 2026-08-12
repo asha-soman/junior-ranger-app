@@ -1,28 +1,10 @@
 import React, { useEffect, useState } from 'react';
-
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
-
+import { ActivityIndicator, Alert, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
+import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-
-import {
-  EventItem,
-  cancelEvent,
-  deleteEvent,
-  getEventById,
-  publishEvent,
-  updateEvent,
-} from '../../services/events/eventService';
-
+import { EventItem, cancelEvent, deleteEvent, getEventById, publishEvent, updateEvent } from '../../services/events/eventService';
 import { eventStyles as styles } from '../../styles/EventStyles';
 
 type Props = NativeStackScreenProps<
@@ -61,38 +43,25 @@ export default function EditEventScreen({
 }: Props) {
   const { eventId } = route.params;
 
-  const [event, setEvent] =
-    useState<EventItem | null>(null);
-
+  const [event, setEvent] = useState<EventItem | null>(null);
   const [title, setTitle] = useState('');
-  const [description, setDescription] =
-    useState('');
-  const [location, setLocation] =
-    useState('');
-
-  const [startDate, setStartDate] =
-    useState('');
-  const [startTime, setStartTime] =
-    useState('');
-
-  const [endDate, setEndDate] =
-    useState('');
-  const [endTime, setEndTime] =
-    useState('');
-
-  const [deadlineDate, setDeadlineDate] =
-    useState('');
-  const [deadlineTime, setDeadlineTime] =
-    useState('');
-
-  const [capacity, setCapacity] =
-    useState('');
-
-  const [fetching, setFetching] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('');
+  const [startDatePickerOpen, setStartDatePickerOpen] = useState(false);
+  const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
+  const [deadlineDatePickerOpen, setDeadlineDatePickerOpen] = useState(false);
+  const [startTimePickerOpen, setStartTimePickerOpen] = useState(false);
+  const [endTimePickerOpen, setEndTimePickerOpen] = useState(false);
+  const [deadlineTimePickerOpen, setDeadlineTimePickerOpen] = useState(false);
+  const [capacity, setCapacity] = useState('');
+  const [fetching, setFetching] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadEvent();
@@ -163,7 +132,7 @@ export default function EditEventScreen({
     try {
       setSaving(true);
 
-      const updated = await updateEvent(
+      await updateEvent(
         eventId,
         {
           title: title.trim(),
@@ -194,12 +163,12 @@ export default function EditEventScreen({
         },
       );
 
-      setEvent(updated);
-
       Alert.alert(
         'Success',
         'Event updated successfully.',
       );
+
+      navigation.goBack();
     } catch (error: any) {
       Alert.alert(
         'Update Failed',
@@ -213,41 +182,80 @@ export default function EditEventScreen({
 
   const handlePublish = async () => {
     try {
-      const updated =
-        await publishEvent(eventId);
+      setSaving(true);
 
-      setEvent(updated);
+      await updateEvent(
+        eventId,
+        {
+          title: title.trim(),
+          description: description.trim(),
+          location: location.trim(),
 
-      Alert.alert(
-        'Success',
-        'Event published successfully.',
+          start_time: combineDateTime(
+            startDate,
+            startTime,
+          ),
+
+          end_time: combineDateTime(
+            endDate,
+            endTime,
+          ),
+
+          registration_deadline:
+            deadlineDate && deadlineTime
+              ? combineDateTime(
+                  deadlineDate,
+                  deadlineTime,
+                )
+              : undefined,
+
+          capacity: capacity
+            ? Number(capacity)
+            : undefined,
+        },
       );
+
+      await publishEvent(eventId);
+
+    Alert.alert(
+      'Success',
+      event?.status === 'cancelled'
+        ? 'Event published again successfully.'
+        : 'Event published successfully.',
+    );
+
+      navigation.goBack();
     } catch (error: any) {
       Alert.alert(
         'Publish Failed',
         error?.response?.data?.message ||
           'Unable to publish event.',
       );
+    } finally {
+      setSaving(false);
     }
   };
 
   const performCancel = async () => {
     try {
-      const updated =
-        await cancelEvent(eventId);
+      setSaving(true);
 
-      setEvent(updated);
+      await cancelEvent(eventId);
 
       Alert.alert(
         'Success',
         'Event cancelled successfully.',
       );
+
+      navigation.goBack();
     } catch (error: any) {
       Alert.alert(
         'Cancel Failed',
         error?.response?.data?.message ||
           'Unable to cancel event.',
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -283,6 +291,8 @@ export default function EditEventScreen({
 
   const performDelete = async () => {
     try {
+      setSaving(true);
+
       await deleteEvent(eventId);
 
       Alert.alert(
@@ -297,6 +307,8 @@ export default function EditEventScreen({
         error?.response?.data?.message ||
           'Unable to delete event.',
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -330,6 +342,24 @@ export default function EditEventScreen({
     );
   };
 
+  const formatDateForState = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const dateStringToDate = (value: string) => {
+    if (!value) {
+      return new Date();
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+  };
+
   if (fetching) {
     return (
       <ActivityIndicator
@@ -343,15 +373,22 @@ export default function EditEventScreen({
     return null;
   }
 
+  const formatTime = (hours: number, minutes: number) => {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
+  const getTimeParts = (time: string) => {
+    if (!time) { return { hours: 9, minutes: 0} }
+
+    const [hours, minutes] = time.split(':').map(Number);
+    return { hours, minutes};
+  };
+
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Edit Event
-        </Text>
-      </View>
 
       <View style={styles.formCard}>
         <Text style={styles.statusText}>
@@ -391,26 +428,69 @@ export default function EditEventScreen({
         </Text>
 
         <View style={styles.row}>
-          <TextInput
-            label="Date"
-            mode="outlined"
-            value={startDate}
-            onChangeText={setStartDate}
-            style={[
-              styles.input,
-              styles.rowInput,
-            ]}
+          <TouchableOpacity
+            onPress={() => setStartDatePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="Start Date *"
+              mode="outlined"
+              value={startDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={startDatePickerOpen}
+            date={dateStringToDate(startDate)}
+            onDismiss={() =>
+              setStartDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setStartDatePickerOpen(false);
+
+              if (date) {
+                setStartDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
           />
 
-          <TextInput
-            label="Time"
-            mode="outlined"
-            value={startTime}
-            onChangeText={setStartTime}
-            style={[
-              styles.input,
-              styles.rowInput,
-            ]}
+          <TouchableOpacity
+            onPress={() => setStartTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={startTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={startTimePickerOpen}
+            onDismiss={() => setStartTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setStartTimePickerOpen(false);
+              setStartTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(startTime).hours}
+            minutes={getTimeParts(startTime).minutes}
+            locale="en"
           />
         </View>
 
@@ -419,26 +499,142 @@ export default function EditEventScreen({
         </Text>
 
         <View style={styles.row}>
-          <TextInput
-            label="Date"
-            mode="outlined"
-            value={endDate}
-            onChangeText={setEndDate}
-            style={[
-              styles.input,
-              styles.rowInput,
-            ]}
+          <TouchableOpacity
+            onPress={() => setEndDatePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="End Date *"
+              mode="outlined"
+              value={endDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={endDatePickerOpen}
+            date={dateStringToDate(endDate)}
+            onDismiss={() =>
+              setEndDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setEndDatePickerOpen(false);
+
+              if (date) {
+                setEndDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
           />
 
-          <TextInput
-            label="Time"
-            mode="outlined"
-            value={endTime}
-            onChangeText={setEndTime}
-            style={[
-              styles.input,
-              styles.rowInput,
-            ]}
+          <TouchableOpacity
+            onPress={() => setEndTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={endTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={endTimePickerOpen}
+            onDismiss={() => setEndTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setEndTimePickerOpen(false);
+              setEndTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(endTime).hours}
+            minutes={getTimeParts(endTime).minutes}
+            locale="en"
+          />
+        </View>
+
+        <Text style={styles.sectionTitle}>
+          Registration Deadline
+        </Text>
+
+        <View style={styles.row}>
+          <TouchableOpacity
+            onPress={() =>
+              setDeadlineDatePickerOpen(true)
+            }
+            activeOpacity={0.8}
+            style={styles.dateInput}
+          >
+            <TextInput
+              label="Registration Date"
+              mode="outlined"
+              value={deadlineDate}
+              placeholder="Select date"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="calendar" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <DatePickerModal
+            locale="en"
+            mode="single"
+            visible={deadlineDatePickerOpen}
+            date={dateStringToDate(deadlineDate)}
+            onDismiss={() =>
+              setDeadlineDatePickerOpen(false)
+            }
+            onConfirm={({ date }) => {
+              setDeadlineDatePickerOpen(false);
+
+              if (date) {
+                setDeadlineDate(
+                  formatDateForState(date),
+                );
+              }
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={() => setDeadlineTimePickerOpen(true)}
+            activeOpacity={0.8}
+            style={styles.timeInput}
+          >
+            <TextInput
+              label="Time *"
+              value={deadlineTime}
+              placeholder="Select time"
+              mode="outlined"
+              editable={false}
+              pointerEvents="none"
+              right={<TextInput.Icon icon="clock-outline" />}
+              style={styles.input}
+            />
+          </TouchableOpacity>
+
+          <TimePickerModal
+            visible={deadlineTimePickerOpen}
+            onDismiss={() => setDeadlineTimePickerOpen(false)}
+            onConfirm={({ hours, minutes }) => {
+              setDeadlineTimePickerOpen(false);
+              setDeadlineTime(formatTime(hours, minutes));
+            }}
+            hours={getTimeParts(deadlineTime).hours}
+            minutes={getTimeParts(deadlineTime).minutes}
+            locale="en"
           />
         </View>
 
@@ -461,10 +657,12 @@ export default function EditEventScreen({
           Save Changes
         </Button>
 
-        {event.status === 'draft' && (
+        {(event.status === 'draft' ||
+          event.status === 'cancelled') && (
           <Button
             mode="contained"
             onPress={handlePublish}
+            disabled={saving}
             style={styles.publishButton}
           >
             Publish Event
@@ -475,6 +673,7 @@ export default function EditEventScreen({
           <Button
             mode="outlined"
             onPress={handleCancelEvent}
+            disabled={saving}
             style={
               styles.cancelEventButton
             }
@@ -487,6 +686,7 @@ export default function EditEventScreen({
           mode="outlined"
           textColor="#9A3D3D"
           onPress={handleDelete}
+          disabled={saving}
           style={styles.deleteButton}
         >
           Delete Event

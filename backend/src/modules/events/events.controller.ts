@@ -18,6 +18,15 @@ type AuthUser = {
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
+    // Get events available to current user
+  @Get()
+  @Roles('admin', 'ranger', 'junior_ranger')
+  getEvents(
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.getEvents(req.user);
+  }
+
   @Post()
   @Roles('admin', 'ranger')
   createEvent(
@@ -27,6 +36,7 @@ export class EventsController {
     return this.eventsService.createEvent(dto, req.user);
   }
 
+  
   @Get(':id')
   @Roles('admin', 'ranger')
   getEventForManagement(

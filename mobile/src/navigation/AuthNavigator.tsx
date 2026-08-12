@@ -28,6 +28,7 @@ import EditAdventureScreen from '../screens/adventures/EditAdventureScreen';
 import SubmitAdventureScreen from '../screens/submissions/SubmitAdventureScreen';
 import AdventureSubmissionsScreen from '../screens/submissions/AdventureSubmissionsScreen';
 import ReviewSubmissionScreen from '../screens/submissions/ReviewSubmissionScreen';
+import EventsHubScreen from '../screens/events/EventsHubScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
 
@@ -58,11 +59,11 @@ export type AuthStackParamList = {
     };
     CreateCohort: {
     userRole?: "admin" | "ranger";
-  };
+    };
     EditCohort: {
     cohortId: string;
     userRole?: "admin" | "ranger";
-  };
+    };
     AssignRanger: {
         cohortId: string;
         assignedRangerId?: string | null;
@@ -84,6 +85,11 @@ export type AuthStackParamList = {
     SubmitAdventure: { adventureId: string };
     AdventureSubmissions: { adventureId: string };
     ReviewSubmission: { submissionId: string };
+    EventsHub:
+    | {
+        userRole: 'admin' | 'ranger' | 'junior_ranger';
+      }
+    | undefined;
     CreateEvent:
     | {
         cohortId?: string;
@@ -288,6 +294,15 @@ export default function AuthNavigator() {
                 options={{
                     ...authHeaderOptions,
                     title: "Generate Invite Code",
+                }}
+            />
+
+            <Stack.Screen
+                name="EventsHub"
+                component={EventsHubScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Events',
                 }}
             />
 

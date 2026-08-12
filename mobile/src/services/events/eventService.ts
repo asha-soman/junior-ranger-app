@@ -20,6 +20,7 @@ export interface EventItem {
   status: EventStatus;
 
   cohort_id: string;
+  cohort_name?: string;
   created_by_user_id: string;
 
   is_deleted: boolean;
@@ -52,6 +53,11 @@ export interface UpdateEventPayload {
   capacity?: number;
   cohort_id?: string;
 }
+
+export const getEvents = async (): Promise<EventItem[]> => {
+  const response = await apiClient.get('/events');
+  return response.data;
+};
 
 export const createEvent = async (
   payload: CreateEventPayload,

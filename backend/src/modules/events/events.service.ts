@@ -196,7 +196,7 @@ export class EventsService {
     .orderBy('events.start_time', 'asc')
     .execute();
   }
-
+  
   async createEvent(dto: CreateEventDto, user: AuthUser) {
     await this.validateCohortPermission(dto.cohort_id, user);
 
@@ -246,7 +246,203 @@ export class EventsService {
     };
   }
 
+  async getEventDetails(
+    eventId: string,
+    user: AuthUser,
+  ) {
+    const event = await this.db
+      .selectFrom('events')
+      .innerJoin(
+        'cohorts',
+        'cohorts.id',
+        'events.cohort_id',
+      )
+      .innerJoin(
+        'users as organiser',
+        'organiser.id',
+        'events.created_by_user_id',
+      )
+      .select([
+        'events.id',
+        'events.title',
+        'events.description',
+        'events.location',
+        'events.start_time',
+        'events.end_time',
+        'events.registration_deadline',
+        'events.capacity',
+        'events.status',
+        'events.cohort_id',
+        'events.created_by_user_id',
+        'events.created_at',
+        'events.updated_at',
 
+        'cohorts.name as cohort_name',
+
+        'organiser.name as organiser_name',
+        'organiser.email as organiser_email',
+        'organiser.role as organiser_role',
+      ])
+      .where('events.id', '=', eventId)
+      .where('events.is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found',
+      );
+    }
+
+    if (user.role === 'ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .select('id')
+        .where('user_id', '=', user.userId)
+        .where(
+          'cohort_id',
+          '=',
+          event.cohort_id,
+        )
+        .where('role', '=', 'ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      if (!membership) {
+        throw new ForbiddenException(
+          'You do not have access to this event',
+        );
+      }
+    }
+
+    if (user.role === 'junior_ranger') {
+      const membership = await this.db
+        .selectFrom('cohort_members')
+        .select('id')
+        .where('user_id', '=', user.userId)
+        .where(
+          'cohort_id',
+          '=',
+          event.cohort_id,
+        )
+        .where('role', '=', 'junior_ranger')
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      if (!membership) {
+        throw new ForbiddenException(
+          'You do not have access to this event',
+        );
+      }
+
+      if (event.status !== 'published') {
+        throw new ForbiddenException(
+          'This event is not available',
+        );
+      }
+    }
+
+    /*Count active registrations*/
+    const registrationCountResult =
+      await this.db
+        .selectFrom('event_registrations')
+        .select(({ fn }) =>
+          fn.count<number>('id').as('count'),
+        )
+        .where('event_id', '=', event.id)
+        .where('status', '=', 'registered')
+        .executeTakeFirst();
+
+    const registeredCount = Number(
+      registrationCountResult?.count ?? 0,
+    );
+
+    /*Get Junior Ranger's registration status for this event*/
+    let userRegistrationStatus:
+      | 'registered'
+      | 'cancelled'
+      | null = null;
+
+    if (user.role === 'junior_ranger') {
+      const registration = await this.db
+        .selectFrom('event_registrations')
+        .select([
+          'status',
+          'registered_at',
+          'cancelled_at',
+        ])
+        .where('event_id', '=', event.id)
+        .where(
+          'junior_ranger_user_id',
+          '=',
+          user.userId,
+        )
+        .executeTakeFirst();
+
+      userRegistrationStatus =
+        registration?.status ?? null;
+    }
+
+    /*Calculate remaining capacity*/
+    const spotsAvailable =
+      event.capacity === null
+        ? null
+        : Math.max(
+            event.capacity - registeredCount,
+            0,
+          );
+
+    /*Determine whether registration is currently available*/
+    const now = new Date();
+
+    const registrationOpen =
+      event.status === 'published' &&
+      event.start_time > now &&
+      (
+        event.registration_deadline === null ||
+        event.registration_deadline >= now
+      ) &&
+      (
+        event.capacity === null ||
+        registeredCount < event.capacity
+      );
+
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      location: event.location,
+
+      start_time: event.start_time,
+      end_time: event.end_time,
+      registration_deadline:
+        event.registration_deadline,
+
+      capacity: event.capacity,
+      status: event.status,
+
+      cohort: {
+        id: event.cohort_id,
+        name: event.cohort_name,
+      },
+
+      organiser: {
+        id: event.created_by_user_id,
+        name: event.organiser_name,
+        email: event.organiser_email,
+        role: event.organiser_role,
+      },
+
+      registration: {
+        registered_count: registeredCount,
+        spots_available: spotsAvailable,
+        registration_open: registrationOpen,
+        user_status: userRegistrationStatus,
+      },
+
+      created_at: event.created_at,
+      updated_at: event.updated_at,
+    };
+  }
 
   async getEventForManagement(
     eventId: string,

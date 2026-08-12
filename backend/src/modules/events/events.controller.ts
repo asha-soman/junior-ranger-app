@@ -16,9 +16,11 @@ type AuthUser = {
 @Controller('events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+  ) {}
 
-    // Get events available to current user
+  // Event listing
   @Get()
   @Roles('admin', 'ranger', 'junior_ranger')
   getEvents(
@@ -27,25 +29,46 @@ export class EventsController {
     return this.eventsService.getEvents(req.user);
   }
 
+  // Create event
   @Post()
   @Roles('admin', 'ranger')
   createEvent(
     @Body() dto: CreateEventDto,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.createEvent(dto, req.user);
+    return this.eventsService.createEvent(
+      dto,
+      req.user,
+    );
   }
 
-  
+  // Event Details
+  @Get(':id/details')
+  @Roles('admin', 'ranger', 'junior_ranger')
+  getEventDetails(
+    @Param('id') id: string,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.getEventDetails(
+      id,
+      req.user,
+    );
+  }
+
+  // Event management details
   @Get(':id')
   @Roles('admin', 'ranger')
   getEventForManagement(
     @Param('id') id: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.getEventForManagement(id, req.user);
+    return this.eventsService.getEventForManagement(
+      id,
+      req.user,
+    );
   }
 
+  // Update event
   @Patch(':id')
   @Roles('admin', 'ranger')
   updateEvent(
@@ -53,33 +76,49 @@ export class EventsController {
     @Body() dto: UpdateEventDto,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.updateEvent(id, dto, req.user);
+    return this.eventsService.updateEvent(
+      id,
+      dto,
+      req.user,
+    );
   }
 
+  // Publish event
   @Patch(':id/publish')
   @Roles('admin', 'ranger')
   publishEvent(
     @Param('id') id: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.publishEvent(id, req.user);
+    return this.eventsService.publishEvent(
+      id,
+      req.user,
+    );
   }
 
+  // Cancel event
   @Patch(':id/cancel')
   @Roles('admin', 'ranger')
   cancelEvent(
     @Param('id') id: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.cancelEvent(id, req.user);
+    return this.eventsService.cancelEvent(
+      id,
+      req.user,
+    );
   }
 
+  // Soft delete event
   @Delete(':id')
   @Roles('admin', 'ranger')
   deleteEvent(
     @Param('id') id: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.eventsService.deleteEvent(id, req.user);
+    return this.eventsService.deleteEvent(
+      id,
+      req.user,
+    );
   }
 }

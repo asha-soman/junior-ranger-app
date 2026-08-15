@@ -3,12 +3,14 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../../database/database.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
+import { Resend } from 'resend';
 
 @Injectable()
 
@@ -19,7 +21,7 @@ export class AuthService {
 
   this.verificationCodes[email] = code;
 
-  console.log(`Resent code for ${email}: ${code}`);
+  await this.sendVerificationEmail(email, code);
 
   return {
     message: 'Verification code resent successfully',
@@ -28,9 +30,44 @@ export class AuthService {
 
   private verificationCodes: Record<string, string> = {};
   constructor(
-    private readonly db: DatabaseService,
-    private readonly jwtService: JwtService,
-  ) {}
+  private readonly db: DatabaseService,
+  private readonly jwtService: JwtService,
+  private readonly configService: ConfigService,
+) {}
+
+private getResendClient() {
+  const apiKey = this.configService.get<string>('RESEND_API_KEY');
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+
+  return new Resend(apiKey);
+}
+
+private async sendVerificationEmail(email: string, code: string) {
+  const resend = this.getResendClient();
+
+  const { data, error } = await resend.emails.send({
+    from: 'onboarding@resend.dev',
+    to: email,
+    subject: 'Verify your Junior Ranger account',
+    html: `
+      <h2>Verify your email</h2>
+      <p>Thank you for signing up for Junior Ranger.</p>
+      <p>Your verification code is:</p>
+      <h1>${code}</h1>
+      <p>Please enter this code in the app to verify your email address.</p>
+    `,
+  });
+
+  if (error) {
+    console.error('Failed to send verification email:', error);
+    throw new Error('Unable to send verification email');
+  }
+
+  console.log('Verification email sent:', data?.id);
+}
 
   async signup(dto: SignupDto) {
     const { email, name, password, role } = dto;
@@ -63,8 +100,9 @@ export class AuthService {
       .returningAll()
       .executeTakeFirst();
 
-      //const code = Math.floor(100000 + Math.random() * 900000).toString();
-      //this.verificationCodes[email] = code;
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      this.verificationCodes[email] = code;
+      await this.sendVerificationEmail(email, code);
       //console.log(`Verification code for ${email}: ${code}`);
 
     return {

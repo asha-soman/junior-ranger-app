@@ -11,20 +11,18 @@ import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
 
 @Injectable()
-
 export class AuthService {
-
   async resendCode(email: string) {
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  this.verificationCodes[email] = code;
+    this.verificationCodes[email] = code;
 
-  console.log(`Resent code for ${email}: ${code}`);
+    console.log(`Resent code for ${email}: ${code}`);
 
-  return {
-    message: 'Verification code resent successfully',
-  };
-}
+    return {
+      message: 'Verification code resent successfully',
+    };
+  }
 
   private verificationCodes: Record<string, string> = {};
   constructor(
@@ -59,13 +57,16 @@ export class AuthService {
         is_active: !isRanger,
         approval_status: isRanger ? 'pending' : 'approved',
         is_deleted: false,
+        two_factor_enabled: false,
+        two_factor_code: null,
+        two_factor_expiry: null,
       })
       .returningAll()
       .executeTakeFirst();
 
-      //const code = Math.floor(100000 + Math.random() * 900000).toString();
-      //this.verificationCodes[email] = code;
-      //console.log(`Verification code for ${email}: ${code}`);
+    //const code = Math.floor(100000 + Math.random() * 900000).toString();
+    //this.verificationCodes[email] = code;
+    //console.log(`Verification code for ${email}: ${code}`);
 
     return {
       message: isRanger
@@ -94,15 +95,15 @@ export class AuthService {
       .where('email', '=', email)
       .executeTakeFirst();
 
-      // TEMP: auto-approve for testing
-      //await this.db
-      //.updateTable('users')
-      //.set({
-      //  is_active: true,
-      //  approval_status: 'approved',
-  //})
-     // .where('email', '=', email)
-      //.execute();
+    // TEMP: auto-approve for testing
+    //await this.db
+    //.updateTable('users')
+    //.set({
+    //  is_active: true,
+    //  approval_status: 'approved',
+    //})
+    // .where('email', '=', email)
+    //.execute();
 
     if (!user || !user.password_hash) {
       throw new UnauthorizedException('Invalid email or password');
@@ -124,6 +125,30 @@ export class AuthService {
           ? 'Your account is pending admin approval'
           : 'Your account is not active',
       );
+    }
+
+    if (user.two_factor_enabled) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+      const expiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      await this.db
+        .updateTable('users')
+        .set({
+          two_factor_code: code,
+          two_factor_expiry: expiry,
+          updated_at: new Date(),
+        })
+        .where('id', '=', user.id)
+        .execute();
+
+      console.log(`2FA code for ${user.email}: ${code}`);
+
+      return {
+        message: 'Two-factor authentication required',
+        requires2FA: true,
+        email: user.email,
+      };
     }
 
     const accessToken = await this.jwtService.signAsync({
@@ -148,30 +173,56 @@ export class AuthService {
       },
     };
   }
+  
   async verifyCode(email: string, code: string) {
-  const storedCode = this.verificationCodes[email];
+    const storedCode = this.verificationCodes[email];
 
-  if (!storedCode) {
-    throw new BadRequestException('No verification code found');
-  }
+    if (!storedCode) {
+      throw new BadRequestException('No verification code found');
+    }
 
-  if (storedCode !== code) {
-    throw new BadRequestException('Invalid verification code');
-  }
+    if (storedCode !== code) {
+      throw new BadRequestException('Invalid verification code');
+    }
 
-  // update DB
-  //await this.db
+    // update DB
+    //await this.db
     //.updateTable('users')
     //.where('email', '=', email)
     //.execute();
 
     console.log(`Email ${email} verified successfully`);
 
-  // remove code after success
-  delete this.verificationCodes[email];
+    // remove code after success
+    delete this.verificationCodes[email];
 
-  return {
-    message: 'Email verified successfully',
-  };
-}
+    return {
+      message: 'Email verified successfully',
+    };
+  }
+
+  async updateTwoFactorStatus(userId: string, enabled: boolean) {
+    const updatedUser = await this.db
+      .updateTable('users')
+      .set({
+        two_factor_enabled: enabled,
+        two_factor_code: null,
+        two_factor_expiry: null,
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .returning(['id', 'email', 'two_factor_enabled'])
+      .executeTakeFirst();
+
+    if (!updatedUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    return {
+      message: enabled
+        ? 'Two-factor authentication enabled'
+        : 'Two-factor authentication disabled',
+      two_factor_enabled: updatedUser.two_factor_enabled,
+    };
+  }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import AdminBottomTabBar from '../../components/admin/AdminBottomTabBar';
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -178,7 +178,7 @@ export default function RangerRequestDetailsScreen() {
           </View>
         </View>
       </ScrollView>
-      <AdminBottomTabBar activeTab={undefined} />
+      <AppBottomTabBar role="admin" activeTab="menu"/>
     </View>
   );
 }

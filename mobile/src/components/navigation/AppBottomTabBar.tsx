@@ -29,6 +29,17 @@ export default function AppBottomTabBar({ role, activeTab }: Props) {
   const activeColor = "#1f6f5b";
   const inactiveColor = "#222";
 
+  const handleMenuPress = () => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: getMenuRoute() as any,
+        },
+      ],
+    });
+  };
+
   return (
     <View
       style={{
@@ -68,7 +79,7 @@ export default function AppBottomTabBar({ role, activeTab }: Props) {
           alignItems: "center",
           flex: 1,
         }}
-        onPress={() => navigation.navigate(getMenuRoute() as any)}
+        onPress={handleMenuPress}
       >
         <View
           style={{

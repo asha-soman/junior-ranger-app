@@ -62,7 +62,7 @@ export interface AdventureSubmissionsTable {
   cohort_id: string;
   junior_ranger_user_id: string;
   submission_text: string;
-  image_url: string | null;
+  image_id: string | null;
   status: SubmissionStatus;
   feedback: string | null;
   reviewed_by_ranger_id: string | null;
@@ -143,6 +143,15 @@ export interface ObservationsTable {
   updated_at: Date | null;
 }
 
+export interface ImagesTable {
+  id: string;
+  secure_url: string;
+  metadata: any | null;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
@@ -156,4 +165,5 @@ export interface Database {
   user_badges: UserBadgesTable;
   sessions: SessionsTable;
   observations: ObservationsTable;
+  images: ImagesTable;
 }

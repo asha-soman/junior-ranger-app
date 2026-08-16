@@ -57,4 +57,14 @@ export class AuthController {
       body.enabled,
     );
   }
+
+  @Post('verify-2fa')
+  verifyTwoFactorCode(
+    @Body() body: { email: string; code: string },
+  ) {
+    return this.authService.verifyTwoFactorCode(
+      body.email,
+      body.code,
+    );
+  }
 }

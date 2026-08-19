@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Modal,
-  Pressable,
-  Alert,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Pressable, Alert, Platform } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -300,6 +290,56 @@ export default function JuniorMenuScreen() {
               }}
             >
               My Adventures
+            </Text>
+
+            <Ionicons
+              name="chevron-forward"
+              size={28}
+              color="#2F6F61"
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("EventsHub", {
+              userRole: "junior_ranger",
+            })
+          }
+          style={[
+            styles.menuOption,
+            {
+              height: 135,
+              backgroundColor: "#EAF2EE",
+              justifyContent: "space-between",
+              marginTop: 16,
+            },
+          ]}
+        >
+          <Image
+            source={require("../../../assets/images/announcements.png")}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#111",
+                flexShrink: 1,
+              }}
+            >
+              Events
             </Text>
 
             <Ionicons

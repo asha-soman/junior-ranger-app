@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-} from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AdminBottomTabBar from "../../components/admin/AdminBottomTabBar";
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { AdminUser, getAdminUsers } from "../../services/admin/adminService";
@@ -302,7 +294,7 @@ export default function ManageUsersScreen() {
           ))
         )}
       </ScrollView>
-      <AdminBottomTabBar activeTab={undefined} />
+      <AppBottomTabBar role="admin" activeTab="menu"/>
     </View>
   );
 }

@@ -93,9 +93,14 @@ export default function AdminMenuScreen() {
       onPress: () => { },
     },
     {
-      title: "Notices & Events",
-      image: require("../../../assets/images/announcements.png"),
-      onPress: () => { },
+      title: 'Notices & Events',
+      image: require(
+        '../../../assets/images/announcements.png'
+      ),
+      onPress: () =>
+        navigation.navigate('EventsHub', {
+          userRole: 'admin',
+        }),
     },
   ];
 

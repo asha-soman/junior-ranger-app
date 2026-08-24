@@ -14,8 +14,31 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class AuthService {
-  private verificationCodes: Record<string, string> = {};
 
+async resendCode(email: string) {
+  const now = Date.now();
+  const lastResend = this.resendTimestamps[email];
+
+  if (lastResend && now - lastResend < 60000) {
+    throw new BadRequestException(
+      'Please wait 60 seconds before requesting another verification code',
+    );
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  this.verificationCodes[email] = code;
+  this.resendTimestamps[email] = now;
+
+  await this.sendVerificationEmail(email, code);
+
+  return {
+    message: 'Verification code resent successfully',
+  };
+}
+
+  private verificationCodes: Record<string, string> = {};
+  private resendTimestamps: Record<string, number> = {};
   constructor(
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,

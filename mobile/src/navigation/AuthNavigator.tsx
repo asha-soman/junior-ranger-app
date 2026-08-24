@@ -21,14 +21,18 @@ import GenerateInviteCodeScreen from "../screens/cohorts/GenerateInviteCodeScree
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
 import JoinCohortScreen from "../screens/junior-ranger/JoinCohortScreen";
-import AdventureListScreen from "../screens/adventures/AdventureListScreen";
-import CreateAdventureScreen from "../screens/adventures/CreateAdventureScreen";
-import AdventureDetailsScreen from "../screens/adventures/AdventureDetailsScreen";
-import EditAdventureScreen from "../screens/adventures/EditAdventureScreen";
-import SubmitAdventureScreen from "../screens/submissions/SubmitAdventureScreen";
-import AdventureSubmissionsScreen from "../screens/submissions/AdventureSubmissionsScreen";
-import ReviewSubmissionScreen from "../screens/submissions/ReviewSubmissionScreen";
-import SettingsScreen from "../screens/settings/SettingsScreen";
+import SocialFeedScreen from "../screens/junior-ranger/SocialFeedScreen";
+import ActivityPostFormScreen from "../screens/junior-ranger/ActivityPostFormScreen";
+import AdventureListScreen from '../screens/adventures/AdventureListScreen';
+import CreateAdventureScreen from '../screens/adventures/CreateAdventureScreen';
+import AdventureDetailsScreen from '../screens/adventures/AdventureDetailsScreen';
+import EditAdventureScreen from '../screens/adventures/EditAdventureScreen';
+import SubmitAdventureScreen from '../screens/submissions/SubmitAdventureScreen';
+import AdventureSubmissionsScreen from '../screens/submissions/AdventureSubmissionsScreen';
+import ReviewSubmissionScreen from '../screens/submissions/ReviewSubmissionScreen';
+import EventsHubScreen from '../screens/events/EventsHubScreen';
+import CreateEventScreen from '../screens/events/CreateEventScreen';
+import EditEventScreen from '../screens/events/EditEventScreen';
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -54,27 +58,27 @@ export type AuthStackParamList = {
         userRole?: "admin" | "ranger" | "junior_ranger";
       }
     | undefined;
-  AdminCohortDetails: {
-    cohortId: string;
-    userRole?: "admin" | "ranger" | "junior_ranger";
-  };
-  CreateCohort: {
-    userRole?: "admin" | "ranger";
-  };
-  EditCohort: {
-    cohortId: string;
-    userRole?: "admin" | "ranger";
-  };
-  AssignRanger: {
-    cohortId: string;
-    assignedRangerId?: string | null;
-  };
-  GenerateInviteCode: {
-    cohortId: string;
-  };
-  RangerMenu: undefined;
-  JuniorMenu: undefined;
-  AdventureList:
+    AdminCohortDetails: {
+        cohortId: string;
+        userRole?: "admin" | "ranger" | "junior_ranger";
+    };
+    CreateCohort: {
+        userRole?: "admin" | "ranger";
+    };
+    EditCohort: {
+        cohortId: string;
+        userRole?: "admin" | "ranger";
+    };
+    AssignRanger: {
+        cohortId: string;
+        assignedRangerId?: string | null;
+    };
+    GenerateInviteCode: {
+        cohortId: string;
+    };
+    RangerMenu: undefined;
+    JuniorMenu: undefined;
+    AdventureList:
     | {
         cohortId?: string;
         userRole?: "ranger" | "admin" | "junior_ranger";
@@ -86,6 +90,30 @@ export type AuthStackParamList = {
   SubmitAdventure: { adventureId: string };
   AdventureSubmissions: { adventureId: string };
   ReviewSubmission: { submissionId: string };
+    EventsHub:
+    | {
+        userRole: 'admin' | 'ranger' | 'junior_ranger';
+    }
+    | undefined;
+    CreateEvent:
+    | {
+        cohortId?: string;
+        userRole?: 'admin' | 'ranger';
+    }
+    | undefined;
+
+    EditEvent:
+    | {
+        eventId: string;
+        userRole: 'admin' | 'ranger';
+    };
+    SocialFeed: undefined;
+
+    ActivityPostForm:
+    | {
+        postId?: string;
+    }
+    | undefined;
   Settings: undefined;
 };
 
@@ -277,14 +305,41 @@ export default function AuthNavigator() {
         }}
       />
 
-      <Stack.Screen
-        name="GenerateInviteCode"
-        component={GenerateInviteCodeScreen}
-        options={{
-          ...authHeaderOptions,
-          title: "Generate Invite Code",
-        }}
-      />
+            <Stack.Screen
+                name="GenerateInviteCode"
+                component={GenerateInviteCodeScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Generate Invite Code",
+                }}
+            />
+
+            <Stack.Screen
+                name="EventsHub"
+                component={EventsHubScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Events',
+                }}
+            />
+
+            <Stack.Screen
+                name="CreateEvent"
+                component={CreateEventScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Create Event',
+                }}
+            />
+
+            <Stack.Screen
+                name="EditEvent"
+                component={EditEventScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Edit Event',
+                }}
+            />
 
       <Stack.Screen
         name="RangerMenu"
@@ -297,6 +352,24 @@ export default function AuthNavigator() {
         component={JuniorMenuScreen}
         options={{ headerShown: false }}
       />
+
+            <Stack.Screen
+                name="SocialFeed"
+                component={SocialFeedScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Feed",
+                }}
+            />
+
+            <Stack.Screen
+                name="ActivityPostForm"
+                component={ActivityPostFormScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Share an Activity",
+                }}
+            />
 
       <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>

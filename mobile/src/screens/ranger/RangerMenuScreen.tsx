@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Modal,
-  Pressable,
-  Alert,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Pressable, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -308,6 +298,11 @@ export default function RangerMenuScreen() {
 
         <TouchableOpacity
           style={[styles.menuOption, { justifyContent: "space-between" }]}
+          onPress={() =>
+           navigation.navigate("EventsHub", {
+            userRole: "ranger",
+           })
+          }
         >
           <Image
             source={require("../../../assets/images/announcements.png")}

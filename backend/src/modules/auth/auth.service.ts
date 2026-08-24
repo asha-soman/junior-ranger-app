@@ -116,24 +116,6 @@ async resendCode(email: string) {
   }
 
   // ============================================================
-  // RESEND EMAIL VERIFICATION CODE
-  // ============================================================
-
-  async resendCode(email: string) {
-    const code = Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
-
-    this.verificationCodes[email] = code;
-
-    await this.sendVerificationEmail(email, code);
-
-    return {
-      message: 'Verification code resent successfully',
-    };
-  }
-
-  // ============================================================
   // SIGN UP
   // ============================================================
 

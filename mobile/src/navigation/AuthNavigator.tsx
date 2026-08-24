@@ -33,6 +33,7 @@ import ReviewSubmissionScreen from '../screens/submissions/ReviewSubmissionScree
 import EventsHubScreen from '../screens/events/EventsHubScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
+import SettingsScreen from "../screens/settings/SettingsScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;

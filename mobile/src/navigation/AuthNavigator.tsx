@@ -21,6 +21,8 @@ import GenerateInviteCodeScreen from "../screens/cohorts/GenerateInviteCodeScree
 import RangerMenuScreen from "../screens/ranger/RangerMenuScreen";
 import JuniorMenuScreen from "../screens/junior-ranger/JuniorMenuScreen";
 import JoinCohortScreen from "../screens/junior-ranger/JoinCohortScreen";
+import SocialFeedScreen from "../screens/junior-ranger/SocialFeedScreen";
+import ActivityPostFormScreen from "../screens/junior-ranger/ActivityPostFormScreen";
 import AdventureListScreen from '../screens/adventures/AdventureListScreen';
 import CreateAdventureScreen from '../screens/adventures/CreateAdventureScreen';
 import AdventureDetailsScreen from '../screens/adventures/AdventureDetailsScreen';
@@ -58,11 +60,11 @@ export type AuthStackParamList = {
         userRole?: "admin" | "ranger" | "junior_ranger";
     };
     CreateCohort: {
-    userRole?: "admin" | "ranger";
+        userRole?: "admin" | "ranger";
     };
     EditCohort: {
-    cohortId: string;
-    userRole?: "admin" | "ranger";
+        cohortId: string;
+        userRole?: "admin" | "ranger";
     };
     AssignRanger: {
         cohortId: string;
@@ -88,20 +90,27 @@ export type AuthStackParamList = {
     EventsHub:
     | {
         userRole: 'admin' | 'ranger' | 'junior_ranger';
-      }
+    }
     | undefined;
     CreateEvent:
     | {
         cohortId?: string;
         userRole?: 'admin' | 'ranger';
-        }
+    }
     | undefined;
 
-    EditEvent: 
+    EditEvent:
     | {
         eventId: string;
         userRole: 'admin' | 'ranger';
     };
+    SocialFeed: undefined;
+
+    ActivityPostForm:
+    | {
+        postId?: string;
+    }
+    | undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -338,6 +347,24 @@ export default function AuthNavigator() {
                 name="JuniorMenu"
                 component={JuniorMenuScreen}
                 options={{ headerShown: false }}
+            />
+
+            <Stack.Screen
+                name="SocialFeed"
+                component={SocialFeedScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Feed",
+                }}
+            />
+
+            <Stack.Screen
+                name="ActivityPostForm"
+                component={ActivityPostFormScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: "Share an Activity",
+                }}
             />
         </Stack.Navigator>
     );

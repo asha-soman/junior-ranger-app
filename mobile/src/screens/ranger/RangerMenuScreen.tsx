@@ -50,6 +50,11 @@ export default function RangerMenuScreen() {
     Alert.alert("Coming Soon", "Profile feature will be available soon.");
   };
 
+  const handleSettings = () => {
+    setAccountMenuVisible(false);
+    navigation.navigate("Settings");
+  };
+
   return (
     <View style={styles.menuContainer}>
       <Modal
@@ -153,7 +158,7 @@ export default function RangerMenuScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: "#EEF2F1",
               }}
-              onPress={showComingSoon}
+              onPress={handleSettings}
             >
               <Ionicons name="settings-outline" size={22} color="#2F6F61" />
               <Text

@@ -35,21 +35,23 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
-  message?: string;
-  access_token: string;
+  message: string;
+  access_token?: string;
+  requires2FA?: boolean;
+  email?: string;
+
   user?: {
     id: string;
     email: string;
-    name?: string;
-    role?: 'ranger' | 'junior_ranger' | 'admin';
+    name: string | null;
+    role: "admin" | "ranger" | "junior_ranger";
     avatar_url?: string | null;
-    is_active?: boolean;
-    approval_status?: string;
+    is_active: boolean;
+    approval_status: string;
     created_at?: string;
     updated_at?: string;
   };
 }
-
 export const loginUser = async (
   payload: LoginPayload
 ): Promise<LoginResponse> => {
@@ -102,4 +104,24 @@ export const resendCode = async (
 ): Promise<ResendCodeResponse> => {
   const response = await apiClient.post("/auth/resend-code", payload);
   return response.data;
+};
+
+export const verifyTwoFactorCode = async (data: {
+  email: string;
+  code: string;
+}) => {
+  try {
+    const response = await apiClient.post(
+      "/auth/verify-2fa",
+      data,
+    );
+
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      "Two-factor authentication failed";
+
+    throw new Error(message);
+  }
 };

@@ -138,7 +138,16 @@ export default function JuniorMenuScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: "#EEF2F1",
               }}
-              onPress={showComingSoon}
+              onPress={() => {
+                setAccountMenuVisible(false);
+
+                navigation.navigate(
+                  "UserProfile",
+                  {
+                    userRole: "junior_ranger",
+                  },
+                );
+              }}
             >
               <Ionicons name="person-outline" size={22} color="#2F6F61" />
               <Text

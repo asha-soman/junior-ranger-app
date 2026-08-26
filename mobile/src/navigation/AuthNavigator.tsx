@@ -8,6 +8,7 @@ import LoginScreen from "../screens/auth/loginScreen";
 import ForgotPasswordScreen from "../screens/auth/forgotPasswordScreen";
 import VerificationScreen from "../screens/auth/verificationScreen";
 import SplashScreen from "../screens/auth/SplashScreen";
+import UserProfileScreen from '../screens/profile/UserProfileScreen';
 import AdminMenuScreen from "../screens/admin/AdminMenuScreen";
 import PendingRangerRequestsScreen from "../screens/admin/PendingRangerRequestsScreen";
 import RangerRequestDetailsScreen from "../screens/admin/RangerRequestDetailsScreen";
@@ -42,6 +43,11 @@ export type AuthStackParamList = {
     JoinWithInvite: undefined;
     Home: undefined;
     AdminMenu: undefined;
+    UserProfile:
+    | {
+      userRole: 'admin' | 'ranger' | 'junior_ranger';
+    }
+  | undefined;
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
     ManageUsers: { initialUsers?: AdminUser[] } | undefined;
@@ -156,6 +162,15 @@ export default function AuthNavigator() {
                 name="AdminMenu"
                 component={AdminMenuScreen}
                 options={{ headerShown: false }}
+            />
+
+            <Stack.Screen
+                name="UserProfile"
+                component={UserProfileScreen}
+                options={{
+                    ...authHeaderOptions,
+                    title: 'Profile',
+                }}
             />
 
             <Stack.Screen

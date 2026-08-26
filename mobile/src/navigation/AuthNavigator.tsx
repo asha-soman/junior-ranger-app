@@ -44,39 +44,22 @@ export type AuthStackParamList = {
         role?: "ranger" | "junior_ranger";
     };
     ForgotPassword: undefined;
-    Verification: { email: string };
+    Verification: {
+        email: string;
+        mode?: "email" | "2fa";
+    };
     JoinCohort: undefined;
     JoinWithInvite: undefined;
     Home: undefined;
     AdminMenu: undefined;
-    UserProfile:
-    | {
-      userRole: 'admin' | 'ranger' | 'junior_ranger';
+    UserProfile: {
+        userRole: 'admin' | 'ranger' | 'junior_ranger';
     }
-  | undefined;
+    | undefined;
     PendingRangerRequests: { refresh?: boolean } | undefined;
     RangerRequestDetails: { rangerId: string };
     ManageUsers: { initialUsers?: AdminUser[] } | undefined;
     AdminCohorts:
-  Splash: undefined;
-  Welcome: undefined;
-  Login: undefined;
-  RangerSignup: {
-    role?: "ranger" | "junior_ranger";
-  };
-  ForgotPassword: undefined;
-  Verification: {
-    email: string;
-    mode?: "email" | "2fa";
-  };
-  JoinCohort: undefined;
-  JoinWithInvite: undefined;
-  Home: undefined;
-  AdminMenu: undefined;
-  PendingRangerRequests: { refresh?: boolean } | undefined;
-  RangerRequestDetails: { rangerId: string };
-  ManageUsers: { initialUsers?: AdminUser[] } | undefined;
-  AdminCohorts:
     | {
         userRole?: "admin" | "ranger" | "junior_ranger";
       }
@@ -107,12 +90,12 @@ export type AuthStackParamList = {
         userRole?: "ranger" | "admin" | "junior_ranger";
       }
     | undefined;
-  AdventureDetails: { adventureId: string };
-  CreateAdventure: { cohortId?: string } | undefined;
-  EditAdventure: { adventureId: string };
-  SubmitAdventure: { adventureId: string };
-  AdventureSubmissions: { adventureId: string };
-  ReviewSubmission: { submissionId: string };
+    AdventureDetails: { adventureId: string };
+    CreateAdventure: { cohortId?: string } | undefined;
+    EditAdventure: { adventureId: string };
+    SubmitAdventure: { adventureId: string };
+    AdventureSubmissions: { adventureId: string };
+    ReviewSubmission: { submissionId: string };
     EventsHub:
     | {
         userRole: 'admin' | 'ranger' | 'junior_ranger';
@@ -215,23 +198,23 @@ export default function AuthNavigator() {
       />
 
 
-            <Stack.Screen
-                name="UserProfile"
-                component={UserProfileScreen}
-                options={{
-                    ...authHeaderOptions,
-                    title: 'Profile',
-                }}
-            />
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{
+         ...authHeaderOptions,
+         title: 'Profile',
+        }}
+     />
 
-            <Stack.Screen
-                name="PendingRangerRequests"
-                component={PendingRangerRequestsScreen}
-                options={{
-                    ...authHeaderOptions,
-                    title: "Signup Requests ",
-                }}
-            />
+      <Stack.Screen
+        name="PendingRangerRequests"
+        component={PendingRangerRequestsScreen}
+        options={{
+         ...authHeaderOptions,
+         title: "Signup Requests ",
+        }}
+      />
 
       <Stack.Screen
         name="RangerRequestDetails"

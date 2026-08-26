@@ -62,51 +62,43 @@ export default function LoginScreen() {
       setIsLoading(true);
 
       const result = await loginUser({ email, password });
+
+      // 2FA enabled
+      if (result.requires2FA) {
+        navigation.navigate("Verification", {
+          email,
+          mode: "2fa",
+        });
+        return;
+      }
+
+      // Normal login - 2FA disabled
+      if (!result.access_token) {
+        throw new Error("Authentication token was not returned");
+      }
+
       await saveToken(result.access_token);
-      navigation.navigate("Verification", { email });
-      return;
 
-      
-
-      // to be removed later, just checks if it returns the profile of the user after logging in with the proper token code
       const profileResponse = await apiClient.get("/auth/profile");
-      console.log("Profile response:", profileResponse.data);
+      const role = profileResponse.data.role;
 
-      // testing if token is getting saved or not
-      console.log("Token saved successfully");
-
-      const storedToken = await getToken();
-      console.log("Stored token:", storedToken);
-
-      // if (profileResponse.data.role === "admin") {
-      //   navigation.replace("AdminMenu");
-      // } else {
-      //   navigation.replace("Verification", { email });
-      // }
-
-
-
-      // JUST ADDING THIS LOGIC TO BYPASS THE VERIFICATION PAGE TO TEST ADMIN, RANGER AND JUNIOR RANGER PAGES
-      //if (profileResponse.data.role === "admin") {
-      //  navigation.replace("AdminMenu");
-      //} else if (profileResponse.data.role === "ranger") {
-      //  navigation.replace("RangerMenu");
-      //}  else if (profileResponse.data.role === "junior_ranger"){
-      //  navigation.replace("JuniorMenu");
-      //} else {
-      //  navigation.replace("Verification", { email });
-      // navigation.replace("Welcome");
-      //}
-
-
+      if (role === "admin") {
+        navigation.replace("AdminMenu");
+      } else if (role === "ranger") {
+        navigation.replace("RangerMenu");
+      } else if (role === "junior_ranger") {
+        navigation.replace("JuniorMenu");
+      } else {
+        navigation.replace("Welcome");
+      }
     } catch (error: any) {
-  const message =
-    error?.response?.data?.message ||
-    error?.message ||
-    "Something went wrong during login";
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong during login";
 
-  setApiError(message);
-}finally {
+      setApiError(message);
+    } finally {
       setIsLoading(false);
     }
   };

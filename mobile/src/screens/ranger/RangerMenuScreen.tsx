@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Modal,
-  Pressable,
-  Alert,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Pressable, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -58,6 +48,11 @@ export default function RangerMenuScreen() {
   const showComingSoon = () => {
     setAccountMenuVisible(false);
     Alert.alert("Coming Soon", "Profile feature will be available soon.");
+  };
+
+  const handleSettings = () => {
+    setAccountMenuVisible(false);
+    navigation.navigate("Settings");
   };
 
   return (
@@ -172,7 +167,7 @@ export default function RangerMenuScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: "#EEF2F1",
               }}
-              onPress={showComingSoon}
+              onPress={handleSettings}
             >
               <Ionicons name="settings-outline" size={22} color="#2F6F61" />
               <Text
@@ -312,6 +307,11 @@ export default function RangerMenuScreen() {
 
         <TouchableOpacity
           style={[styles.menuOption, { justifyContent: "space-between" }]}
+          onPress={() =>
+           navigation.navigate("EventsHub", {
+            userRole: "ranger",
+           })
+          }
         >
           <Image
             source={require("../../../assets/images/announcements.png")}

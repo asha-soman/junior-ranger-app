@@ -20,7 +20,10 @@ import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 import { removeToken } from "../../utils/secureStore";
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList, "AdminMenu">;
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "AdminMenu"
+>;
 
 export default function AdminMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -30,7 +33,7 @@ export default function AdminMenuScreen() {
   useEffect(() => {
     getAdminUsers()
       .then(setUsersPreview)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   const confirmLogout = async () => {
@@ -62,6 +65,11 @@ export default function AdminMenuScreen() {
     Alert.alert("Coming Soon", "Profile feature will be available soon.");
   };
 
+  const handleSettings = () => {
+    setAccountMenuVisible(false);
+    navigation.navigate("Settings");
+  };
+
   const menuItems = [
     {
       title: "Pending Requests",
@@ -90,7 +98,7 @@ export default function AdminMenuScreen() {
     {
       title: "Feed",
       image: require("../../../assets/images/feed.png"),
-      onPress: () => { },
+      onPress: () => {},
     },
     {
       title: 'Notices & Events',
@@ -207,7 +215,7 @@ export default function AdminMenuScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: "#EEF2F1",
               }}
-              onPress={showComingSoon}
+              onPress={handleSettings}
             >
               <Ionicons name="settings-outline" size={22} color="#2F6F61" />
               <Text

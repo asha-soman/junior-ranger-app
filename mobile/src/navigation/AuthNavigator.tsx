@@ -33,6 +33,7 @@ import ReviewSubmissionScreen from '../screens/submissions/ReviewSubmissionScree
 import EventsHubScreen from '../screens/events/EventsHubScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
+import EventDetailsScreen from '../screens/events/EventDetailsScreen';
 import SettingsScreen from "../screens/settings/SettingsScreen";
 
 export type AuthStackParamList = {
@@ -102,11 +103,15 @@ export type AuthStackParamList = {
         userRole?: 'admin' | 'ranger';
     }
     | undefined;
-
     EditEvent:
     | {
         eventId: string;
         userRole: 'admin' | 'ranger';
+    };
+    EventDetails: 
+    | {
+        eventId: string;
+        userRole: 'admin' | 'ranger' | 'junior_ranger';
     };
     SocialFeed: undefined;
 
@@ -322,6 +327,15 @@ export default function AuthNavigator() {
                     ...authHeaderOptions,
                     title: 'Events',
                 }}
+            />
+
+            <Stack.Screen
+              name="EventDetails"
+              component={EventDetailsScreen}
+              options={{
+                ...authHeaderOptions,
+                title: 'Event Details',
+              }}
             />
 
             <Stack.Screen

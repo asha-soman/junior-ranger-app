@@ -28,6 +28,45 @@ export interface EventItem {
   updated_at: string | null;
 }
 
+export interface EventDetails {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+
+  start_time: string;
+  end_time: string;
+  registration_deadline: string | null;
+
+  capacity: number | null;
+  status: EventStatus;
+
+  cohort: {
+    id: string;
+    name: string;
+  };
+
+  organiser: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: 'admin' | 'ranger';
+  };
+
+  registration: {
+    registered_count: number;
+    spots_available: number | null;
+    registration_open: boolean;
+    user_status:
+      | 'registered'
+      | 'cancelled'
+      | null;
+  };
+
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 export interface CreateEventPayload {
   title: string;
   description?: string;
@@ -71,6 +110,16 @@ export const getEventById = async (
 ): Promise<EventItem> => {
   const response = await apiClient.get(`/events/${eventId}`);
   return response.data.event;
+};
+
+export const getEventDetails = async (
+  eventId: string,
+): Promise<EventDetails> => {
+  const response = await apiClient.get(
+    `/events/${eventId}/details`,
+  );
+
+  return response.data;
 };
 
 export const updateEvent = async (

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -82,5 +83,33 @@ export class UsersService {
           }
         : null,
     };
+  }
+    async updateMyProfile(
+    userId: string,
+    dto: UpdateUserProfileDto,
+  ) {
+    const user = await this.db
+      .selectFrom('users')
+      .select('id')
+      .where('id', '=', userId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new NotFoundException(
+        'User profile not found',
+      );
+    }
+
+    await this.db
+      .updateTable('users')
+      .set({
+        name: dto.name,
+      })
+      .where('id', '=', userId)
+      .where('is_deleted', '=', false)
+      .execute();
+
+    return this.getMyProfile(userId);
   }
 }

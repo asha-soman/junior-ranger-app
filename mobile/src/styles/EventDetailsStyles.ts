@@ -9,7 +9,7 @@ export const eventDetailsStyles =
 
     content: {
       paddingHorizontal: 18,
-      paddingTop: 18,
+      paddingTop: 30,
       paddingBottom: 30,
     },
 
@@ -108,7 +108,7 @@ export const eventDetailsStyles =
     },
 
     registrationOpen: {
-      color: '#1F6F5B',
+      color: '#1f6f6c',
       fontWeight: '700',
       marginLeft: 5,
     },
@@ -117,6 +117,33 @@ export const eventDetailsStyles =
       color: '#A33A3A',
       fontWeight: '700',
       marginLeft: 5,
+    },
+
+    registerButton: {
+      marginTop: 16,
+      backgroundColor: '#2d7189',
+      borderRadius: 8,
+    },
+
+    cancelRegistrationButton: {
+      marginTop: 16,
+      borderColor: '#A33A3A',
+      borderRadius: 8,
+    },
+
+    unavailableButton: {
+      marginTop: 16,
+      backgroundColor: '#4f8b91',
+      borderRadius: 8,
+      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    unavailableButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#fafffd',
     },
 
     manageButton: {

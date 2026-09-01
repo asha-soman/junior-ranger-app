@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 import { Button, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { EventDetails, getEventDetails } from '../../services/events/eventService';
+import { EventDetails, getEventDetails, registerForEvent, cancelEventRegistration } from '../../services/events/eventService';
 import { eventDetailsStyles as styles } from '../../styles/EventDetailsStyles';
 import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
 
@@ -25,6 +25,9 @@ export default function EventDetailsScreen({
 
   const [event, setEvent] =
     useState<EventDetails | null>(null);
+
+  const [registrationLoading, setRegistrationLoading] =
+    useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -165,6 +168,87 @@ export default function EventDetailsScreen({
 
     return 'You are not registered for this event.';
   };
+
+  const handleRegister = async () => {
+    try {
+      setRegistrationLoading(true);
+
+      await registerForEvent(
+        eventId,
+      );
+
+      await loadEvent();
+
+      Alert.alert(
+        'Registration Successful',
+        'You are now registered for this event.',
+      );
+    } catch (error: any) {
+                      Alert.alert(
+        'Registration Failed',
+        error?.response?.data?.message ||
+          'Unable to register for this event.',
+      );
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+const handleCancelRegistration =
+  async () => {
+    try {
+      setRegistrationLoading(true);
+
+      await cancelEventRegistration(
+        eventId,
+      );
+
+      await loadEvent();
+
+      Alert.alert(
+        'Registration Cancelled',
+        'Your event registration has been cancelled.',
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Cancellation Failed',
+        error?.response?.data?.message ||
+          'Unable to cancel your registration.',
+      );
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+const getRegistrationButtonLabel = () => {
+  if (!event) return '';
+
+  // Junior is already registered
+  if (
+    event.registration.user_status === 'registered'
+  ) {
+    return 'Cancel Registration';
+  }
+
+  // Event has reached maximum capacity
+  if (
+    event.capacity !== null &&
+    event.registration.registered_count >= event.capacity
+  ) {
+    return 'Event Full';
+  }
+
+  // Registration deadline has passed
+  if (
+    event.registration_deadline &&
+    new Date(event.registration_deadline) <= new Date()
+  ) {
+    return 'Registration Closed';
+  }
+
+  // Registration is available
+  return 'Register for Event';
+};
 
   if (loading) {
     return (
@@ -474,6 +558,40 @@ export default function EventDetailsScreen({
               </Text>
             )}
           </View>
+
+          {userRole === 'junior_ranger' && (
+            <>
+              {event.registration.user_status === 'registered' ? (
+                <Button
+                  mode="outlined"
+                  textColor="#A33A3A"
+                  onPress={handleCancelRegistration}
+                  loading={registrationLoading}
+                  disabled={registrationLoading}
+                  style={styles.cancelRegistrationButton}
+                >
+                  Cancel Registration
+                </Button>
+              ) : event.registration.registration_open ? (
+                <Button
+                  mode="contained"
+                  textColor="#FFFFFF"
+                  onPress={handleRegister}
+                  loading={registrationLoading}
+                  disabled={registrationLoading}
+                  style={styles.registerButton}
+                >
+                  Register for Event
+                </Button>
+              ) : (
+                <View style={styles.unavailableButton}>
+                  <Text style={styles.unavailableButtonText}>
+                    {getRegistrationButtonLabel()}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
 
           {canManageEvents && (
             <Button

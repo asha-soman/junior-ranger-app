@@ -121,4 +121,30 @@ export class EventsController {
       req.user,
     );
   }
+
+  // Register for an event
+  @Post(':id/register')
+  @Roles('junior_ranger')
+  registerForEvent(
+    @Param('id') id: string,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.registerForEvent(
+      id,
+      req.user,
+    );
+  }
+
+  // Cancel registration for an event
+  @Patch(':id/registration/cancel')
+  @Roles('junior_ranger')
+  cancelRegistration(
+    @Param('id') id: string,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.cancelRegistration(
+      id,
+      req.user,
+    );
+  }
 }

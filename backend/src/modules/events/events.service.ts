@@ -444,6 +444,298 @@ export class EventsService {
     };
   }
 
+  async registerForEvent(
+    eventId: string,
+    user: AuthUser,
+  ) {
+    if (user.role !== 'junior_ranger') {
+      throw new ForbiddenException(
+        'Only Junior Rangers can register for events',
+      );
+    }
+
+    return this.db.transaction().execute(
+      async (trx) => {
+        /*Lock the event while checking capacity*/
+        const event = await trx
+          .selectFrom('events')
+          .selectAll()
+          .where('id', '=', eventId)
+          .where('is_deleted', '=', false)
+          .forUpdate()
+          .executeTakeFirst();
+
+        if (!event) {
+          throw new NotFoundException(
+            'Event not found',
+          );
+        }
+
+        if (event.status !== 'published') {
+          throw new BadRequestException(
+            'Registration is not available for this event',
+          );
+        }
+
+        const membership = await trx
+          .selectFrom('cohort_members')
+          .select('id')
+          .where(
+            'user_id',
+            '=',
+            user.userId,
+          )
+          .where(
+            'cohort_id',
+            '=',
+            event.cohort_id,
+          )
+          .where(
+            'role',
+            '=',
+            'junior_ranger',
+          )
+          .where(
+            'is_deleted',
+            '=',
+            false,
+          )
+          .executeTakeFirst();
+
+        if (!membership) {
+          throw new ForbiddenException(
+            'You cannot register for an event from another cohort',
+          );
+        }
+
+        const now = new Date();
+
+        /*Event already started*/
+        if (event.start_time <= now) {
+          throw new BadRequestException(
+            'Registration is closed because the event has already started',
+          );
+        }
+
+        /*Registration deadline passed*/
+        if (
+          event.registration_deadline &&
+          event.registration_deadline < now
+        ) {
+          throw new BadRequestException(
+            'The registration deadline has passed',
+          );
+        }
+
+        /*Check existing registration*/
+        const existingRegistration =
+          await trx
+            .selectFrom(
+              'event_registrations',
+            )
+            .selectAll()
+            .where(
+              'event_id',
+              '=',
+              eventId,
+            )
+            .where(
+              'junior_ranger_user_id',
+              '=',
+              user.userId,
+            )
+            .executeTakeFirst();
+
+        if (
+          existingRegistration?.status ===
+          'registered'
+        ) {
+          throw new BadRequestException(
+            'You are already registered for this event',
+          );
+        }
+
+        /*Count active registrations*/
+        const countResult = await trx
+          .selectFrom(
+            'event_registrations',
+          )
+          .select(({ fn }) =>
+            fn
+              .count<number>('id')
+              .as('count'),
+          )
+          .where(
+            'event_id',
+            '=',
+            eventId,
+          )
+          .where(
+            'status',
+            '=',
+            'registered',
+          )
+          .executeTakeFirst();
+
+        const registeredCount = Number(
+          countResult?.count ?? 0,
+        );
+
+        /*Capacity check*/
+        if (
+          event.capacity !== null &&
+          registeredCount >=
+            event.capacity
+        ) {
+          throw new BadRequestException(
+            'This event has reached its maximum capacity',
+          );
+        }
+
+        /*
+        * Previously cancelled registration:
+        * reactivate row instead of creating another one.
+        */
+        if (existingRegistration) {
+          return trx
+            .updateTable(
+              'event_registrations',
+            )
+            .set({
+              status: 'registered',
+              registered_at:
+                new Date(),
+              cancelled_at: null,
+              updated_at:
+                new Date(),
+            })
+            .where(
+              'id',
+              '=',
+              existingRegistration.id,
+            )
+            .returningAll()
+            .executeTakeFirstOrThrow();
+        }
+
+        /*
+        * First registration.
+        */
+        return trx
+          .insertInto(
+            'event_registrations',
+          )
+          .values({
+            event_id: eventId,
+
+            junior_ranger_user_id:
+              user.userId,
+
+            status: 'registered',
+
+            registered_at:
+              new Date(),
+
+            cancelled_at: null,
+
+            created_at:
+              new Date(),
+
+            updated_at:
+              new Date(),
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
+      },
+    );
+  }
+
+  async cancelRegistration(
+    eventId: string,
+    user: AuthUser,
+  ) {
+    if (user.role !== 'junior_ranger') {
+      throw new ForbiddenException(
+        'Only Junior Rangers can cancel event registrations',
+      );
+    }
+
+    const event = await this.db
+      .selectFrom('events')
+      .select([
+        'id',
+        'start_time',
+        'is_deleted',
+      ])
+      .where('id', '=', eventId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found',
+      );
+    }
+
+    if (
+      event.start_time <= new Date()
+    ) {
+      throw new BadRequestException(
+        'Registration cannot be cancelled after the event has started',
+      );
+    }
+
+    const registration =
+      await this.db
+        .selectFrom(
+          'event_registrations',
+        )
+        .selectAll()
+        .where(
+          'event_id',
+          '=',
+          eventId,
+        )
+        .where(
+          'junior_ranger_user_id',
+          '=',
+          user.userId,
+        )
+        .executeTakeFirst();
+
+    if (!registration) {
+      throw new NotFoundException(
+        'Registration not found',
+      );
+    }
+
+    if (
+      registration.status ===
+      'cancelled'
+    ) {
+      throw new BadRequestException(
+        'This registration has already been cancelled',
+      );
+    }
+
+    return this.db
+      .updateTable(
+        'event_registrations',
+      )
+      .set({
+        status: 'cancelled',
+        cancelled_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where(
+        'id',
+        '=',
+        registration.id,
+      )
+      .returningAll()
+      .executeTakeFirstOrThrow();
+  }
+
   async getEventForManagement(
     eventId: string,
     user: AuthUser,
@@ -495,6 +787,33 @@ export class EventsService {
       endTime,
       registrationDeadline,
     );
+
+    // Prevent capacity from being reduced below
+    // the current number of registered Junior Rangers.
+    if (
+      dto.capacity !== undefined &&
+      dto.capacity !== null
+    ) {
+      const registrationCountResult =
+        await this.db
+          .selectFrom('event_registrations')
+          .select(({ fn }) =>
+            fn.count<number>('id').as('count'),
+          )
+          .where('event_id', '=', eventId)
+          .where('status', '=', 'registered')
+          .executeTakeFirst();
+
+      const registeredCount = Number(
+        registrationCountResult?.count ?? 0,
+      );
+
+      if (dto.capacity < registeredCount) {
+        throw new BadRequestException(
+          `Capacity cannot be lower than the current number of registered participants (${registeredCount}).`,
+        );
+      }
+    }
 
     const updatedEvent = await this.db
       .updateTable('events')

@@ -1,3 +1,5 @@
+import type { Generated } from 'kysely';
+
 export type UserRole = 'admin' | 'ranger' | 'junior_ranger';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type AdventureStatus = 'draft' | 'published' | 'archived';
@@ -181,7 +183,7 @@ export interface EventsTable {
 }
 
 export interface EventRegistrationsTable {
-  id: string;
+  id: Generated<string>;
   event_id: string;
   junior_ranger_user_id: string;
   status: EventRegistrationStatus;

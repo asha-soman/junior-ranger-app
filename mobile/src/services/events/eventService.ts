@@ -122,6 +122,28 @@ export const getEventDetails = async (
   return response.data;
 };
 
+export const registerForEvent = async (
+  eventId: string,
+) => {
+  const response =
+    await apiClient.post(
+      `/events/${eventId}/register`,
+    );
+
+  return response.data;
+};
+
+export const cancelEventRegistration = async (
+  eventId: string,
+) => {
+  const response =
+    await apiClient.patch(
+      `/events/${eventId}/registration/cancel`,
+    );
+
+  return response.data;
+};
+
 export const updateEvent = async (
   eventId: string,
   payload: UpdateEventPayload,

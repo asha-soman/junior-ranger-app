@@ -6,6 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 
 type AuthUser = {
   userId: string;
@@ -147,4 +148,36 @@ export class EventsController {
       req.user,
     );
   }
+
+  // Get event participants
+  @Get(':id/participants')
+  @Roles('admin', 'ranger')
+  getEventParticipants(
+    @Param('id') id: string,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.getEventParticipants(
+      id,
+      req.user,
+    );
+  }
+
+  @Patch(':eventId/attendance/:registrationId')
+  @Roles('admin', 'ranger')
+  updateAttendance(
+    @Param('eventId') eventId: string,
+    @Param('registrationId') registrationId: string,
+    @Body() dto: UpdateAttendanceDto,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.eventsService.updateAttendance(
+      eventId,
+      registrationId,
+      dto.status,
+      req.user,
+    );
+  }
+
+
+
 }

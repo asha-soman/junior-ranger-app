@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
+import type { AttendanceStatus} from '../../database/database.types';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
@@ -867,6 +868,187 @@ export class EventsService {
     return {
       message: 'Event updated successfully',
       event: updatedEvent,
+    };
+  }
+
+  async getEventParticipants(
+    eventId: string,
+    user: AuthUser,
+  ) {
+    await this.getManageableEvent(
+      eventId,
+      user,
+    );
+
+    const participants = await this.db
+      .selectFrom('event_registrations')
+      .innerJoin(
+        'users',
+        'users.id',
+        'event_registrations.junior_ranger_user_id',
+      )
+      .leftJoin(
+        'event_attendance',
+        'event_attendance.registration_id',
+        'event_registrations.id',
+      )
+      .select([
+        'event_registrations.id as registration_id',
+        'event_registrations.event_id',
+        'event_registrations.junior_ranger_user_id',
+        'event_registrations.status as registration_status',
+        'event_registrations.registered_at',
+
+        'users.name as junior_name',
+        'users.email as junior_email',
+
+        'event_attendance.id as attendance_id',
+        'event_attendance.status as attendance_status',
+        'event_attendance.marked_at',
+      ])
+      .where(
+        'event_registrations.event_id',
+        '=',
+        eventId,
+      )
+      .where(
+        'event_registrations.status',
+        '=',
+        'registered',
+      )
+      .where(
+        'users.is_deleted',
+        '=',
+        false,
+      )
+      .orderBy(
+        'users.name',
+        'asc',
+      )
+      .execute();
+
+    return {
+      event_id: eventId,
+      participant_count:
+        participants.length,
+      participants: participants.map(
+        (participant) => ({
+          ...participant,
+
+          attendance_status:
+            participant.attendance_status ?? 'not_marked',
+        }),
+      ),
+    };
+  }
+
+  async updateAttendance(
+    eventId: string,
+    registrationId: string,
+    status: AttendanceStatus,
+    user: AuthUser,
+  ) {
+    await this.getManageableEvent(
+      eventId,
+      user,
+    );
+
+    /*Find registration*/
+    const registration = await this.db
+      .selectFrom('event_registrations')
+      .selectAll()
+      .where(
+        'id',
+        '=',
+        registrationId,
+      )
+      .where(
+        'event_id',
+        '=',
+        eventId,
+      )
+      .executeTakeFirst();
+
+    if (!registration) {
+      throw new NotFoundException(
+        'Event registration not found',
+      );
+    }
+
+    if (
+      registration.status !==
+      'registered'
+    ) {
+      throw new BadRequestException(
+        'Only registered participants can have attendance recorded',
+      );
+    }
+
+    /*Check whether attendance already exists*/
+    const existingAttendance =
+      await this.db
+        .selectFrom('event_attendance')
+        .selectAll()
+        .where(
+          'registration_id',
+          '=',
+          registrationId,
+        )
+        .executeTakeFirst();
+
+    /*Update existing record*/
+    if (existingAttendance) {
+      const attendance =
+        await this.db
+          .updateTable(
+            'event_attendance',
+          )
+          .set({
+            status,
+            marked_by_user_id:
+              user.userId,
+            marked_at: new Date(),
+            updated_at: new Date(),
+          })
+          .where(
+            'id',
+            '=',
+            existingAttendance.id,
+          )
+          .returningAll()
+          .executeTakeFirstOrThrow();
+
+      return {
+        message:
+          'Attendance updated successfully',
+        attendance,
+      };
+    }
+
+    /*Create record, if there's one*/
+    const attendance = await this.db
+      .insertInto('event_attendance')
+      .values({
+        registration_id:
+          registrationId,
+
+        status,
+
+        marked_by_user_id:
+          user.userId,
+
+        marked_at: new Date(),
+
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return {
+      message:
+        'Attendance recorded successfully',
+      attendance,
     };
   }
 

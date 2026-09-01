@@ -148,7 +148,6 @@ export const eventDetailsStyles =
 
     manageButton: {
       marginTop: 20,
-      backgroundColor: '#376E62',
       borderRadius: 8,
     },
 

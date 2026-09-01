@@ -596,6 +596,7 @@ const getRegistrationButtonLabel = () => {
           {canManageEvents && (
             <Button
               mode="contained"
+              buttonColor="#376e6e" 
               style={
                 styles.manageButton
               }
@@ -613,6 +614,27 @@ const getRegistrationButtonLabel = () => {
               Edit Event
             </Button>
           )}
+
+          {canManageEvents && (
+          <Button
+            mode="contained"
+            buttonColor="#326a87"
+            textColor="#FFFFFF"
+            style={[
+              styles.manageButton,
+              {marginTop: 12},
+            ]}
+            onPress={() =>
+              navigation.navigate('AttendanceManagement', {
+                eventId: event.id,
+                userRole,
+              })
+            }
+          >
+            Manage Attendance
+          </Button>
+          )}
+
         </View>
       </ScrollView>
 

@@ -34,6 +34,7 @@ import EventsHubScreen from '../screens/events/EventsHubScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
 import EventDetailsScreen from '../screens/events/EventDetailsScreen';
+import AttendanceManagementScreen from '../screens/events/AttendanceManagementScreen';
 import SettingsScreen from "../screens/settings/SettingsScreen";
 
 export type AuthStackParamList = {
@@ -114,7 +115,10 @@ export type AuthStackParamList = {
         userRole: 'admin' | 'ranger' | 'junior_ranger';
     };
     SocialFeed: undefined;
-
+    AttendanceManagement: {
+      eventId: string;
+      userRole: 'admin' | 'ranger';
+    };
     ActivityPostForm:
     | {
         postId?: string;
@@ -354,6 +358,15 @@ export default function AuthNavigator() {
                     ...authHeaderOptions,
                     title: 'Edit Event',
                 }}
+            />
+
+            <Stack.Screen
+              name="AttendanceManagement"
+              component={AttendanceManagementScreen}
+              options={{
+                ...authHeaderOptions,
+                title: 'Attendance',
+              }}
             />
 
       <Stack.Screen

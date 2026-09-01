@@ -8,14 +8,17 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+
 import { Request } from 'express';
 
 import { SubmissionsService } from './submissions.service';
+
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ReviewSubmissionDto } from './dto/review-submission.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateTaskCompletionDto } from './dto/create-task-completion.dto';
 import { ReviewTaskCompletionDto } from './dto/review-task-completion.dto';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 type AuthUser = {
   userId: string;
@@ -26,7 +29,15 @@ type AuthUser = {
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class SubmissionsController {
-  constructor(private readonly submissionsService: SubmissionsService) {}
+  constructor(
+    private readonly submissionsService: SubmissionsService,
+  ) {}
+
+  /*
+   * ==========================================
+   * OLD WHOLE-ADVENTURE SUBMISSION ROUTES
+   * ==========================================
+   */
 
   @Post('adventures/:adventureId/submissions')
   createSubmission(
@@ -34,7 +45,11 @@ export class SubmissionsController {
     @Body() dto: CreateSubmissionDto,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.submissionsService.createSubmission(adventureId, dto, req.user);
+    return this.submissionsService.createSubmission(
+      adventureId,
+      dto,
+      req.user,
+    );
   }
 
   @Get('adventures/:adventureId/submissions')
@@ -66,7 +81,10 @@ export class SubmissionsController {
     @Param('adventureId') adventureId: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.submissionsService.getMySubmission(adventureId, req.user);
+    return this.submissionsService.getMySubmission(
+      adventureId,
+      req.user,
+    );
   }
 
   @Patch('submissions/:submissionId')
@@ -82,13 +100,23 @@ export class SubmissionsController {
     );
   }
 
+  /*
+   * ==========================================
+   * TASK COMPLETION ROUTES
+   * ==========================================
+   */
+
   @Post('tasks/:taskId/completions')
   createTaskCompletion(
     @Param('taskId') taskId: string,
     @Body() dto: CreateTaskCompletionDto,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.submissionsService.createTaskCompletion(taskId, dto, req.user);
+    return this.submissionsService.createTaskCompletion(
+      taskId,
+      dto,
+      req.user,
+    );
   }
 
   @Get('tasks/:taskId/completions')
@@ -96,7 +124,23 @@ export class SubmissionsController {
     @Param('taskId') taskId: string,
     @Req() req: Request & { user: AuthUser },
   ) {
-    return this.submissionsService.getTaskCompletions(taskId, req.user);
+    return this.submissionsService.getTaskCompletions(
+      taskId,
+      req.user,
+    );
+  }
+
+  // NEW:
+  // Ranger gets every submitted task for one Adventure.
+  @Get('adventures/:adventureId/task-completions')
+  getTaskCompletionsForAdventure(
+    @Param('adventureId') adventureId: string,
+    @Req() req: Request & { user: AuthUser },
+  ) {
+    return this.submissionsService.getTaskCompletionsForAdventure(
+      adventureId,
+      req.user,
+    );
   }
 
   @Patch('task-completions/:completionId/review')

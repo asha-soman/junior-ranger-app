@@ -473,6 +473,84 @@ export class SubmissionsService {
       .execute();
   }
 
+  async getTaskCompletionsForAdventure(adventureId: string, user: AuthUser) {
+    if (user.role !== 'ranger') {
+      throw new ForbiddenException('Only Rangers can view task submissions');
+    }
+
+    const adventure = await this.db
+      .selectFrom('adventures')
+      .selectAll()
+      .where('id', '=', adventureId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found');
+    }
+
+    /*
+     * Check whether this Ranger manages a cohort
+     * to which this Adventure is assigned.
+     */
+    const managedAssignment = await this.db
+      .selectFrom('cohort_adventures')
+      .innerJoin('cohorts', 'cohorts.id', 'cohort_adventures.cohort_id')
+      .select('cohort_adventures.id')
+      .where('cohort_adventures.adventure_id', '=', adventureId)
+      .where('cohort_adventures.is_deleted', '=', false)
+      .where('cohorts.is_deleted', '=', false)
+      .where((eb) =>
+        eb.or([
+          eb('cohorts.created_by_ranger_id', '=', user.userId),
+          eb('cohorts.assigned_ranger_id', '=', user.userId),
+        ]),
+      )
+      .executeTakeFirst();
+
+    if (!managedAssignment && adventure.created_by_user_id !== user.userId) {
+      throw new ForbiddenException(
+        'You do not have permission to view task submissions for this adventure',
+      );
+    }
+
+    return this.db
+      .selectFrom('task_completions')
+      .innerJoin(
+        'adventure_tasks',
+        'adventure_tasks.id',
+        'task_completions.task_id',
+      )
+      .innerJoin('users', 'users.id', 'task_completions.junior_ranger_user_id')
+      .select([
+        'task_completions.id',
+        'task_completions.task_id',
+        'task_completions.junior_ranger_user_id',
+        'task_completions.submission_text',
+        'task_completions.image_url',
+        'task_completions.status',
+        'task_completions.feedback',
+        'task_completions.reviewed_by_ranger_id',
+        'task_completions.submitted_at',
+        'task_completions.reviewed_at',
+        'task_completions.xp_awarded',
+        'task_completions.created_at',
+        'task_completions.updated_at',
+
+        'adventure_tasks.title as task_title',
+        'adventure_tasks.description as task_description',
+        'adventure_tasks.xp_reward',
+        'adventure_tasks.task_order',
+
+        'users.name as junior_ranger_name',
+        'users.email as junior_ranger_email',
+      ])
+      .where('adventure_tasks.adventure_id', '=', adventureId)
+      .where('adventure_tasks.is_deleted', '=', false)
+      .orderBy('task_completions.submitted_at', 'desc')
+      .execute();
+  }
+
   private calculateLevel(totalXp: number): number {
     if (totalXp >= 1000) return 5;
     if (totalXp >= 500) return 4;

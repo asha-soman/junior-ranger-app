@@ -1,239 +1,814 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, ScrollView } from 'react-native';
-import { Button, Chip } from 'react-native-paper';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import {
-    Adventure,
-    getAdventureById,
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+
+import {
+  Button,
+  Chip,
+} from 'react-native-paper';
+
+import { Ionicons } from '@expo/vector-icons';
+
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
+import {
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
+
+import {
+  AuthStackParamList,
+} from '../../navigation/AuthNavigator';
+
+import {
+  Adventure,
+  AdventureTask,
+  getAdventureById,
+  getAdventureTasks,
 } from '../../services/adventures/adventureService';
+
 import {
-    AdventureSubmission,
-    getMySubmission,
-} from '../../services/submissions/submissionService';
+  AdventureProgress,
+  TaskProgressStatus,
+  getAdventureProgress,
+} from '../../services/gamification/gamificationService';
+
 import apiClient from '../../services/api/client';
-import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'AdventureDetails'>;
+import {
+  adventureStyles as styles,
+} from '../../styles/AdventureStyles';
 
-type UserRole = 'admin' | 'ranger' | 'junior_ranger';
+type Props = NativeStackScreenProps<
+  AuthStackParamList,
+  'AdventureDetails'
+>;
 
-export default function AdventureDetailsScreen({ navigation, route }: Props) {
-    const { adventureId } = route.params;
+type UserRole =
+  | 'admin'
+  | 'ranger'
+  | 'junior_ranger';
 
-    const [adventure, setAdventure] = useState<Adventure | null>(null);
-    const [mySubmission, setMySubmission] = useState<AdventureSubmission | null>(
-        null
+export default function AdventureDetailsScreen({
+  navigation,
+  route,
+}: Props) {
+  const { adventureId } = route.params;
+
+  const [
+    adventure,
+    setAdventure,
+  ] = useState<Adventure | null>(null);
+
+  const [
+    adventureTasks,
+    setAdventureTasks,
+  ] = useState<AdventureTask[]>([]);
+
+  const [
+    adventureProgress,
+    setAdventureProgress,
+  ] =
+    useState<AdventureProgress | null>(
+      null,
     );
-    const [userRole, setUserRole] = useState<UserRole | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [submissionLoading, setSubmissionLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [userId, setUserId] = useState('');
 
-    useEffect(() => {
-        fetchAdventureDetails();
-        fetchProfile();
-    }, [adventureId]);
+  const [
+    userRole,
+    setUserRole,
+  ] =
+    useState<UserRole | null>(null);
 
-    useEffect(() => {
-        if (userRole === 'junior_ranger') {
-            fetchMySubmission();
-        }
-    }, [userRole, adventureId]);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-    const fetchAdventureDetails = async () => {
-        try {
-            setLoading(true);
-            setError('');
+  const [
+    progressLoading,
+    setProgressLoading,
+  ] = useState(false);
 
-            const data = await getAdventureById(adventureId);
-            setAdventure(data);
-        } catch (err) {
-            console.log('Fetch adventure details error:', err);
-            setError('Unable to load adventure details.');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [
+    taskLoading,
+    setTaskLoading,
+  ] = useState(false);
 
-    const fetchProfile = async () => {
-        try {
-            const response = await apiClient.get('/auth/profile');
-            setUserRole(response.data.role);
-            setUserId(response.data.userId);
-        } catch (err) {
-            console.log('Fetch profile error:', err);
-        }
-    };
+  const [
+    error,
+    setError,
+  ] = useState('');
 
-    const fetchMySubmission = async () => {
-        try {
-            setSubmissionLoading(true);
-            const submission = await getMySubmission(adventureId);
-            setMySubmission(submission);
-        } catch (err) {
-            console.log('Fetch my submission error:', err);
-        } finally {
-            setSubmissionLoading(false);
-        }
-    };
+  const [
+    userId,
+    setUserId,
+  ] = useState('');
 
-    const canEditAdventure =
-        userRole === 'admin' ||
-        (userRole === 'ranger' && adventure?.created_by_user_id === userId);
-    const canViewSubmissions = userRole === 'ranger';
-    const canSubmit = userRole === 'junior_ranger';
+  const fetchAdventureDetails =
+    async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-    const getSubmissionMessage = () => {
-        if (!mySubmission) {
-            return 'You have not submitted this adventure yet.';
-        }
+        const data =
+          await getAdventureById(
+            adventureId,
+          );
 
-        if (mySubmission.status === 'submitted') {
-            return 'Your submission has been submitted and is waiting for Ranger review.';
-        }
-
-        if (mySubmission.status === 'approved') {
-            return 'Your submission has been approved. Great work!';
-        }
-
-        if (mySubmission.status === 'rejected') {
-            return 'Your submission needs changes. Please check the feedback and update your submission.';
-        }
-
-        return '';
-    };
-
-    const getSubmitButtonLabel = () => {
-        if (!mySubmission) return 'Submit Adventure';
-
-        if (mySubmission.status === 'approved') return 'Submission Approved';
-
-        return 'Update Submission';
-    };
-
-    const isSubmitButtonDisabled = mySubmission?.status === 'approved';
-
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <ActivityIndicator size="large" style={styles.loader} />
-            </View>
+        setAdventure(data);
+      } catch (err) {
+        console.log(
+          'Fetch adventure details error:',
+          err,
         );
-    }
 
-    if (error || !adventure) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>
-                    {error || 'Adventure details not found.'}
-                </Text>
-            </View>
+        setError(
+          'Unable to load adventure details.',
         );
-    }
+      } finally {
+        setLoading(false);
+      }
+    };
 
+  const fetchProfile =
+    async () => {
+      try {
+        const response =
+          await apiClient.get(
+            '/auth/profile',
+          );
+
+        setUserRole(
+          response.data.role,
+        );
+
+        setUserId(
+          response.data.userId,
+        );
+      } catch (err) {
+        console.log(
+          'Fetch profile error:',
+          err,
+        );
+      }
+    };
+
+  const fetchAdventureProgress =
+    async () => {
+      try {
+        setProgressLoading(true);
+
+        const data =
+          await getAdventureProgress(
+            adventureId,
+          );
+
+        setAdventureProgress(data);
+      } catch (err) {
+        console.log(
+          'Fetch adventure progress error:',
+          err,
+        );
+
+        setAdventureProgress(null);
+      } finally {
+        setProgressLoading(false);
+      }
+    };
+
+  const fetchAdventureTasks =
+    async () => {
+      try {
+        setTaskLoading(true);
+
+        const data =
+          await getAdventureTasks(
+            adventureId,
+          );
+
+        setAdventureTasks(data);
+      } catch (err) {
+        console.log(
+          'Fetch adventure tasks error:',
+          err,
+        );
+
+        setAdventureTasks([]);
+      } finally {
+        setTaskLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    fetchAdventureDetails();
+    fetchProfile();
+  }, [adventureId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAdventureDetails();
+
+      if (
+        userRole ===
+        'junior_ranger'
+      ) {
+        fetchAdventureProgress();
+      }
+
+      if (
+        userRole === 'ranger' ||
+        userRole === 'admin'
+      ) {
+        fetchAdventureTasks();
+      }
+    }, [
+      userRole,
+      adventureId,
+    ]),
+  );
+
+  const canEditAdventure =
+    userRole === 'admin' ||
+    (
+      userRole === 'ranger' &&
+      adventure
+        ?.created_by_user_id ===
+        userId
+    );
+
+  const canViewSubmissions =
+    userRole === 'ranger';
+
+  const getTaskIcon = (
+    status: TaskProgressStatus,
+  ):
+    | 'checkmark-circle'
+    | 'time'
+    | 'alert-circle'
+    | 'ellipse-outline' => {
+    switch (status) {
+      case 'approved':
+        return 'checkmark-circle';
+
+      case 'submitted':
+        return 'time';
+
+      case 'rejected':
+        return 'alert-circle';
+
+      default:
+        return 'ellipse-outline';
+    }
+  };
+
+  const getTaskStatusLabel = (
+    status: TaskProgressStatus,
+  ) => {
+    switch (status) {
+      case 'approved':
+        return 'Approved';
+
+      case 'submitted':
+        return 'Waiting for Ranger review';
+
+      case 'rejected':
+        return 'Needs changes';
+
+      default:
+        return 'Not started';
+    }
+  };
+
+  if (loading) {
     return (
-        <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
+      <View
+        style={styles.container}
+      >
+        <ActivityIndicator
+          size="large"
+          style={styles.loader}
+        />
+      </View>
+    );
+  }
+
+  if (error || !adventure) {
+    return (
+      <View
+        style={styles.container}
+      >
+        <Text
+          style={styles.errorText}
         >
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Adventure Details</Text>
-            </View>
+          {error ||
+            'Adventure details not found.'}
+        </Text>
+      </View>
+    );
+  }
 
-            <View style={styles.detailsCard}>
-                <Text style={styles.detailsTitle}>{adventure.title}</Text>
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        styles.content
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
+    >
+      <View style={styles.header}>
+        <Text
+          style={styles.headerTitle}
+        >
+          Adventure Details
+        </Text>
+      </View>
 
-                <Chip style={styles.statusChip} textStyle={styles.statusText}>
-                    {adventure.status}
-                </Chip>
+      <View
+        style={styles.detailsCard}
+      >
+        <Text
+          style={styles.detailsTitle}
+        >
+          {adventure.title}
+        </Text>
 
-                <Text style={styles.detailsLabel}>Description</Text>
-                <Text style={styles.detailsText}>{adventure.description}</Text>
+        <Chip
+          style={styles.statusChip}
+          textStyle={
+            styles.statusText
+          }
+        >
+          {adventure.status}
+        </Chip>
 
-                <Text style={styles.detailsLabel}>Task Instructions</Text>
-                <Text style={styles.detailsText}>{adventure.task_instructions}</Text>
+        <Text
+          style={styles.detailsLabel}
+        >
+          Description
+        </Text>
 
-                <Text style={styles.detailsLabel}>Due Date</Text>
-                <Text style={styles.detailsText}>
-                    {adventure.due_date
-                        ? new Date(adventure.due_date).toDateString()
-                        : 'No due date'}
+        <Text
+          style={styles.detailsText}
+        >
+          {adventure.description}
+        </Text>
+
+        <Text
+          style={styles.detailsLabel}
+        >
+          Task Instructions
+        </Text>
+
+        <Text
+          style={styles.detailsText}
+        >
+          {adventure.task_instructions ||
+            'Complete the tasks below.'}
+        </Text>
+
+        <Text
+          style={styles.detailsLabel}
+        >
+          Due Date
+        </Text>
+
+        <Text
+          style={styles.detailsText}
+        >
+          {adventure.due_date
+            ? new Date(
+                adventure.due_date,
+              ).toDateString()
+            : 'No due date'}
+        </Text>
+
+        {/* Junior Ranger view */}
+
+        {userRole ===
+          'junior_ranger' && (
+          <View
+            style={
+              styles.adventureProgressSection
+            }
+          >
+            <Text
+              style={
+                styles.sectionHeading
+              }
+            >
+              Adventure Progress
+            </Text>
+
+            {progressLoading ? (
+              <ActivityIndicator
+                size="small"
+                style={
+                  styles.progressLoader
+                }
+              />
+            ) : adventureProgress ? (
+              <>
+                <View
+                  style={
+                    styles.progressSummaryRow
+                  }
+                >
+                  <Text
+                    style={
+                      styles.progressSummary
+                    }
+                  >
+                    {
+                      adventureProgress.approved_tasks
+                    }{' '}
+                    of{' '}
+                    {
+                      adventureProgress.total_tasks
+                    }{' '}
+                    tasks completed
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.progressPercentage
+                    }
+                  >
+                    {
+                      adventureProgress.progress_percentage
+                    }
+                    %
+                  </Text>
+                </View>
+
+                <View
+                  style={
+                    styles.adventureProgressBarBackground
+                  }
+                >
+                  <View
+                    style={[
+                      styles.adventureProgressBarFill,
+                      {
+                        width:
+                          `${adventureProgress.progress_percentage}%`,
+                      },
+                    ]}
+                  />
+                </View>
+
+                <Text
+                  style={
+                    styles.sectionHeading
+                  }
+                >
+                  Adventure Tasks
                 </Text>
 
-                {canSubmit && (
-                    <View style={styles.submissionStatusCard}>
-                        <Text style={styles.detailsLabel}>My Submission Status</Text>
+                {adventureProgress
+                  .tasks.length === 0 ? (
+                  <Text
+                    style={
+                      styles.emptyTaskText
+                    }
+                  >
+                    No tasks have been
+                    added to this
+                    adventure yet.
+                  </Text>
+                ) : (
+                  adventureProgress.tasks.map(
+                    (task) => (
+                      <View
+                        key={task.id}
+                        style={
+                          styles.taskCard
+                        }
+                      >
+                        <View
+                          style={
+                            styles.taskTopRow
+                          }
+                        >
+                          <View
+                            style={
+                              styles.taskIconContainer
+                            }
+                          >
+                            <Ionicons
+                              name={getTaskIcon(
+                                task.status,
+                              )}
+                              size={25}
+                              color="#3D786B"
+                            />
+                          </View>
 
-                        {submissionLoading ? (
-                            <ActivityIndicator size="small" />
-                        ) : (
-                            <>
-                                <Chip style={styles.statusChip} textStyle={styles.statusText}>
-                                    {mySubmission?.status || 'not submitted'}
-                                </Chip>
+                          <View
+                            style={
+                              styles.taskInfo
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.taskTitle
+                              }
+                            >
+                              {task.title}
+                            </Text>
 
-                                <Text style={styles.statusMessage}>
-                                    {getSubmissionMessage()}
-                                </Text>
+                            <Text
+                              style={
+                                styles.taskXp
+                              }
+                            >
+                              {
+                                task.xp_reward
+                              }{' '}
+                              XP
+                            </Text>
 
-                                {mySubmission?.feedback ? (
-                                    <View style={styles.feedbackBox}>
-                                        <Text style={styles.detailsLabel}>Ranger Feedback</Text>
-                                        <Text style={styles.detailsText}>
-                                            {mySubmission.feedback}
-                                        </Text>
-                                    </View>
-                                ) : null}
+                            <Text
+                              style={
+                                styles.taskStatus
+                              }
+                            >
+                              {getTaskStatusLabel(
+                                task.status,
+                              )}
+                            </Text>
+                          </View>
+                        </View>
 
-                                <Button
-                                    mode="contained"
-                                    style={styles.editButton}
-                                    disabled={isSubmitButtonDisabled}
-                                    onPress={() =>
-                                        navigation.navigate('SubmitAdventure', {
-                                            adventureId: adventure.id,
-                                        })
-                                    }
-                                >
-                                    {getSubmitButtonLabel()}
-                                </Button>
-                            </>
+                        {task.status ===
+                          'not_started' && (
+                          <Button
+                            mode="contained"
+                            style={
+                              styles.taskSubmitButton
+                            }
+                            onPress={() =>
+                              navigation.navigate(
+                                'SubmitAdventureTask',
+                                {
+                                  taskId:
+                                    task.id,
+                                  taskTitle:
+                                    task.title,
+                                  adventureId:
+                                    adventure.id,
+                                },
+                              )
+                            }
+                          >
+                            Submit Task
+                          </Button>
                         )}
-                    </View>
-                )}
 
-                {canViewSubmissions && (
-                    <Button
-                        mode="contained"
-                        style={styles.editButton}
-                        onPress={() =>
-                            navigation.navigate('AdventureSubmissions', {
-                                adventureId: adventure.id,
-                            })
-                        }
-                    >
-                        View Submissions
-                    </Button>
-                )}
+                        {task.status ===
+                          'submitted' && (
+                          <View
+                            style={
+                              styles.taskWaitingBox
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.taskWaitingText
+                              }
+                            >
+                              Your task is
+                              waiting for Ranger
+                              review.
+                            </Text>
+                          </View>
+                        )}
 
-                {canEditAdventure && (
-                    <Button
-                        mode="outlined"
-                        style={styles.cancelButton}
-                        onPress={() =>
-                            navigation.navigate('EditAdventure', {
-                                adventureId: adventure.id,
-                            })
-                        }
-                    >
-                        Edit Adventure
-                    </Button>
+                        {task.status ===
+                          'approved' && (
+                          <View
+                            style={
+                              styles.taskApprovedBox
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.taskApprovedText
+                              }
+                            >
+                              Task completed
+                            </Text>
+                          </View>
+                        )}
+
+                        {task.status ===
+                          'rejected' && (
+                          <View
+                            style={
+                              styles.taskRejectedBox
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.taskRejectedText
+                              }
+                            >
+                              This task needs
+                              changes.
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    ),
+                  )
                 )}
+              </>
+            ) : (
+              <Text
+                style={
+                  styles.emptyTaskText
+                }
+              >
+                Unable to load task
+                progress.
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Ranger/Admin view */}
+
+        {(userRole === 'ranger' ||
+          userRole === 'admin') && (
+          <View
+            style={
+              styles.adventureProgressSection
+            }
+          >
+            <View
+              style={
+                styles.taskManagementHeader
+              }
+            >
+              <Text
+                style={
+                  styles.sectionHeading
+                }
+              >
+                Adventure Tasks
+              </Text>
+
+              <Text
+                style={
+                  styles.taskCountText
+                }
+              >
+                {
+                  adventureTasks.length
+                }{' '}
+                task
+                {adventureTasks.length ===
+                1
+                  ? ''
+                  : 's'}
+              </Text>
             </View>
-        </ScrollView>
-    );
+
+            {taskLoading ? (
+              <ActivityIndicator
+                size="small"
+                style={
+                  styles.progressLoader
+                }
+              />
+            ) : adventureTasks.length ===
+              0 ? (
+              <Text
+                style={
+                  styles.emptyTaskText
+                }
+              >
+                No tasks have been
+                added to this
+                adventure yet.
+              </Text>
+            ) : (
+              adventureTasks.map(
+                (task, index) => (
+                  <View
+                    key={task.id}
+                    style={
+                      styles.rangerTaskCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.rangerTaskNumber
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.rangerTaskNumberText
+                        }
+                      >
+                        {index + 1}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={
+                        styles.taskInfo
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.taskTitle
+                        }
+                      >
+                        {task.title}
+                      </Text>
+
+                      {task.description ? (
+                        <Text
+                          style={
+                            styles.rangerTaskDescription
+                          }
+                        >
+                          {
+                            task.description
+                          }
+                        </Text>
+                      ) : null}
+
+                      <Text
+                        style={
+                          styles.taskXp
+                        }
+                      >
+                        {
+                          task.xp_reward
+                        }{' '}
+                        XP
+                      </Text>
+                    </View>
+                  </View>
+                ),
+              )
+            )}
+          </View>
+        )}
+
+        {canViewSubmissions && (
+          <Button
+            mode="contained"
+            style={
+              styles.editButton
+            }
+            onPress={() =>
+              navigation.navigate(
+                'AdventureSubmissions',
+                {
+                  adventureId:
+                    adventure.id,
+                },
+              )
+            }
+          >
+            View Submissions
+          </Button>
+        )}
+
+        {canEditAdventure && (
+          <Button
+            mode="outlined"
+            style={
+              styles.cancelButton
+            }
+            onPress={() =>
+              navigation.navigate(
+                'EditAdventure',
+                {
+                  adventureId:
+                    adventure.id,
+                },
+              )
+            }
+          >
+            Edit Adventure & Tasks
+          </Button>
+        )}
+      </View>
+    </ScrollView>
+  );
 }

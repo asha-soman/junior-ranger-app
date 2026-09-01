@@ -192,7 +192,16 @@ export default function AdminMenuScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: "#EEF2F1",
               }}
-              onPress={showComingSoon}
+              onPress={() => {
+                setAccountMenuVisible(false);
+
+                navigation.navigate(
+                  "UserProfile",
+                  {
+                    userRole: "admin",
+                  },
+                );
+              }}
             >
               <Ionicons name="person-outline" size={22} color="#2F6F61" />
               <Text

@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from './database/database.module'
+import { UsersModule } from './modules/users/users.module';;
 import { AdminModule } from './modules/admin/admin.module';
 import { AdventuresModule } from './modules/adventures/adventures.module';
 import { CohortsModule } from './modules/cohorts/cohorts.module';
@@ -21,6 +22,7 @@ import { FeedModule } from './modules/feed/feed.module';
       envFilePath: ['.env'],
     }),
     DatabaseModule,
+    UsersModule,
     AuthModule,
     AdminModule,
     AdventuresModule,

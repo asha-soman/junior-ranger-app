@@ -37,6 +37,8 @@ export interface UsersTable {
   two_factor_enabled: boolean;
   two_factor_code: string | null;
   two_factor_expiry: Date | null;
+  total_xp: number;
+  current_level: number;
 }
 
 export interface CohortsTable {
@@ -132,6 +134,8 @@ export interface BadgesTable {
   is_deleted: boolean;
   created_at: Date;
   updated_at: Date | null;
+  criteria_type: string | null;
+  criteria_value: number | null;
 }
 
 export interface UserBadgesTable {
@@ -259,5 +263,46 @@ export interface Database {
   activity_posts: ActivityPostsTable;
   reactions: ReactionsTable;
   club_activities: ClubActivitiesTable;
+  adventure_tasks: AdventureTasksTable;
+  task_completions: TaskCompletionsTable;
+  notifications: NotificationsTable;
+}
+
+export interface AdventureTasksTable {
+  id: string;
+  adventure_id: string;
+  title: string;
+  description: string | null;
+  xp_reward: number;
+  task_order: number;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface TaskCompletionsTable {
+  id: string;
+  task_id: string;
+  junior_ranger_user_id: string;
+  submission_text: string | null;
+  image_url: string | null;
+  status: 'submitted' | 'approved' | 'rejected';
+  feedback: string | null;
+  reviewed_by_ranger_id: string | null;
+  submitted_at: Date;
+  reviewed_at: Date | null;
+  xp_awarded: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface NotificationsTable {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: Date;
 }
 

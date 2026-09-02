@@ -1,3 +1,5 @@
+import type { Generated } from 'kysely';
+
 export type UserRole = 'admin' | 'ranger' | 'junior_ranger';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type AdventureStatus = 'draft' | 'published' | 'archived';
@@ -6,6 +8,7 @@ export type SubmissionStatus = 'submitted' | 'approved' | 'rejected';
 export type AdventureAssignedByRole = 'admin' | 'ranger';
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type EventRegistrationStatus = 'registered' | 'cancelled';
+export type AttendanceStatus = 'not_marked' | 'present' | 'absent';
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 export type AnnouncementPriority = 'normal' | 'high';
 export type ReactionType =
@@ -181,12 +184,22 @@ export interface EventsTable {
 }
 
 export interface EventRegistrationsTable {
-  id: string;
+  id: Generated<string>;
   event_id: string;
   junior_ranger_user_id: string;
   status: EventRegistrationStatus;
   registered_at: Date | null;
   cancelled_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface EventAttendanceTable {
+  id: Generated<string>;
+  registration_id: string;
+  status: AttendanceStatus;
+  marked_by_user_id: string | null;
+  marked_at: Date | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -255,6 +268,7 @@ export interface Database {
   observations: ObservationsTable;
   events: EventsTable;
   event_registrations: EventRegistrationsTable;
+  event_attendance: EventAttendanceTable;
   announcements: AnnouncementsTable;
   activity_posts: ActivityPostsTable;
   reactions: ReactionsTable;

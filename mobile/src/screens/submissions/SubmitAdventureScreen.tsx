@@ -19,6 +19,7 @@ import {
     createSubmission,
     getMySubmission,
     updateMySubmission,
+    uploadImage,
 } from '../../services/submissions/submissionService';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
@@ -80,7 +81,24 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
         });
 
         if (!result.canceled) {
-            setImageUrl(result.assets[0].uri);
+            const asset = result.assets[0];
+            
+            if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
+                showMessage('Image size cannot exceed 10MB.');
+                return;
+            }
+
+            const filename = asset.fileName || asset.uri.split('/').pop() || '';
+            const match = /\.(\w+)$/.exec(filename.toLowerCase());
+            const extension = match ? match[1] : '';
+            
+            const allowedExtensions = ['jpg', 'jpeg', 'png'];
+            if (!allowedExtensions.includes(extension) && asset.mimeType !== 'image/jpeg' && asset.mimeType !== 'image/png') {
+                showMessage('Only JPG, JPEG, and PNG images are allowed.');
+                return;
+            }
+
+            setImageUrl(asset.uri);
             showMessage('Image selected successfully.');
         }
     };
@@ -99,10 +117,17 @@ export default function SubmitAdventureScreen({ navigation, route }: Props) {
 
         try {
             setLoading(true);
+            
+            let finalImageUrl = imageUrl.trim() || undefined;
+            
+            if (finalImageUrl && !finalImageUrl.startsWith('http')) {
+                showMessage('Uploading image...');
+                finalImageUrl = await uploadImage(finalImageUrl);
+            }
 
             const payload = {
                 submission_text: submissionText.trim(),
-                image_url: imageUrl.trim() || undefined,
+                image_url: finalImageUrl,
             };
 
             if (existingSubmissionId) {

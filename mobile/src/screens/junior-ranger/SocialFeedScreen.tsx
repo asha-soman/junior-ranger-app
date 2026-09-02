@@ -7,19 +7,17 @@ import React, {
 
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     RefreshControl,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import AnnouncementCard from "../../components/feed/AnnouncementCard";
-import EventCard from "../../components/feed/EventCard";
-import ClubActivityCard from "../../components/feed/ClubActivityCard";
-import ActivityPostCard from "../../components/feed/ActivityPostCard";
 
 import {
     useFocusEffect,
@@ -28,9 +26,7 @@ import {
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import {
-    AuthStackParamList,
-} from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 import {
     FeedItem,
@@ -38,14 +34,36 @@ import {
     getFeed,
 } from "../../services/feed/feedService";
 
-type NavigationProp = NativeStackNavigationProp<
-    AuthStackParamList,
-    "SocialFeed"
->;
+import {
+    deleteActivityPost,
+} from "../../services/activity-posts/activityPostsService";
+
+import {
+    getCurrentUserProfile,
+} from "../../services/auth/authService";
+
+import AnnouncementCard from "../../components/feed/AnnouncementCard";
+import EventCard from "../../components/feed/EventCard";
+import ClubActivityCard from "../../components/feed/ClubActivityCard";
+import ActivityPostCard from "../../components/feed/ActivityPostCard";
+
+/* ========================================================
+   TYPES
+======================================================== */
+
+type NavigationProp =
+    NativeStackNavigationProp<
+        AuthStackParamList,
+        "SocialFeed"
+    >;
 
 type FilterType =
     | "all"
     | FeedItemType;
+
+/* ========================================================
+   FILTER OPTIONS
+======================================================== */
 
 const filters: {
     label: string;
@@ -73,96 +91,318 @@ const filters: {
         },
     ];
 
-export default function SocialFeedScreen() {
-    const navigation = useNavigation<NavigationProp>();
+/* ========================================================
+   SCREEN
+======================================================== */
 
-    const [feed, setFeed] = useState<FeedItem[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function SocialFeedScreen() {
+    const navigation =
+        useNavigation<NavigationProp>();
+
+    /* ======================================================
+       STATE
+    ====================================================== */
+
+    const [feed, setFeed] =
+        useState<FeedItem[]>([]);
+
+    const [loading, setLoading] =
+        useState(true);
 
     const [refreshing, setRefreshing] =
         useState(false);
 
-    const [selectedFilter, setSelectedFilter] =
-        useState<FilterType>("all");
-
     const [error, setError] =
         useState<string | null>(null);
 
-    const loadFeed = async (
-        showLoading = true,
-    ) => {
-        try {
-            if (showLoading) {
-                setLoading(true);
+    const [
+        selectedFilter,
+        setSelectedFilter,
+    ] = useState<FilterType>("all");
+
+    const [
+        currentUserId,
+        setCurrentUserId,
+    ] = useState<string | null>(null);
+
+    /*
+     * Search text entered by
+     * the Junior Ranger.
+     */
+    const [
+        searchText,
+        setSearchText,
+    ] = useState("");
+
+    /* ======================================================
+       LOAD CURRENT USER
+    ====================================================== */
+
+    const loadCurrentUser =
+        async () => {
+            try {
+                const profile =
+                    await getCurrentUserProfile();
+
+                console.log(
+                    "Current user profile:",
+                    profile,
+                );
+
+                setCurrentUserId(
+                    profile.userId,
+                );
+            } catch (err: any) {
+                console.error(
+                    "Unable to load current user:",
+                    err?.response?.data ??
+                    err,
+                );
+
+                setCurrentUserId(
+                    null,
+                );
             }
+        };
 
-            setError(null);
+    /* ======================================================
+       LOAD FEED
+    ====================================================== */
 
-            const data = await getFeed();
+    const loadFeed =
+        async (
+            showLoader = true,
+        ) => {
+            try {
+                if (showLoader) {
+                    setLoading(true);
+                }
 
-            setFeed(data);
-        } catch (err: any) {
-            console.error(
-                "Unable to load feed:",
-                err?.response?.data ?? err,
-            );
+                setError(null);
 
-            setError(
-                err?.response?.data?.message ??
-                "We couldn't load your feed.",
-            );
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    };
+                const result =
+                    await getFeed();
+
+                console.log(
+                    "Feed response:",
+                    result,
+                );
+
+                setFeed(result);
+            } catch (err: any) {
+                console.error(
+                    "Unable to load feed:",
+                    err?.response?.data ??
+                    err,
+                );
+
+                setError(
+                    err?.response?.data
+                        ?.message ||
+                    err?.message ||
+                    "We couldn't load the feed.",
+                );
+            } finally {
+                if (showLoader) {
+                    setLoading(false);
+                }
+            }
+        };
+
+    /* ======================================================
+       INITIAL LOAD
+    ====================================================== */
 
     useEffect(() => {
-        loadFeed();
+        const initialiseScreen =
+            async () => {
+                await Promise.all([
+                    loadCurrentUser(),
+                    loadFeed(),
+                ]);
+            };
+
+        initialiseScreen();
     }, []);
 
-    // Reload feed after returning from Add Post
+    /* ======================================================
+       RELOAD WHEN RETURNING TO FEED
+    ====================================================== */
+
     useFocusEffect(
         useCallback(() => {
             loadFeed(false);
         }, []),
     );
 
-    const handleRefresh = () => {
-        setRefreshing(true);
-        loadFeed(false);
-    };
+    /* ======================================================
+       PULL TO REFRESH
+    ====================================================== */
 
-    const filteredFeed = useMemo(() => {
-        if (selectedFilter === "all") {
-            return feed;
-        }
+    const handleRefresh =
+        async () => {
+            try {
+                setRefreshing(true);
 
-        return feed.filter(
-            (item) => item.type === selectedFilter,
-        );
-    }, [feed, selectedFilter]);
+                await loadFeed(false);
+            } finally {
+                setRefreshing(false);
+            }
+        };
 
-    const getTypeLabel = (
-        type: FeedItemType,
-    ) => {
-        switch (type) {
-            case "announcement":
-                return "Announcement";
+    /* ======================================================
+       DELETE ACTIVITY POST
+    ====================================================== */
 
-            case "event":
-                return "Event";
+    const handleDeletePost =
+        async (
+            postId: string,
+        ) => {
+            try {
+                console.log(
+                    "Deleting activity post:",
+                    postId,
+                );
 
-            case "club_activity":
-                return "Club Activity";
+                await deleteActivityPost(
+                    postId,
+                );
 
-            case "activity_post":
-                return "Activity";
+                console.log(
+                    "Activity post deleted:",
+                    postId,
+                );
 
-            default:
-                return "Post";
-        }
-    };
+                /*
+                 * Remove it immediately
+                 * from the local feed.
+                 */
+                setFeed(
+                    (
+                        currentFeed,
+                    ) =>
+                        currentFeed.filter(
+                            (item) =>
+                                !(
+                                    item.type ===
+                                    "activity_post" &&
+                                    item.id ===
+                                    postId
+                                ),
+                        ),
+                );
+            } catch (err: any) {
+                console.error(
+                    "Delete post failed:",
+                    err?.response?.data ??
+                    err,
+                );
+
+                Alert.alert(
+                    "Couldn't Delete Post",
+                    err?.response?.data
+                        ?.message ||
+                    err?.message ||
+                    "Something went wrong while deleting your post.",
+                );
+            }
+        };
+
+    /* ======================================================
+       FILTER + SEARCH
+    ====================================================== */
+
+    const filteredFeed =
+        useMemo(() => {
+            /*
+             * Start with complete feed.
+             */
+            let result = feed;
+
+            /* -------------------------
+               CONTENT TYPE FILTER
+            ------------------------- */
+
+            if (
+                selectedFilter !==
+                "all"
+            ) {
+                result =
+                    result.filter(
+                        (item) =>
+                            item.type ===
+                            selectedFilter,
+                    );
+            }
+
+            /* -------------------------
+               KEYWORD SEARCH
+            ------------------------- */
+
+            const query =
+                searchText
+                    .trim()
+                    .toLowerCase();
+
+            /*
+             * If nothing has been
+             * typed, return normal
+             * filtered feed.
+             */
+            if (!query) {
+                return result;
+            }
+
+            return result.filter(
+                (item) => {
+                    /*
+                     * These properties already
+                     * exist in our FeedItem type.
+                     *
+                     * We deliberately DON'T use
+                     * item.description here,
+                     * because description is not
+                     * currently declared on your
+                     * FeedItem interface.
+                     */
+                    const searchableText = [
+                        item.title,
+                        item.content,
+                        item.location,
+                        item.author_name,
+
+                        /*
+                         * We also include type so
+                         * searching words such as
+                         * event or announcement can
+                         * still return results.
+                         */
+                        item.type,
+                    ]
+                        .filter(
+                            (
+                                value,
+                            ): value is string =>
+                                typeof value ===
+                                "string",
+                        )
+                        .join(" ")
+                        .toLowerCase();
+
+                    return searchableText.includes(
+                        query,
+                    );
+                },
+            );
+        }, [
+            feed,
+            selectedFilter,
+            searchText,
+        ]);
+
+    /* ======================================================
+       CARD RENDERING
+    ====================================================== */
 
     const renderFeedItem = ({
         item,
@@ -170,206 +410,489 @@ export default function SocialFeedScreen() {
         item: FeedItem;
     }) => {
         switch (item.type) {
+            /* -------------------------
+               ANNOUNCEMENT
+            ------------------------- */
+
             case "announcement":
                 return (
-                    <AnnouncementCard item={item} />
+                    <AnnouncementCard
+                        item={item}
+                    />
                 );
+
+            /* -------------------------
+               EVENT
+            ------------------------- */
 
             case "event":
                 return (
-                    <EventCard item={item} />
+                    <EventCard
+                        item={item}
+                        onViewEvent={() =>
+                            navigation.navigate(
+                                "EventDetails",
+                                {
+                                    eventId: item.id,
+                                    userRole: "junior_ranger",
+                                },
+                            )
+                        }
+                    />
                 );
+
+            /* -------------------------
+               CLUB ACTIVITY
+            ------------------------- */
 
             case "club_activity":
                 return (
-                    <ClubActivityCard item={item} />
+                    <ClubActivityCard
+                        item={item}
+                    />
                 );
 
-            case "activity_post":
+            /* -------------------------
+               JUNIOR RANGER POST
+            ------------------------- */
+
+            case "activity_post": {
+                const isOwner =
+                    !!currentUserId &&
+                    item.created_by_user_id ===
+                    currentUserId;
+
                 return (
-                    <ActivityPostCard item={item} />
+                    <ActivityPostCard
+                        item={item}
+                        isOwner={
+                            isOwner
+                        }
+                        onEdit={() =>
+                            navigation.navigate(
+                                "ActivityPostForm",
+                                {
+                                    postId:
+                                        item.id,
+                                },
+                            )
+                        }
+                        onDelete={() =>
+                            handleDeletePost(
+                                item.id,
+                            )
+                        }
+                    />
                 );
+            }
 
             default:
                 return null;
         }
     };
 
-    const ListHeader = () => (
-        <>
-            <View style={styles.pageHeading}>
-                <Text style={styles.title}>
-                    Junior Ranger Feed
-                </Text>
-
-                <Text style={styles.subtitle}>
-                    See what's happening in your club.
-                </Text>
-            </View>
-
-            <View style={styles.cohortBanner}>
-                <Ionicons
-                    name="people-outline"
-                    size={19}
-                    color="#376E62"
-                />
-
-                <Text style={styles.cohortBannerText}>
-                    Only posts from your club are shown
-                </Text>
-            </View>
-
-            <FlatList
-                data={filters}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => item.value}
-                contentContainerStyle={
-                    styles.filterContainer
-                }
-                renderItem={({ item }) => {
-                    const selected =
-                        selectedFilter === item.value;
-
-                    return (
-                        <TouchableOpacity
-                            style={[
-                                styles.filterButton,
-                                selected &&
-                                styles.selectedFilterButton,
-                            ]}
-                            onPress={() =>
-                                setSelectedFilter(item.value)
-                            }
-                        >
-                            <Text
-                                style={[
-                                    styles.filterText,
-                                    selected &&
-                                    styles.selectedFilterText,
-                                ]}
-                            >
-                                {item.label}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                }}
-            />
-
-            <TouchableOpacity
-                style={styles.sharePost}
-                activeOpacity={0.85}
-                onPress={() =>
-                    navigation.navigate(
-                        "ActivityPostForm",
-                    )
-                }
-            >
-                <View style={styles.shareAvatar}>
-                    <Text style={styles.shareAvatarText}>
-                        JR
-                    </Text>
-                </View>
-
-                <Text style={styles.shareText}>
-                    Share A Post
-                </Text>
-
-                <Ionicons
-                    name="camera-outline"
-                    size={24}
-                    color="#376E62"
-                />
-
-                <View style={styles.addButton}>
-                    <Ionicons
-                        name="add"
-                        size={24}
-                        color="#FFFFFF"
-                    />
-                </View>
-            </TouchableOpacity>
-
-            <Text style={styles.sectionHeading}>
-                Latest
-            </Text>
-        </>
-    );
+    /* ======================================================
+       INITIAL LOADING
+    ====================================================== */
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View
+                style={
+                    styles.loadingContainer
+                }
+            >
                 <ActivityIndicator
                     size="large"
                     color="#376E62"
                 />
 
-                <Text style={styles.loadingText}>
+                <Text
+                    style={
+                        styles.loadingText
+                    }
+                >
                     Loading your feed...
                 </Text>
             </View>
         );
     }
 
+    /* ======================================================
+       ERROR
+    ====================================================== */
+
+    if (
+        error &&
+        feed.length === 0
+    ) {
+        return (
+            <View
+                style={
+                    styles.errorContainer
+                }
+            >
+                <Ionicons
+                    name="cloud-offline-outline"
+                    size={48}
+                    color="#777777"
+                />
+
+                <Text
+                    style={
+                        styles.errorTitle
+                    }
+                >
+                    Unable to Load Feed
+                </Text>
+
+                <Text
+                    style={
+                        styles.errorText
+                    }
+                >
+                    {error}
+                </Text>
+
+                <TouchableOpacity
+                    style={
+                        styles.retryButton
+                    }
+                    onPress={() =>
+                        loadFeed()
+                    }
+                >
+                    <Text
+                        style={
+                            styles.retryButtonText
+                        }
+                    >
+                        Try Again
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    /* ======================================================
+       SCREEN
+    ====================================================== */
+
     return (
-        <View style={styles.container}>
+        <View
+            style={
+                styles.container
+            }
+        >
             <FlatList
                 data={filteredFeed}
-                keyExtractor={(item) =>
+                keyExtractor={(
+                    item,
+                ) =>
                     `${item.type}-${item.id}`
                 }
-                renderItem={renderFeedItem}
-                ListHeaderComponent={ListHeader}
+                renderItem={
+                    renderFeedItem
+                }
+                showsVerticalScrollIndicator={
+                    false
+                }
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={
                     styles.listContent
                 }
                 refreshControl={
                     <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
+                        refreshing={
+                            refreshing
+                        }
+                        onRefresh={
+                            handleRefresh
+                        }
+                        tintColor="#376E62"
                     />
                 }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons
-                            name={
-                                error
-                                    ? "alert-circle-outline"
-                                    : "leaf-outline"
+                /* ==================================================
+                   HEADER
+                ================================================== */
+
+                ListHeaderComponent={
+                    <>
+                        {/* -------------------------
+                TITLE
+            ------------------------- */}
+
+                        <View
+                            style={
+                                styles.titleSection
                             }
-                            size={42}
-                            color="#376E62"
-                        />
+                        >
+                            <Text
+                                style={
+                                    styles.title
+                                }
+                            >
+                                Social Feed
+                            </Text>
 
-                        <Text style={styles.emptyTitle}>
-                            {error
-                                ? "Couldn't load the feed"
-                                : "Nothing here yet"}
-                        </Text>
+                            <Text
+                                style={
+                                    styles.subtitle
+                                }
+                            >
+                                See what's happening in
+                                your club.
+                            </Text>
+                        </View>
 
-                        <Text style={styles.emptyText}>
-                            {error ??
-                                (selectedFilter === "all"
-                                    ? "Be the first to share an activity with your club!"
-                                    : "There aren't any posts in this category yet.")}
-                        </Text>
+                        {/* -------------------------
+                SEARCH BAR
+            ------------------------- */}
 
-                        {error && (
-                            <TouchableOpacity
-                                style={styles.retryButton}
-                                onPress={() =>
-                                    loadFeed()
+                        <View
+                            style={
+                                styles.searchContainer
+                            }
+                        >
+                            <Ionicons
+                                name="search-outline"
+                                size={21}
+                                color="#687C75"
+                            />
+
+                            <TextInput
+                                style={
+                                    styles.searchInput
+                                }
+                                placeholder="Search the feed..."
+                                placeholderTextColor="#8B9692"
+                                value={
+                                    searchText
+                                }
+                                onChangeText={
+                                    setSearchText
+                                }
+                                autoCapitalize="none"
+                                autoCorrect={
+                                    false
+                                }
+                                returnKeyType="search"
+                            />
+
+                            {searchText.length >
+                                0 && (
+                                    <TouchableOpacity
+                                        style={
+                                            styles.clearSearchButton
+                                        }
+                                        onPress={() =>
+                                            setSearchText(
+                                                "",
+                                            )
+                                        }
+                                    >
+                                        <Ionicons
+                                            name="close-circle"
+                                            size={21}
+                                            color="#7B8883"
+                                        />
+                                    </TouchableOpacity>
+                                )}
+                        </View>
+
+                        {/* -------------------------
+                FILTERS
+            ------------------------- */}
+
+                        <View
+                            style={
+                                styles.filtersContainer
+                            }
+                        >
+                            {filters.map(
+                                (filter) => {
+                                    const active =
+                                        selectedFilter ===
+                                        filter.value;
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={
+                                                filter.value
+                                            }
+                                            style={[
+                                                styles.filterButton,
+
+                                                active &&
+                                                styles.activeFilterButton,
+                                            ]}
+                                            onPress={() =>
+                                                setSelectedFilter(
+                                                    filter.value,
+                                                )
+                                            }
+                                            activeOpacity={
+                                                0.8
+                                            }
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.filterText,
+
+                                                    active &&
+                                                    styles.activeFilterText,
+                                                ]}
+                                            >
+                                                {
+                                                    filter.label
+                                                }
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                },
+                            )}
+                        </View>
+
+                        {/* -------------------------
+                SHARE POST
+            ------------------------- */}
+
+                        <TouchableOpacity
+                            style={
+                                styles.sharePostCard
+                            }
+                            onPress={() =>
+                                navigation.navigate(
+                                    "ActivityPostForm",
+                                )
+                            }
+                            activeOpacity={
+                                0.85
+                            }
+                        >
+                            <View
+                                style={
+                                    styles.sharePostIcon
+                                }
+                            >
+                                <Ionicons
+                                    name="add"
+                                    size={27}
+                                    color="#FFFFFF"
+                                />
+                            </View>
+
+                            <View
+                                style={
+                                    styles.sharePostTextContainer
                                 }
                             >
                                 <Text
                                     style={
-                                        styles.retryButtonText
+                                        styles.sharePostTitle
                                     }
                                 >
-                                    Try Again
+                                    Share A Post
                                 </Text>
-                            </TouchableOpacity>
-                        )}
+
+                                <Text
+                                    style={
+                                        styles.sharePostSubtitle
+                                    }
+                                >
+                                    Tell your club about an
+                                    activity you've done.
+                                </Text>
+                            </View>
+
+                            <Ionicons
+                                name="chevron-forward"
+                                size={22}
+                                color="#376E62"
+                            />
+                        </TouchableOpacity>
+
+                        {/* -------------------------
+                SEARCH RESULT LABEL
+            ------------------------- */}
+
+                        {searchText.trim() !==
+                            "" && (
+                                <Text
+                                    style={
+                                        styles.searchResultText
+                                    }
+                                >
+                                    {filteredFeed.length ===
+                                        1
+                                        ? `1 result for "${searchText.trim()}"`
+                                        : `${filteredFeed.length} results for "${searchText.trim()}"`}
+                                </Text>
+                            )}
+                    </>
+                }
+
+                /* ==================================================
+                   EMPTY STATE
+                ================================================== */
+
+                ListEmptyComponent={
+                    <View
+                        style={
+                            styles.emptyContainer
+                        }
+                    >
+                        <Ionicons
+                            name={
+                                searchText.trim()
+                                    ? "search-outline"
+                                    : "leaf-outline"
+                            }
+                            size={44}
+                            color="#8AA59D"
+                        />
+
+                        <Text
+                            style={
+                                styles.emptyTitle
+                            }
+                        >
+                            {searchText.trim()
+                                ? "No Results Found"
+                                : "Nothing Here Yet"}
+                        </Text>
+
+                        <Text
+                            style={
+                                styles.emptyText
+                            }
+                        >
+                            {searchText.trim()
+                                ? `We couldn't find anything matching "${searchText.trim()}".`
+                                : "Posts and activities from your club will appear here."}
+                        </Text>
+
+                        {searchText.trim() !==
+                            "" && (
+                                <TouchableOpacity
+                                    style={
+                                        styles.clearResultsButton
+                                    }
+                                    onPress={() =>
+                                        setSearchText(
+                                            "",
+                                        )
+                                    }
+                                >
+                                    <Text
+                                        style={
+                                            styles.clearResultsText
+                                        }
+                                    >
+                                        Clear Search
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                     </View>
                 }
             />
@@ -377,259 +900,266 @@ export default function SocialFeedScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F6F7F5",
-    },
+/* ========================================================
+   STYLES
+======================================================== */
 
-    listContent: {
-        padding: 16,
-        paddingBottom: 50,
-    },
+const styles =
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor:
+                "#F6F7F5",
+        },
 
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#F6F7F5",
-    },
+        listContent: {
+            paddingHorizontal: 16,
+            paddingTop: 18,
+            paddingBottom: 40,
+        },
 
-    loadingText: {
-        marginTop: 12,
-        color: "#666",
-    },
+        /* -------------------------
+           LOADING
+        ------------------------- */
 
-    pageHeading: {
-        marginBottom: 14,
-    },
+        loadingContainer: {
+            flex: 1,
+            justifyContent:
+                "center",
+            alignItems: "center",
+            backgroundColor:
+                "#F6F7F5",
+        },
 
-    title: {
-        fontSize: 25,
-        fontWeight: "700",
-        color: "#1B1B1B",
-    },
+        loadingText: {
+            marginTop: 12,
+            fontSize: 14,
+            color: "#666666",
+        },
 
-    subtitle: {
-        marginTop: 4,
-        fontSize: 14,
-        color: "#666",
-    },
+        /* -------------------------
+           ERROR
+        ------------------------- */
 
-    cohortBanner: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#DDEDE8",
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 20,
-        marginBottom: 14,
-        gap: 7,
-    },
+        errorContainer: {
+            flex: 1,
+            padding: 30,
+            justifyContent:
+                "center",
+            alignItems: "center",
+            backgroundColor:
+                "#F6F7F5",
+        },
 
-    cohortBannerText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#2E5F54",
-    },
+        errorTitle: {
+            marginTop: 14,
+            fontSize: 20,
+            fontWeight: "700",
+            color: "#333333",
+        },
 
-    filterContainer: {
-        gap: 8,
-        paddingBottom: 15,
-    },
+        errorText: {
+            marginTop: 8,
+            fontSize: 14,
+            lineHeight: 20,
+            textAlign: "center",
+            color: "#777777",
+        },
 
-    filterButton: {
-        borderWidth: 1,
-        borderColor: "#B8B8B8",
-        backgroundColor: "#FFFFFF",
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
+        retryButton: {
+            marginTop: 20,
+            backgroundColor:
+                "#376E62",
+            paddingHorizontal: 22,
+            paddingVertical: 12,
+            borderRadius: 12,
+        },
 
-    selectedFilterButton: {
-        backgroundColor: "#376E62",
-        borderColor: "#376E62",
-    },
+        retryButtonText: {
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: "700",
+        },
 
-    filterText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: "#444",
-    },
+        /* -------------------------
+           TITLE
+        ------------------------- */
 
-    selectedFilterText: {
-        color: "#FFFFFF",
-    },
+        titleSection: {
+            marginBottom: 16,
+        },
 
-    sharePost: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#E3E3E3",
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 14,
-        marginBottom: 22,
-    },
+        title: {
+            fontSize: 27,
+            fontWeight: "800",
+            color: "#1F1F1F",
+        },
 
-    shareAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: "#FFFFFF",
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 10,
-    },
+        subtitle: {
+            marginTop: 4,
+            fontSize: 14,
+            color: "#68716E",
+        },
 
-    shareAvatarText: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: "#376E62",
-    },
+        /* -------------------------
+           SEARCH
+        ------------------------- */
 
-    shareText: {
-        flex: 1,
-        fontSize: 15,
-        fontWeight: "700",
-        color: "#222",
-    },
+        searchContainer: {
+            minHeight: 50,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor:
+                "#FFFFFF",
+            borderRadius: 15,
+            borderWidth: 1,
+            borderColor:
+                "#D6E0DC",
+            paddingHorizontal: 14,
+            marginBottom: 15,
+        },
 
-    addButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: "#376E62",
-        alignItems: "center",
-        justifyContent: "center",
-        marginLeft: 10,
-    },
+        searchInput: {
+            flex: 1,
+            marginLeft: 9,
+            paddingVertical: 11,
+            fontSize: 15,
+            color: "#1F1F1F",
+        },
 
-    sectionHeading: {
-        fontSize: 18,
-        fontWeight: "700",
-        marginBottom: 12,
-        color: "#222",
-    },
+        clearSearchButton: {
+            marginLeft: 5,
+            padding: 4,
+        },
 
-    card: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 16,
-        padding: 15,
-        marginBottom: 14,
-        borderWidth: 1,
-        borderColor: "#E2E2E2",
-    },
+        /* -------------------------
+           FILTERS
+        ------------------------- */
 
-    cardHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 12,
-    },
+        filtersContainer: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+            marginBottom: 17,
+        },
 
-    avatar: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: "#E0EFEA",
-        alignItems: "center",
-        justifyContent: "center",
-    },
+        filterButton: {
+            paddingHorizontal: 13,
+            paddingVertical: 8,
+            borderRadius: 18,
+            backgroundColor:
+                "#E7ECEA",
+        },
 
-    headerInformation: {
-        flex: 1,
-        marginLeft: 10,
-    },
+        activeFilterButton: {
+            backgroundColor:
+                "#376E62",
+        },
 
-    author: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#222",
-    },
+        filterText: {
+            fontSize: 12,
+            fontWeight: "600",
+            color: "#53605C",
+        },
 
-    postType: {
-        marginTop: 2,
-        fontSize: 12,
-        color: "#777",
-    },
+        activeFilterText: {
+            color: "#FFFFFF",
+        },
 
-    cardTitle: {
-        fontSize: 17,
-        fontWeight: "700",
-        color: "#222",
-        marginBottom: 6,
-    },
+        /* -------------------------
+           SHARE POST
+        ------------------------- */
 
-    cardContent: {
-        fontSize: 14,
-        lineHeight: 20,
-        color: "#444",
-        marginBottom: 12,
-    },
+        sharePostCard: {
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor:
+                "#E0EFEA",
+            borderWidth: 1,
+            borderColor:
+                "#C2DED5",
+            borderRadius: 16,
+            padding: 14,
+            marginBottom: 18,
+        },
 
-    detailRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 5,
-        gap: 6,
-    },
+        sharePostIcon: {
+            width: 43,
+            height: 43,
+            borderRadius: 22,
+            backgroundColor:
+                "#376E62",
+            justifyContent:
+                "center",
+            alignItems: "center",
+            marginRight: 12,
+        },
 
-    detailText: {
-        fontSize: 13,
-        color: "#555",
-    },
+        sharePostTextContainer: {
+            flex: 1,
+        },
 
-    cardFooter: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        borderTopWidth: 1,
-        borderTopColor: "#EEEEEE",
-        paddingTop: 10,
-        marginTop: 12,
-    },
+        sharePostTitle: {
+            fontSize: 15,
+            fontWeight: "700",
+            color: "#214C45",
+        },
 
-    dateText: {
-        fontSize: 12,
-        color: "#888",
-    },
+        sharePostSubtitle: {
+            marginTop: 3,
+            fontSize: 12,
+            lineHeight: 16,
+            color: "#60736D",
+        },
 
-    reactionSummary: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: "#376E62",
-    },
+        /* -------------------------
+           SEARCH RESULT
+        ------------------------- */
 
-    emptyContainer: {
-        alignItems: "center",
-        paddingVertical: 50,
-        paddingHorizontal: 25,
-    },
+        searchResultText: {
+            marginBottom: 12,
+            fontSize: 12,
+            fontWeight: "600",
+            color: "#68716E",
+        },
 
-    emptyTitle: {
-        marginTop: 12,
-        fontSize: 17,
-        fontWeight: "700",
-        color: "#333",
-    },
+        /* -------------------------
+           EMPTY STATE
+        ------------------------- */
 
-    emptyText: {
-        marginTop: 6,
-        textAlign: "center",
-        lineHeight: 19,
-        color: "#777",
-    },
+        emptyContainer: {
+            paddingVertical: 50,
+            paddingHorizontal: 25,
+            alignItems: "center",
+        },
 
-    retryButton: {
-        marginTop: 16,
-        backgroundColor: "#376E62",
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 18,
-    },
+        emptyTitle: {
+            marginTop: 12,
+            fontSize: 18,
+            fontWeight: "700",
+            color: "#3E4A46",
+        },
 
-    retryButtonText: {
-        color: "#FFFFFF",
-        fontWeight: "700",
-    },
-});
+        emptyText: {
+            marginTop: 7,
+            fontSize: 13,
+            lineHeight: 19,
+            color: "#78827F",
+            textAlign: "center",
+        },
+
+        clearResultsButton: {
+            marginTop: 17,
+            backgroundColor:
+                "#376E62",
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+            borderRadius: 10,
+        },
+
+        clearResultsText: {
+            color: "#FFFFFF",
+            fontSize: 13,
+            fontWeight: "700",
+        },
+    });

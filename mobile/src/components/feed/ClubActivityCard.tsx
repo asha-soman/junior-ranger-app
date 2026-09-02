@@ -62,17 +62,6 @@ export default function ClubActivityCard({
                             : ""}
                     </Text>
                 </View>
-
-                <TouchableOpacity
-                    style={styles.menuButton}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons
-                        name="ellipsis-horizontal"
-                        size={22}
-                        color="#222222"
-                    />
-                </TouchableOpacity>
             </View>
 
             {/* CONTENT */}

@@ -16,7 +16,7 @@ import {
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Cohort, getCohorts } from "../../services/cohorts/cohortService";
+import { Cohort, getCohorts, getCohortsPaginated, } from "../../services/cohorts/cohortService";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
@@ -38,31 +38,43 @@ export default function AdminCohortsScreen() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [searchName, setSearchName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCohorts, setTotalCohorts] = useState(0);
+
+  const COHORTS_PER_PAGE = 6;
 
   const userRole = route.params?.userRole ?? "admin";
   const canCreateCohort = userRole === "admin" || userRole === "ranger";
 
-  const loadCohorts = async () => {
-    try {
-      setErrorMessage("");
+  const loadCohorts = async (page = 1) => {
+  try {
+    setErrorMessage("");
 
-      if (loading) {
-        setLoading(true);
-      } else {
-        setIsFiltering(true);
-      }
+    if (loading) {
+      setLoading(true);
+    } else {
+      setIsFiltering(true);
+    }
 
-      const data = await getCohorts();
-      setCohorts(data);
-    } catch (error: any) {
-      setErrorMessage(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Could not load cohorts.",
-      );
-    } finally {
-      setLoading(false);
-      setIsFiltering(false);
+    const result = await getCohortsPaginated(
+      page,
+      COHORTS_PER_PAGE,
+    );
+
+    setCohorts(result.cohorts);
+    setCurrentPage(result.pagination.page);
+    setTotalPages(result.pagination.totalPages);
+    setTotalCohorts(result.pagination.total);
+  } catch (error: any) {
+    setErrorMessage(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Could not load cohorts.",
+    );
+  } finally {
+    setLoading(false);
+    setIsFiltering(false);
     }
   };
 
@@ -122,8 +134,8 @@ export default function AdminCohortsScreen() {
         ) : filteredCohorts.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
-              {userRole === 'junior_ranger' && searchName === '' 
-                ? "You haven't joined a club yet." 
+              {userRole === 'junior_ranger' && searchName === ''
+                ? "You haven't joined a club yet."
                 : "No cohorts found"}
             </Text>
             {userRole === 'junior_ranger' && searchName === '' && (
@@ -299,6 +311,67 @@ export default function AdminCohortsScreen() {
             </TouchableOpacity>
           ))
         )}
+{!loading && filteredCohorts.length > 0 && (
+  <Text
+    style={{
+      textAlign: "center",
+      marginTop: 8,
+      marginBottom: 12,
+      fontWeight: "600",
+      color: "#555",
+    }}
+  >
+    {totalCohorts} cohorts found
+  </Text>
+)}
+
+{!loading && totalPages > 1 && (
+  <View
+    style={{
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 20,
+      gap: 12,
+    }}
+  >
+    <TouchableOpacity
+      disabled={currentPage === 1}
+      onPress={() => loadCohorts(currentPage - 1)}
+      style={{
+        backgroundColor:
+          currentPage === 1 ? "#CCCCCC" : "#376E62",
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 8,
+      }}
+    >
+      <Text style={{ color: "white", fontWeight: "700" }}>
+        Previous
+      </Text>
+    </TouchableOpacity>
+
+    <Text style={{ fontWeight: "700" }}>
+      {currentPage} / {totalPages}
+    </Text>
+
+    <TouchableOpacity
+      disabled={currentPage === totalPages}
+      onPress={() => loadCohorts(currentPage + 1)}
+      style={{
+        backgroundColor:
+          currentPage === totalPages ? "#CCCCCC" : "#376E62",
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 8,
+      }}
+    >
+      <Text style={{ color: "white", fontWeight: "700" }}>
+        Next
+      </Text>
+    </TouchableOpacity>
+  </View>
+)}
       </ScrollView>
 
       {canCreateCohort && (

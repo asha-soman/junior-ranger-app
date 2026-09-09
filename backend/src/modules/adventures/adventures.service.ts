@@ -4,7 +4,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-
+import { sql } from 'kysely';
 import { DatabaseService } from '../../database/database.service';
 import { CreateAdventureDto } from './dto/create-adventure.dto';
 import { UpdateAdventureDto } from './dto/update-adventure.dto';
@@ -159,6 +159,172 @@ export class AdventuresService {
             .orderBy('adventures.created_at', 'desc')
             .distinct()
             .execute();
+    }
+
+        async getAllAdventuresPaginated(
+        user: AuthUser,
+        page = 1,
+        limit = 20,
+    ) {
+        const safePage = Math.max(1, Number(page) || 1);
+        const safeLimit = Math.min(
+            100,
+            Math.max(1, Number(limit) || 20),
+        );
+        const offset = (safePage - 1) * safeLimit;
+
+        let adventures;
+        let totalResult;
+
+        if (user.role === 'admin') {
+            adventures = await this.db
+                .selectFrom('adventures')
+                .selectAll()
+                .where('is_deleted', '=', false)
+                .orderBy('created_at', 'desc')
+                .limit(safeLimit)
+                .offset(offset)
+                .execute();
+
+            totalResult = await this.db
+                .selectFrom('adventures')
+                .select((eb) => eb.fn.countAll<number>().as('count'))
+                .where('is_deleted', '=', false)
+                .executeTakeFirst();
+        } else if (user.role === 'ranger') {
+            adventures = await this.db
+                .selectFrom('adventures')
+                .leftJoin(
+                    'cohort_adventures',
+                    'cohort_adventures.adventure_id',
+                    'adventures.id',
+                )
+                .leftJoin(
+                    'cohorts',
+                    'cohorts.id',
+                    'cohort_adventures.cohort_id',
+                )
+                .selectAll('adventures')
+                .where('adventures.is_deleted', '=', false)
+                .where((eb) =>
+                    eb.or([
+                        eb(
+                            'adventures.created_by_user_id',
+                            '=',
+                            user.userId,
+                        ),
+                        eb(
+                            'cohorts.created_by_ranger_id',
+                            '=',
+                            user.userId,
+                        ),
+                        eb(
+                            'cohorts.assigned_ranger_id',
+                            '=',
+                            user.userId,
+                        ),
+                    ]),
+                )
+                .orderBy('adventures.created_at', 'desc')
+                .distinct()
+                .limit(safeLimit)
+                .offset(offset)
+                .execute();
+
+            totalResult = await this.db
+                .selectFrom('adventures')
+                .leftJoin(
+                    'cohort_adventures',
+                    'cohort_adventures.adventure_id',
+                    'adventures.id',
+                )
+                .leftJoin(
+                    'cohorts',
+                    'cohorts.id',
+                    'cohort_adventures.cohort_id',
+                )
+                .select(
+                    sql<number>`count(distinct adventures.id)`.as('count'),
+                )
+                .where('adventures.is_deleted', '=', false)
+                .where((eb) =>
+                    eb.or([
+                        eb(
+                            'adventures.created_by_user_id',
+                            '=',
+                            user.userId,
+                        ),
+                        eb(
+                            'cohorts.created_by_ranger_id',
+                            '=',
+                            user.userId,
+                        ),
+                        eb(
+                            'cohorts.assigned_ranger_id',
+                            '=',
+                            user.userId,
+                        ),
+                    ]),
+                )
+                .executeTakeFirst();
+        } else {
+            adventures = await this.db
+                .selectFrom('adventures')
+                .innerJoin(
+                    'cohort_adventures',
+                    'cohort_adventures.adventure_id',
+                    'adventures.id',
+                )
+                .innerJoin(
+                    'cohort_members',
+                    'cohort_members.cohort_id',
+                    'cohort_adventures.cohort_id',
+                )
+                .selectAll('adventures')
+                .where('adventures.is_deleted', '=', false)
+                .where('cohort_adventures.is_deleted', '=', false)
+                .where('cohort_members.is_deleted', '=', false)
+                .where('cohort_members.user_id', '=', user.userId)
+                .orderBy('adventures.created_at', 'desc')
+                .distinct()
+                .limit(safeLimit)
+                .offset(offset)
+                .execute();
+
+            totalResult = await this.db
+                .selectFrom('adventures')
+                .innerJoin(
+                    'cohort_adventures',
+                    'cohort_adventures.adventure_id',
+                    'adventures.id',
+                )
+                .innerJoin(
+                    'cohort_members',
+                    'cohort_members.cohort_id',
+                    'cohort_adventures.cohort_id',
+                )
+                .select(
+                    sql<number>`count(distinct adventures.id)`.as('count'),
+                )
+                .where('adventures.is_deleted', '=', false)
+                .where('cohort_adventures.is_deleted', '=', false)
+                .where('cohort_members.is_deleted', '=', false)
+                .where('cohort_members.user_id', '=', user.userId)
+                .executeTakeFirst();
+        }
+
+        const total = Number(totalResult?.count ?? 0);
+        const totalPages = Math.ceil(total / safeLimit);
+
+        return {
+            data: adventures,
+            pagination: {
+                page: safePage,
+                limit: safeLimit,
+                total,
+                totalPages,
+            },
+        };
     }
 
     async getAdventuresByCohort(cohortId: string, user: AuthUser) {

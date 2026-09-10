@@ -37,6 +37,7 @@ export interface UsersTable {
   password_hash: string | null;
   is_active: boolean;
   approval_status: ApprovalStatus;
+  email_verified: boolean;
   two_factor_enabled: boolean;
   two_factor_code: string | null;
   two_factor_expiry: Date | null;

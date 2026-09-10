@@ -80,8 +80,8 @@ export interface VerifyCodePayload {
 }
 
 export interface VerifyCodeResponse {
-  access_token: string;
   message?: string;
+  access_token?: string;
 }
 
 export const verifyCode = async (
@@ -106,10 +106,9 @@ export const resendCode = async (
   return response.data;
 };
 
-export const verifyTwoFactorCode = async (data: {
-  email: string;
-  code: string;
-}) => {
+export const verifyTwoFactorCode = async (
+  data: VerifyCodePayload
+): Promise<VerifyCodeResponse> => {
   try {
     const response = await apiClient.post(
       "/auth/verify-2fa",

@@ -1,16 +1,8 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableWithoutFeedback,
-  Keyboard,
-  View,
-} from "react-native";
-import { HelperText } from "react-native-paper";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, View } from "react-native";
+import { Button, HelperText } from "react-native-paper";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
-
 import LoginForm from "../../components/login/loginForm";
 import { screenStyles } from "../../styles/loginStyles";
 import { loginUser } from "../../services/auth/authService";
@@ -97,6 +89,29 @@ export default function LoginScreen() {
         error?.message ||
         "Something went wrong during login";
 
+      if (message === "Please verify your email before logging in") {
+        Alert.alert(
+          "Email Verification Required",
+          "Please verify your email before logging in.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Verify Email",
+              onPress: () =>
+                navigation.navigate("Verification", {
+                  email,
+                  mode: "email",
+                }),
+            },
+          ]
+        );
+
+        return;
+      }
+
       setApiError(message);
     } finally {
       setIsLoading(false);
@@ -128,6 +143,21 @@ export default function LoginScreen() {
         <HelperText type="error" visible={!!apiError}>
           {apiError}
         </HelperText>
+
+        {apiError === "Please verify your email before logging in" && (
+          <Button
+            mode="contained"
+            onPress={() =>
+              navigation.navigate("Verification", {
+                email,
+                mode: "email",
+              })
+            }
+          >
+            Verify Email
+          </Button>
+        )}
+
       </View>
     </ScrollView>
   );

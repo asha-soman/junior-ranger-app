@@ -329,10 +329,6 @@ export default function SubmitAdventureTaskScreen({
     setSubmissionText,
   ] = useState('');
 
-  const [
-    imageUrl,
-    setImageUrl,
-  ] = useState('');
 
   const [
     loading,
@@ -366,9 +362,6 @@ export default function SubmitAdventureTaskScreen({
             submission_text:
               submissionText.trim(),
 
-            image_url:
-              imageUrl.trim() ||
-              undefined,
           },
         );
 
@@ -731,23 +724,79 @@ export default function SubmitAdventureTaskScreen({
           ]}
         />
 
-        <TextInput
-          label="Image URL (optional)"
-          mode="outlined"
-          value={
-            imageUrl
-          }
-          onChangeText={
-            setImageUrl
-          }
-          autoCapitalize="none"
-          autoCorrect={
-            false
-          }
-          style={
-            styles.input
-          }
-        />
+        {/* IMAGE UPLOAD PLACEHOLDER */}
+
+        <View
+          style={{
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '700',
+              color: '#3D786B',
+              marginBottom: 8,
+            }}
+          >
+            Task Image (optional)
+          </Text>
+
+          <View
+            style={{
+              borderWidth: 1.5,
+              borderStyle: 'dashed',
+              borderColor: '#A8CDC4',
+              backgroundColor: '#F7FCFA',
+              borderRadius: 14,
+              paddingVertical: 22,
+              paddingHorizontal: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 32,
+                marginBottom: 8,
+              }}
+            >
+              📷
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#376E62',
+                marginBottom: 4,
+                textAlign: 'center',
+              }}
+            >
+              Add a photo
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 12,
+                color: '#6F7775',
+                lineHeight: 18,
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
+              Image upload will be available soon.
+            </Text>
+
+            <Button
+              mode="outlined"
+              disabled
+              icon="image-outline"
+            >
+              Choose Image
+            </Button>
+          </View>
+        </View>
 
         <Button
           mode="contained"

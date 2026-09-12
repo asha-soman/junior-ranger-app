@@ -48,9 +48,7 @@ export default function UserProfileScreen({
     useState<UserProfile | null>(null);
 
   const [progress, setProgress] =
-    useState<GamificationProgress | null>(
-      null,
-    );
+    useState<GamificationProgress | null>(null);
 
   const [badges, setBadges] =
     useState<EarnedBadge[]>([]);
@@ -71,7 +69,6 @@ export default function UserProfileScreen({
 
       setProfile(profileData);
 
-      // Gamification only applies to Junior Rangers
       if (
         profileData.role ===
         'junior_ranger'
@@ -126,6 +123,50 @@ export default function UserProfileScreen({
 
       default:
         return role;
+    }
+  };
+
+  const getLevelTitle = (
+    level: number,
+  ) => {
+    if (level >= 5) {
+      return 'Nature Champion';
+    }
+
+    if (level === 4) {
+      return 'Wildlife Guardian';
+    }
+
+    if (level === 3) {
+      return 'Adventure Explorer';
+    }
+
+    if (level === 2) {
+      return 'Rising Ranger';
+    }
+
+    return 'Junior Explorer';
+  };
+
+  const getBadgeIcon = (
+    criteriaType: string | null,
+  ):
+    | 'ribbon'
+    | 'star'
+    | 'checkmark-circle'
+    | 'trophy' => {
+    switch (criteriaType) {
+      case 'xp':
+        return 'star';
+
+      case 'task_count':
+        return 'checkmark-circle';
+
+      case 'level':
+        return 'trophy';
+
+      default:
+        return 'ribbon';
     }
   };
 
@@ -196,6 +237,10 @@ export default function UserProfileScreen({
     );
   }
 
+  const isJuniorRanger =
+    profile.role ===
+    'junior_ranger';
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -203,33 +248,78 @@ export default function UserProfileScreen({
         contentContainerStyle={
           styles.content
         }
+        showsVerticalScrollIndicator={
+          false
+        }
       >
         <View
-          style={styles.profileCard}
+          style={[
+            styles.profileCard,
+            isJuniorRanger &&
+              styles.juniorProfileCard,
+          ]}
         >
           <View
             style={
               styles.avatarContainer
             }
           >
-            {profile.avatar_url ? (
-              <Image
-                source={{
-                  uri: profile.avatar_url,
-                }}
-                style={styles.avatar}
-              />
-            ) : (
+            <View
+              style={
+                isJuniorRanger
+                  ? styles.juniorAvatarRing
+                  : undefined
+              }
+            >
+              {profile.avatar_url ? (
+                <Image
+                  source={{
+                    uri: profile.avatar_url,
+                  }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View
+                  style={
+                    styles.avatarPlaceholder
+                  }
+                >
+                  <Ionicons
+                    name={
+                      isJuniorRanger
+                        ? 'leaf'
+                        : 'person'
+                    }
+                    size={
+                      isJuniorRanger
+                        ? 52
+                        : 65
+                    }
+                    color="#376E62"
+                  />
+                </View>
+              )}
+            </View>
+
+            {isJuniorRanger && (
               <View
                 style={
-                  styles.avatarPlaceholder
+                  styles.juniorRolePill
                 }
               >
                 <Ionicons
-                  name="person"
-                  size={65}
-                  color="#376E62"
+                  name="compass"
+                  size={14}
+                  color="#FFFFFF"
                 />
+
+                <Text
+                  style={
+                    styles.juniorRolePillText
+                  }
+                >
+                  JUNIOR RANGER
+                </Text>
               </View>
             )}
 
@@ -239,14 +329,472 @@ export default function UserProfileScreen({
               {profile.name || 'User'}
             </Text>
 
-            <Text
-              style={styles.role}
-            >
-              {formatRole(
-                profile.role,
+            {!isJuniorRanger && (
+              <Text
+                style={styles.role}
+              >
+                {formatRole(
+                  profile.role,
+                )}
+              </Text>
+            )}
+
+            {isJuniorRanger &&
+              progress && (
+                <Text
+                  style={
+                    styles.levelNickname
+                  }
+                >
+                  {getLevelTitle(
+                    progress.current_level,
+                  )}
+                </Text>
               )}
-            </Text>
           </View>
+
+          {isJuniorRanger &&
+            progress && (
+              <>
+                <View
+                  style={
+                    styles.gamificationHeroCard
+                  }
+                >
+                  <View
+                    style={
+                      styles.levelBadgeCircle
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.levelBadgeSmall
+                      }
+                    >
+                      LEVEL
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.levelBadgeNumber
+                      }
+                    >
+                      {
+                        progress.current_level
+                      }
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.gamificationHeroContent
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.gamificationHeroEyebrow
+                      }
+                    >
+                      YOUR RANGER JOURNEY
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.gamificationHeroTitle
+                      }
+                    >
+                      {getLevelTitle(
+                        progress.current_level,
+                      )}
+                    </Text>
+
+                    <View
+                      style={
+                        styles.totalXpPill
+                      }
+                    >
+                      <Ionicons
+                        name="star"
+                        size={16}
+                        color="#D89B22"
+                      />
+
+                      <Text
+                        style={
+                          styles.totalXpPillText
+                        }
+                      >
+                        {
+                          progress.total_xp
+                        }{' '}
+                        Total XP
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {progress.next_level_xp !==
+                  null && (
+                  <View
+                    style={
+                      styles.progressCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.progressHeader
+                      }
+                    >
+                      <View>
+                        <Text
+                          style={
+                            styles.progressSectionEyebrow
+                          }
+                        >
+                          KEEP EXPLORING
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.progressText
+                          }
+                        >
+                          Progress to Level{' '}
+                          {progress.current_level +
+                            1}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={
+                          styles.progressPercentPill
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.progressPercent
+                          }
+                        >
+                          {
+                            progress.progress_percentage
+                          }
+                          %
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={
+                        styles.progressBarBackground
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          {
+                            width: `${progress.progress_percentage}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    <View
+                      style={
+                        styles.progressBottomRow
+                      }
+                    >
+                      <View
+                        style={
+                          styles.progressMiniStat
+                        }
+                      >
+                        <Ionicons
+                          name="star-outline"
+                          size={18}
+                          color="#3D786B"
+                        />
+
+                        <View>
+                          <Text
+                            style={
+                              styles.progressMiniValue
+                            }
+                          >
+                            {
+                              progress.xp_into_level
+                            }{' '}
+                            XP
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.progressMiniLabel
+                            }
+                          >
+                            earned this level
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View
+                        style={
+                          styles.progressMiniDivider
+                        }
+                      />
+
+                      <View
+                        style={
+                          styles.progressMiniStat
+                        }
+                      >
+                        <Ionicons
+                          name="flag-outline"
+                          size={18}
+                          color="#D89B22"
+                        />
+
+                        <View>
+                          <Text
+                            style={
+                              styles.progressMiniValue
+                            }
+                          >
+                            {
+                              progress.xp_needed_for_next_level
+                            }{' '}
+                            XP
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.progressMiniLabel
+                            }
+                          >
+                            until next level
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View
+                      style={
+                        styles.progressEncouragement
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.progressEncouragementText
+                        }
+                      >
+                        Keep completing tasks to
+                        earn XP and level up! 🌿
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View
+                  style={
+                    styles.achievementHeader
+                  }
+                >
+                  <View
+                    style={
+                      styles.achievementTitleRow
+                    }
+                  >
+                    <View
+                      style={
+                        styles.achievementHeaderIcon
+                      }
+                    >
+                      <Ionicons
+                        name="trophy"
+                        size={22}
+                        color="#FFFFFF"
+                      />
+                    </View>
+
+                    <View>
+                      <Text
+                        style={
+                          styles.achievementEyebrow
+                        }
+                      >
+                        REWARDS
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.achievementTitle
+                        }
+                      >
+                        My Achievements
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={
+                      styles.achievementCount
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.achievementCountText
+                      }
+                    >
+                      {badges.length}
+                    </Text>
+                  </View>
+                </View>
+
+                {badges.length ===
+                0 ? (
+                  <View
+                    style={
+                      styles.emptyBadgeCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.emptyBadgeIcon
+                      }
+                    >
+                      <Ionicons
+                        name="ribbon-outline"
+                        size={36}
+                        color="#6F7775"
+                      />
+                    </View>
+
+                    <Text
+                      style={
+                        styles.emptyBadgeTitle
+                      }
+                    >
+                      Your badge collection
+                      starts here!
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.emptyBadgeText
+                      }
+                    >
+                      Complete tasks, earn XP,
+                      and level up to unlock
+                      achievements.
+                    </Text>
+                  </View>
+                ) : (
+                  <View
+                    style={
+                      styles.badgeGrid
+                    }
+                  >
+                    {badges.map(
+                      (badge) => (
+                        <View
+                          key={badge.id}
+                          style={
+                            styles.badgeCard
+                          }
+                        >
+                          <View
+                            style={
+                              styles.badgeIcon
+                            }
+                          >
+                            <Ionicons
+                              name={getBadgeIcon(
+                                badge.criteria_type,
+                              )}
+                              size={30}
+                              color="#FFFFFF"
+                            />
+                          </View>
+
+                          <Text
+                            style={
+                              styles.badgeName
+                            }
+                          >
+                            {badge.name}
+                          </Text>
+
+                          {badge.description && (
+                            <Text
+                              style={
+                                styles.badgeDescription
+                              }
+                            >
+                              {
+                                badge.description
+                              }
+                            </Text>
+                          )}
+
+                          <View
+                            style={
+                              styles.earnedBadgePill
+                            }
+                          >
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={13}
+                              color="#2F725B"
+                            />
+
+                            <Text
+                              style={
+                                styles.earnedBadgePillText
+                              }
+                            >
+                              EARNED
+                            </Text>
+                          </View>
+                        </View>
+                      ),
+                    )}
+                  </View>
+                )}
+
+                <View
+                  style={
+                    styles.nextGoalCard
+                  }
+                >
+                  <Ionicons
+                    name="sparkles"
+                    size={23}
+                    color="#D89B22"
+                  />
+
+                  <View
+                    style={{ flex: 1 }}
+                  >
+                    <Text
+                      style={
+                        styles.nextGoalTitle
+                      }
+                    >
+                      Keep collecting!
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.nextGoalText
+                      }
+                    >
+                      More tasks and adventures
+                      mean more XP, levels and
+                      badges.
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
 
           <Text
             style={
@@ -401,232 +949,6 @@ export default function UserProfileScreen({
               )}
             </>
           )}
-
-          {profile.role ===
-            'junior_ranger' &&
-            progress && (
-              <>
-                <Text
-                  style={
-                    styles.sectionTitle
-                  }
-                >
-                  My Progress
-                </Text>
-
-                <View
-                  style={
-                    styles.progressCard
-                  }
-                >
-                  <View
-                    style={
-                      styles.levelRow
-                    }
-                  >
-                    <View>
-                      <Text
-                        style={
-                          styles.levelLabel
-                        }
-                      >
-                        Level
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.levelNumber
-                        }
-                      >
-                        {
-                          progress.current_level
-                        }
-                      </Text>
-                    </View>
-
-                    <View
-                      style={
-                        styles.xpContainer
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.totalXp
-                        }
-                      >
-                        {
-                          progress.total_xp
-                        }{' '}
-                        XP
-                      </Text>
-
-                      {progress.next_level_xp !==
-                        null && (
-                        <Text
-                          style={
-                            styles.nextLevelText
-                          }
-                        >
-                          Next Level:{' '}
-                          {
-                            progress.next_level_xp
-                          }{' '}
-                          XP
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {progress.next_level_xp !==
-                    null && (
-                    <>
-                      <View
-                        style={
-                          styles.progressHeader
-                        }
-                      >
-                        <Text
-                          style={
-                            styles.progressText
-                          }
-                        >
-                          Progress to Level{' '}
-                          {progress.current_level +
-                            1}
-                        </Text>
-
-                        <Text
-                          style={
-                            styles.progressPercent
-                          }
-                        >
-                          {
-                            progress.progress_percentage
-                          }
-                          %
-                        </Text>
-                      </View>
-
-                      <View
-                        style={
-                          styles.progressBarBackground
-                        }
-                      >
-                        <View
-                          style={[
-                            styles.progressBarFill,
-                            {
-                              width: `${progress.progress_percentage}%`,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      <Text
-                        style={
-                          styles.progressXpText
-                        }
-                      >
-                        {
-                          progress.xp_into_level
-                        }{' '}
-                        XP earned in this
-                        level •{' '}
-                        {
-                          progress.xp_needed_for_next_level
-                        }{' '}
-                        XP remaining
-                      </Text>
-                    </>
-                  )}
-                </View>
-
-                <Text
-                  style={
-                    styles.sectionTitle
-                  }
-                >
-                  Achievements
-                </Text>
-
-                {badges.length ===
-                0 ? (
-                  <View
-                    style={
-                      styles.emptyBadgeCard
-                    }
-                  >
-                    <Ionicons
-                      name="ribbon-outline"
-                      size={34}
-                      color="#6F7775"
-                    />
-
-                    <Text
-                      style={
-                        styles.emptyBadgeText
-                      }
-                    >
-                      Complete tasks to
-                      unlock badges.
-                    </Text>
-                  </View>
-                ) : (
-                  badges.map(
-                    (badge) => (
-                      <View
-                        key={
-                          badge.id
-                        }
-                        style={
-                          styles.badgeCard
-                        }
-                      >
-                        <View
-                          style={
-                            styles.badgeIcon
-                          }
-                        >
-                          <Ionicons
-                            name="ribbon"
-                            size={28}
-                            color="#376E62"
-                          />
-                        </View>
-
-                        <View
-                          style={
-                            styles.badgeContent
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.badgeName
-                            }
-                          >
-                            {
-                              badge.name
-                            }
-                          </Text>
-
-                          {badge.description && (
-                            <Text
-                              style={
-                                styles.badgeDescription
-                              }
-                            >
-                              {
-                                badge.description
-                              }
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    ),
-                  )
-                )}
-              </>
-            )}
         </View>
       </ScrollView>
 

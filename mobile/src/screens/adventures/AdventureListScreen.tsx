@@ -1,127 +1,423 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import { Card, Button, Chip } from 'react-native-paper';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import {
-    Adventure,
-    getAllAdventures,
+  ActivityIndicator,
+  FlatList,
+  Text,
+  View,
+} from 'react-native';
+
+import {
+  Button,
+  Card,
+  Chip,
+} from 'react-native-paper';
+
+import { Ionicons } from '@expo/vector-icons';
+
+import {
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
+
+import {
+  AuthStackParamList,
+} from '../../navigation/AuthNavigator';
+
+import {
+  Adventure,
+  getAllAdventures,
 } from '../../services/adventures/adventureService';
-import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
+import {
+  adventureStyles as styles,
+} from '../../styles/AdventureStyles';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'AdventureList'>;
+type Props = NativeStackScreenProps<
+  AuthStackParamList,
+  'AdventureList'
+>;
 
-export default function AdventureListScreen({ navigation, route }: Props) {
-    const userRole = route.params?.userRole || "junior_ranger";
+export default function AdventureListScreen({
+  navigation,
+  route,
+}: Props) {
+  const userRole =
+    route.params?.userRole ||
+    'junior_ranger';
 
-    const [adventures, setAdventures] = useState<Adventure[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+  const [
+    adventures,
+    setAdventures,
+  ] = useState<Adventure[]>([]);
 
-    const canCreateAdventure = userRole === 'ranger' || userRole === 'admin';
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-    console.log('AdventureList route params:', route.params);
-    // console.log('cohortId:', cohortId);
-    console.log('userRole:', userRole);
+  const [
+    error,
+    setError,
+  ] = useState('');
 
-    useEffect(() => {
-        fetchAdventures();
-    }, []);
+  const canCreateAdventure =
+    userRole === 'ranger' ||
+    userRole === 'admin';
 
-    const fetchAdventures = async () => {
-        // if (!cohortId) return;
+  useEffect(() => {
+    fetchAdventures();
+  }, []);
 
-        try {
-            setLoading(true);
-            setError('');
+  const fetchAdventures =
+    async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-            const data = await getAllAdventures();
-            setAdventures(data);
-        } catch (err) {
-            console.log('Get all adventures error:', err);
-            setError('Unable to load adventures. Please try again.');
-        } finally {
-            setLoading(false);
-        }
+        const data =
+          await getAllAdventures();
+
+        setAdventures(data);
+      } catch (err) {
+        console.log(
+          'Get all adventures error:',
+          err,
+        );
+
+        setError(
+          'Unable to load adventures. Please try again.',
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const renderAdventure = ({ item }: { item: Adventure }) => (
-        <Card
-            style={styles.card}
-            mode="elevated"
-            onPress={() =>
-                navigation.navigate('AdventureDetails', {
-                    adventureId: item.id,
-                })
-            }
+  const formatDueDate = (
+    date?: string | null,
+  ) => {
+    if (!date) {
+      return 'No due date';
+    }
+
+    return new Date(
+      date,
+    ).toLocaleDateString(
+      'en-AU',
+      {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      },
+    );
+  };
+
+  const renderAdventure = ({
+    item,
+    index,
+  }: {
+    item: Adventure;
+    index: number;
+  }) => (
+    <Card
+      style={[
+        styles.adventureListCard,
+        !canCreateAdventure &&
+          styles.juniorAdventureListCard,
+      ]}
+      mode="contained"
+      onPress={() =>
+        navigation.navigate(
+          'AdventureDetails',
+          {
+            adventureId: item.id,
+          },
+        )
+      }
+    >
+      <Card.Content>
+        <View
+          style={
+            styles.adventureListCardTopRow
+          }
         >
-            <Card.Content>
-                <Text style={styles.cardTitle}>{item.title}</Text>
+          <View
+            style={
+              styles.adventureListIcon
+            }
+          >
+            <Ionicons
+              name={
+                canCreateAdventure
+                  ? 'map-outline'
+                  : index % 3 === 0
+                    ? 'compass'
+                    : index % 3 === 1
+                      ? 'leaf'
+                      : 'earth'
+              }
+              size={24}
+              color="#FFFFFF"
+            />
+          </View>
 
-                <Text style={styles.cardDescription} numberOfLines={2}>
-                    {item.description}
-                </Text>
+          <View
+            style={
+              styles.adventureListCardTitleWrap
+            }
+          >
+            <Text
+              style={
+                styles.adventureListCardTitle
+              }
+              numberOfLines={2}
+            >
+              {item.title}
+            </Text>
 
-                <View style={styles.metaRow}>
-                    <Text style={styles.dueDate}>
-                        Due:{' '}
-                        {item.due_date
-                            ? new Date(item.due_date).toDateString()
-                            : 'No due date'}
-                    </Text>
+            {!canCreateAdventure && (
+              <Text
+                style={
+                  styles.adventureListEyebrow
+                }
+              >
+                READY TO EXPLORE
+              </Text>
+            )}
+          </View>
 
-                    <Chip style={styles.statusChip} textStyle={styles.statusText}>
-                        {item.status}
-                    </Chip>
-                </View>
-            </Card.Content>
-        </Card>
-    );
-
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>
-                    {canCreateAdventure ? 'Manage Adventures' : 'My Adventures'}
-                </Text>
-            </View>
-
-            <View style={styles.content}>
-                {canCreateAdventure && (
-                    <Button
-                        mode="contained"
-                        style={styles.createButton}
-                        labelStyle={styles.createButtonLabel}
-                        onPress={() => navigation.navigate('CreateAdventure', undefined)}
-                    >
-                        + Create Adventure
-                    </Button>
-                )}
-
-                {/* {!cohortId && (
-                    <Text style={styles.errorText}>
-                        No cohort selected yet. Please select a cohort before creating or
-                        viewing adventures.
-                    </Text>
-                )} */}
-
-                {loading && <ActivityIndicator size="large" style={styles.loader} />}
-
-                {!!error && <Text style={styles.errorText}>{error}</Text>}
-
-                {!loading && adventures.length === 0 && !error && (
-                    <Text style={styles.emptyText}>No adventures available yet.</Text>
-                )}
-
-                <FlatList
-                    data={adventures}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderAdventure}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                />
-            </View>
+          <View
+            style={
+              styles.adventureListArrow
+            }
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={22}
+              color="#3D786B"
+            />
+          </View>
         </View>
-    );
+
+        <Text
+          style={
+            styles.adventureListDescription
+          }
+          numberOfLines={2}
+        >
+          {item.description}
+        </Text>
+
+        <View
+          style={
+            styles.adventureListDivider
+          }
+        />
+
+        <View
+          style={
+            styles.adventureListMetaRow
+          }
+        >
+          <View
+            style={
+              styles.adventureListDateWrap
+            }
+          >
+            <View
+              style={
+                styles.adventureListMetaIcon
+              }
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={15}
+                color="#39776C"
+              />
+            </View>
+
+            <View>
+              <Text
+                style={
+                  styles.adventureListMetaLabel
+                }
+              >
+                Due
+              </Text>
+
+              <Text
+                style={
+                  styles.adventureListDate
+                }
+              >
+                {formatDueDate(
+                  item.due_date,
+                )}
+              </Text>
+            </View>
+          </View>
+
+          <Chip
+            style={
+              styles.adventureListStatusChip
+            }
+            textStyle={
+              styles.adventureListStatusText
+            }
+          >
+            {item.status}
+          </Chip>
+        </View>
+      </Card.Content>
+    </Card>
+  );
+
+  return (
+    <View
+      style={styles.container}
+    >
+      <FlatList
+        data={adventures}
+        keyExtractor={(item) =>
+          item.id
+        }
+        renderItem={
+          renderAdventure
+        }
+        showsVerticalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.adventureListContent
+        }
+        ListHeaderComponent={
+          <>
+            {loading && (
+              <ActivityIndicator
+                size="large"
+                style={styles.loader}
+              />
+            )}
+
+            {!!error && (
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {error}
+              </Text>
+            )}
+
+            {!loading &&
+              adventures.length === 0 &&
+              !error && (
+                <View
+                  style={
+                    styles.adventureListEmptyCard
+                  }
+                >
+                  <Ionicons
+                    name="map-outline"
+                    size={42}
+                    color="#6B8D85"
+                  />
+
+                  <Text
+                    style={
+                      styles.adventureListEmptyTitle
+                    }
+                  >
+                    No adventures yet
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.adventureListEmptyText
+                    }
+                  >
+                    {canCreateAdventure
+                      ? 'Create your first adventure to get started.'
+                      : 'Your Ranger will add adventures for you soon.'}
+                  </Text>
+                </View>
+              )}
+
+            {!loading &&
+              adventures.length > 0 && (
+                <View
+                  style={
+                    styles.adventureListSectionHeader
+                  }
+                >
+                  <View>
+                    <Text
+                      style={
+                        styles.adventureListSectionEyebrow
+                      }
+                    >
+                      {canCreateAdventure
+                        ? 'ALL ADVENTURES'
+                        : 'YOUR JOURNEY'}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.adventureListSectionTitle
+                      }
+                    >
+                      {canCreateAdventure
+                        ? 'Adventure Library'
+                        : 'Choose an Adventure'}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.adventureListCountBadge
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.adventureListCountText
+                      }
+                    >
+                      {
+                        adventures.length
+                      }
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+            {canCreateAdventure && (
+              <Button
+                mode="contained"
+                icon="plus"
+                style={
+                  styles.adventureListCreateButton
+                }
+                contentStyle={{
+                  minHeight: 48,
+                }}
+                labelStyle={{
+                  fontWeight: '800',
+                }}
+                onPress={() =>
+                  navigation.navigate(
+                    'CreateAdventure',
+                    undefined,
+                  )
+                }
+              >
+                Create Adventure
+              </Button>
+            )}
+          </>
+        }
+      />
+    </View>
+  );
 }

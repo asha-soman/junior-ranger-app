@@ -26,3 +26,17 @@ export const getMyProfile = async (): Promise<UserProfile> => {
 
   return response.data;
 };
+
+export const updateMyProfile = async (
+  name: string,
+): Promise<UserProfile> => {
+  const response = await apiClient.patch(
+    '/users/me',
+    { name },
+    {
+      timeout: 3000,
+    },
+  );
+
+  return response.data;
+};

@@ -204,33 +204,25 @@ export default function EventsHubScreen({
 
         {canManageEvents && (
           <Text style={styles.manageHint}>
-            Tap to manage this event
+            Tap to view event details
           </Text>
         )}
       </Card.Content>
     );
 
-    if (canManageEvents) {
-      return (
-        <Card
-          style={styles.card}
-          mode="elevated"
-          onPress={() =>
-            navigation.navigate('EditEvent', {
-              eventId: item.id,
-              userRole,
-            })
-          }
-        >
-          {cardContent}
-        </Card>
-      );
-    }
-
     return (
       <Card
         style={styles.card}
         mode="elevated"
+        onPress={() =>
+          navigation.navigate(
+            'EventDetails',
+            {
+              eventId: item.id,
+              userRole,
+            },
+          )
+        }
       >
         {cardContent}
       </Card>

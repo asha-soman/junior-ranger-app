@@ -365,6 +365,7 @@ export default function AdventureDetailsScreen({
       }
 
       if (
+        userRole === 'junior_ranger' ||
         userRole === 'ranger' ||
         userRole === 'admin'
       ) {
@@ -1556,6 +1557,18 @@ export default function AdventureDetailsScreen({
 
                                     taskTitle:
                                       task.title,
+
+                                    taskDescription:
+                                      adventureTasks.find(
+                                        (item) =>
+                                          item.id ===
+                                          task.id,
+                                      )
+                                        ?.description ??
+                                      '',
+
+                                    xpReward:
+                                      task.xp_reward,
 
                                     adventureId:
                                       adventure.id,

@@ -186,6 +186,8 @@ export type AuthStackParamList = {
   SubmitAdventureTask: {
     taskId: string;
     taskTitle: string;
+    taskDescription: string;
+    xpReward: number;
     adventureId: string;
   };
 

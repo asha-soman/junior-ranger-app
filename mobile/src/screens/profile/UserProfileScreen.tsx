@@ -647,7 +647,7 @@ export default function UserProfileScreen({
                         }
                       >
                         Keep completing tasks to
-                        earn XP and level up! 🌿
+                        earn XP and level up!
                       </Text>
                     </View>
                   </View>

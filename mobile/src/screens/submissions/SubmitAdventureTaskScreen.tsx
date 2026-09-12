@@ -322,6 +322,8 @@ export default function SubmitAdventureTaskScreen({
   const {
     taskId,
     taskTitle,
+    taskDescription,
+    xpReward,
   } = route.params;
 
   const [
@@ -695,16 +697,89 @@ export default function SubmitAdventureTaskScreen({
           {taskTitle}
         </Text>
 
+        {taskDescription ? (
+          <View
+            style={{
+              backgroundColor: '#F2F8F6',
+              borderWidth: 1,
+              borderColor: '#D6E9E4',
+              borderRadius: 14,
+              padding: 14,
+              marginTop: 10,
+              marginBottom: 14,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 7,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '800',
+                  color: '#3D786B',
+                }}
+              >
+                Your Task
+              </Text>
+
+              <View
+                style={{
+                  marginLeft: 'auto',
+                  backgroundColor: '#FFF1BE',
+                  borderRadius: 12,
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '800',
+                    color: '#8C6718',
+                  }}
+                >
+                  +{xpReward} XP
+                </Text>
+              </View>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 21,
+                color: '#4D5A56',
+              }}
+            >
+              {taskDescription}
+            </Text>
+          </View>
+        ) : (
+          <Text
+            style={
+              styles.helperText
+            }
+          >
+            Complete this task
+            and describe what
+            you did. Your Ranger
+            will review your
+            submission.
+          </Text>
+        )}
+
         <Text
-          style={
-            styles.helperText
-          }
+          style={{
+            fontSize: 14,
+            fontWeight: '700',
+            color: '#3D786B',
+            marginBottom: 8,
+          }}
         >
-          Describe what you
-          did to complete this
-          task. Your Ranger
-          will review your
-          submission.
+          Your Answer
         </Text>
 
         <TextInput

@@ -1,3 +1,5 @@
+import type { Generated } from 'kysely';
+
 export type UserRole = 'admin' | 'ranger' | 'junior_ranger';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type AdventureStatus = 'draft' | 'published' | 'archived';
@@ -6,6 +8,22 @@ export type SubmissionStatus = 'submitted' | 'approved' | 'rejected';
 export type AdventureAssignedByRole = 'admin' | 'ranger';
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 export type EventRegistrationStatus = 'registered' | 'cancelled';
+export type AttendanceStatus = 'not_marked' | 'present' | 'absent';
+export type AnnouncementStatus = 'draft' | 'published' | 'archived';
+export type AnnouncementPriority = 'normal' | 'high';
+export type ReactionType =
+  | 'clap'
+  | 'thumbs_up'
+  | 'star'
+  | 'smile'
+  | 'wow'
+  | 'okay';
+
+export type ReactionTargetType =
+  | 'announcement'
+  | 'event'
+  | 'activity_post'
+  | 'club_activity';
 
 export interface UsersTable {
   id: string;
@@ -19,6 +37,9 @@ export interface UsersTable {
   password_hash: string | null;
   is_active: boolean;
   approval_status: ApprovalStatus;
+  two_factor_enabled: boolean;
+  two_factor_code: string | null;
+  two_factor_expiry: Date | null;
 }
 
 export interface CohortsTable {
@@ -172,13 +193,72 @@ export interface EventsTable {
 }
 
 export interface EventRegistrationsTable {
-  id: string;
+  id: Generated<string>;
   event_id: string;
   junior_ranger_user_id: string;
   status: EventRegistrationStatus;
   registered_at: Date | null;
   cancelled_at: Date | null;
   created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface EventAttendanceTable {
+  id: Generated<string>;
+  registration_id: string;
+  status: AttendanceStatus;
+  marked_by_user_id: string | null;
+  marked_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface AnnouncementsTable {
+  id: string;
+  title: string;
+  content: string;
+  cohort_id: string;
+  created_by_user_id: string;
+  status: AnnouncementStatus;
+  priority: AnnouncementPriority;
+  is_pinned: boolean;
+  is_deleted: boolean;
+  published_at: Date | null;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface ActivityPostsTable {
+  id: string;
+  content: string;
+  image_url: string | null;
+  cohort_id: string;
+  created_by_user_id: string;
+  is_deleted: boolean;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface ReactionsTable {
+  id: string;
+  user_id: string;
+  target_type: ReactionTargetType;
+  target_id: string;
+  reaction_type: ReactionType;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+export interface ClubActivitiesTable {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  cohort_id: string;
+  created_by_user_id: string;
+  activity_date: Date | null;
+  is_deleted: boolean;
+  created_at: Date;
   updated_at: Date | null;
 }
 
@@ -198,5 +278,10 @@ export interface Database {
   images: ImagesTable;
   events: EventsTable;
   event_registrations: EventRegistrationsTable;
+  event_attendance: EventAttendanceTable;
+  announcements: AnnouncementsTable;
+  activity_posts: ActivityPostsTable;
+  reactions: ReactionsTable;
+  club_activities: ClubActivitiesTable;
 }
 

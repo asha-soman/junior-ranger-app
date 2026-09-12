@@ -13,7 +13,6 @@ import { randomUUID } from 'crypto';
 import { Resend } from 'resend';
 
 @Injectable()
-
 export class AuthService {
 
 async resendCode(email: string) {
@@ -41,44 +40,84 @@ async resendCode(email: string) {
   private verificationCodes: Record<string, string> = {};
   private resendTimestamps: Record<string, number> = {};
   constructor(
-  private readonly db: DatabaseService,
-  private readonly jwtService: JwtService,
-  private readonly configService: ConfigService,
-) {}
+    private readonly db: DatabaseService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
-private getResendClient() {
-  const apiKey = this.configService.get<string>('RESEND_API_KEY');
+  // ============================================================
+  // RESEND CLIENT
+  // ============================================================
 
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not configured');
+  private getResendClient() {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+
+    return new Resend(apiKey);
   }
 
-  return new Resend(apiKey);
-}
+  // ============================================================
+  // EMAIL VERIFICATION EMAIL
+  // ============================================================
 
-private async sendVerificationEmail(email: string, code: string) {
-  const resend = this.getResendClient();
+  private async sendVerificationEmail(email: string, code: string) {
+    const resend = this.getResendClient();
 
-  const { data, error } = await resend.emails.send({
-    from: 'onboarding@resend.dev',
-    to: email,
-    subject: 'Verify your Junior Ranger account',
-    html: `
-      <h2>Verify your email</h2>
-      <p>Thank you for signing up for Junior Ranger.</p>
-      <p>Your verification code is:</p>
-      <h1>${code}</h1>
-      <p>Please enter this code in the app to verify your email address.</p>
-    `,
-  });
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: email,
+      subject: 'Verify your Junior Ranger account',
+      html: `
+        <h2>Verify your email</h2>
+        <p>Thank you for signing up for Junior Ranger.</p>
+        <p>Your verification code is:</p>
+        <h1>${code}</h1>
+        <p>Please enter this code in the app to verify your email address.</p>
+      `,
+    });
 
-  if (error) {
-    console.error('Failed to send verification email:', error);
-    throw new Error('Unable to send verification email');
+    if (error) {
+      console.error('Failed to send verification email:', error);
+      throw new Error('Unable to send verification email');
+    }
+
+    console.log('Verification email sent:', data?.id);
   }
 
-  console.log('Verification email sent:', data?.id);
-}
+  // ============================================================
+  // 2FA EMAIL
+  // ============================================================
+
+  private async sendTwoFactorEmail(email: string, code: string) {
+    const resend = this.getResendClient();
+
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: email,
+      subject: 'Your Junior Ranger login verification code',
+      html: `
+        <h2>Two-Factor Authentication</h2>
+        <p>A login attempt was made for your Junior Ranger account.</p>
+        <p>Your verification code is:</p>
+        <h1>${code}</h1>
+        <p>This code will expire in 5 minutes.</p>
+      `,
+    });
+
+    if (error) {
+      console.error('Failed to send 2FA email:', error);
+      throw new Error('Unable to send two-factor authentication email');
+    }
+
+    console.log('2FA email sent:', data?.id);
+  }
+
+  // ============================================================
+  // SIGN UP
+  // ============================================================
 
   async signup(dto: SignupDto) {
     const { email, name, password, role } = dto;
@@ -94,6 +133,7 @@ private async sendVerificationEmail(email: string, code: string) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+
     const isRanger = role === 'ranger';
 
     const newUser = await this.db
@@ -107,19 +147,29 @@ private async sendVerificationEmail(email: string, code: string) {
         is_active: !isRanger,
         approval_status: isRanger ? 'pending' : 'approved',
         is_deleted: false,
+
+        // 2FA defaults
+        two_factor_enabled: false,
+        two_factor_code: null,
+        two_factor_expiry: null,
       })
       .returningAll()
       .executeTakeFirst();
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      this.verificationCodes[email] = code;
-      await this.sendVerificationEmail(email, code);
-      //console.log(`Verification code for ${email}: ${code}`);
+    // Email verification code
+    const code = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    this.verificationCodes[email] = code;
+
+    await this.sendVerificationEmail(email, code);
 
     return {
       message: isRanger
         ? 'Signup successful. Awaiting admin approval.'
         : 'Signup successful',
+
       user: {
         id: newUser?.id,
         email: newUser?.email,
@@ -134,6 +184,10 @@ private async sendVerificationEmail(email: string, code: string) {
     };
   }
 
+  // ============================================================
+  // LOGIN
+  // ============================================================
+
   async login(dto: LoginDto) {
     const { email, password } = dto;
 
@@ -143,25 +197,14 @@ private async sendVerificationEmail(email: string, code: string) {
       .where('email', '=', email)
       .executeTakeFirst();
 
-      // TEMP: auto-approve for testing
-      //await this.db
-      //.updateTable('users')
-      //.set({
-      //  is_active: true,
-      //  approval_status: 'approved',
-  //})
-     // .where('email', '=', email)
-      //.execute();
-
     if (!user || !user.password_hash) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.verificationCodes[email] = code;
-    console.log(`Verification code for ${email}: ${code}`);
-
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password_hash,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
@@ -175,6 +218,52 @@ private async sendVerificationEmail(email: string, code: string) {
       );
     }
 
+    // ==========================================================
+    // 2FA ENABLED
+    // ==========================================================
+
+    if (user.two_factor_enabled) {
+      const code = Math.floor(
+        100000 + Math.random() * 900000,
+      ).toString();
+
+      // Code expires after 5 minutes
+      const expiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      await this.db
+        .updateTable('users')
+        .set({
+          two_factor_code: code,
+          two_factor_expiry: expiry,
+          updated_at: new Date(),
+        })
+        .where('id', '=', user.id)
+        .execute();
+
+      // Temporary testing output
+      console.log('=================================');
+      console.log('2FA LOGIN CODE');
+      console.log(`Email: ${user.email}`);
+      console.log(`Code : ${code}`);
+      console.log('=================================');
+
+      /*
+       * Enable this once you have the
+       * RESEND_API_KEY in your .env file.
+       */
+      // await this.sendTwoFactorEmail(user.email, code);
+
+      return {
+        message: 'Two-factor authentication required',
+        requires2FA: true,
+        email: user.email,
+      };
+    }
+
+    // ==========================================================
+    // NORMAL LOGIN - 2FA DISABLED
+    // ==========================================================
+
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
@@ -183,7 +272,9 @@ private async sendVerificationEmail(email: string, code: string) {
 
     return {
       message: 'Login successful',
+      requires2FA: false,
       access_token: accessToken,
+
       user: {
         id: user.id,
         email: user.email,
@@ -197,30 +288,170 @@ private async sendVerificationEmail(email: string, code: string) {
       },
     };
   }
+
+  // ============================================================
+  // VERIFY SIGNUP EMAIL
+  // ============================================================
+
   async verifyCode(email: string, code: string) {
-  const storedCode = this.verificationCodes[email];
+    const storedCode = this.verificationCodes[email];
 
-  if (!storedCode) {
-    throw new BadRequestException('No verification code found');
-  }
+    if (!storedCode) {
+      throw new BadRequestException(
+        'No verification code found',
+      );
+    }
 
-  if (storedCode !== code) {
-    throw new BadRequestException('Invalid verification code');
-  }
-
-  // update DB
-  //await this.db
-    //.updateTable('users')
-    //.where('email', '=', email)
-    //.execute();
+    if (storedCode !== code) {
+      throw new BadRequestException(
+        'Invalid verification code',
+      );
+    }
 
     console.log(`Email ${email} verified successfully`);
 
-  // remove code after success
-  delete this.verificationCodes[email];
+    delete this.verificationCodes[email];
 
-  return {
-    message: 'Email verified successfully',
-  };
-}
+    return {
+      message: 'Email verified successfully',
+    };
+  }
+
+  // ============================================================
+  // ENABLE / DISABLE 2FA
+  // ============================================================
+
+  async updateTwoFactorStatus(
+    userId: string,
+    enabled: boolean,
+  ) {
+    const updatedUser = await this.db
+      .updateTable('users')
+      .set({
+        two_factor_enabled: enabled,
+
+        // Clear any previous code whenever setting changes
+        two_factor_code: null,
+        two_factor_expiry: null,
+
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .returning([
+        'id',
+        'email',
+        'two_factor_enabled',
+      ])
+      .executeTakeFirst();
+
+    if (!updatedUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    return {
+      message: enabled
+        ? 'Two-factor authentication enabled'
+        : 'Two-factor authentication disabled',
+
+      two_factor_enabled:
+        updatedUser.two_factor_enabled,
+    };
+  }
+
+  // ============================================================
+  // VERIFY 2FA CODE
+  // ============================================================
+
+  async verifyTwoFactorCode(
+    email: string,
+    code: string,
+  ) {
+    const user = await this.db
+      .selectFrom('users')
+      .selectAll()
+      .where('email', '=', email)
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.two_factor_enabled) {
+      throw new BadRequestException(
+        'Two-factor authentication is not enabled',
+      );
+    }
+
+    if (
+      !user.two_factor_code ||
+      !user.two_factor_expiry
+    ) {
+      throw new BadRequestException(
+        'No two-factor authentication code found',
+      );
+    }
+
+    // Check expiry BEFORE validating the code
+    if (
+      new Date().getTime() >
+      new Date(user.two_factor_expiry).getTime()
+    ) {
+      // Clear expired code
+      await this.db
+        .updateTable('users')
+        .set({
+          two_factor_code: null,
+          two_factor_expiry: null,
+          updated_at: new Date(),
+        })
+        .where('id', '=', user.id)
+        .execute();
+
+      throw new UnauthorizedException(
+        'Two-factor authentication code has expired',
+      );
+    }
+
+    if (user.two_factor_code !== code) {
+      throw new UnauthorizedException(
+        'Invalid two-factor authentication code',
+      );
+    }
+
+    // Clear code after successful verification
+    await this.db
+      .updateTable('users')
+      .set({
+        two_factor_code: null,
+        two_factor_expiry: null,
+        updated_at: new Date(),
+      })
+      .where('id', '=', user.id)
+      .execute();
+
+    // Login is now fully authenticated
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return {
+      message: 'Two-factor authentication successful',
+
+      access_token: accessToken,
+
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar_url: user.avatar_url,
+        is_active: user.is_active,
+        approval_status: user.approval_status,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
+    };
+  }
 }

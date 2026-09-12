@@ -128,6 +128,7 @@ export class CohortsController {
   }
 
   @Patch(':id/remove-ranger')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   removeRangerFromCohort(
     @Param('id') cohortId: string,

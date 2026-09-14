@@ -124,3 +124,18 @@ export const verifyTwoFactorCode = async (
     throw new Error(message);
   }
 };
+
+export interface CurrentUserProfile {
+  userId: string;
+  email: string;
+  role: "admin" | "ranger" | "junior_ranger";
+  two_factor_enabled: boolean;
+}
+
+export const getCurrentUserProfile =
+  async (): Promise<CurrentUserProfile> => {
+    const response =
+      await apiClient.get("/auth/profile");
+
+    return response.data;
+  };

@@ -81,7 +81,7 @@ async resendCode(email: string) {
     const resend = this.getResendClient();
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
       to: email,
       subject: 'Verify your Junior Ranger account',
       html: `
@@ -109,7 +109,7 @@ async resendCode(email: string) {
     const resend = this.getResendClient();
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
       to: email,
       subject: 'Your Junior Ranger login verification code',
       html: `
@@ -286,11 +286,7 @@ async resendCode(email: string) {
       console.log(`Code : ${code}`);
       console.log('=================================');
 
-      /*
-       * Enable this once you have the
-       * RESEND_API_KEY in your .env file.
-       */
-      // await this.sendTwoFactorEmail(user.email, code);
+      await this.sendTwoFactorEmail(user.email, code);
 
       return {
         message: 'Two-factor authentication required',

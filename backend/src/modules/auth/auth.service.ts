@@ -1,12 +1,11 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../../database/database.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
-import { Resend } from 'resend';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -45,7 +44,7 @@ async resendCode(email: string) {
 
   this.resendTimestamps[email] = now;
 
-  await this.sendVerificationEmail(email, code);
+  await this.emailService.sendVerificationCode(email, code);
 
   return {
     message: 'Verification code resent successfully',
@@ -56,78 +55,8 @@ async resendCode(email: string) {
   constructor(
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
-
-  // ============================================================
-  // RESEND CLIENT
-  // ============================================================
-
-  private getResendClient() {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not configured');
-    }
-
-    return new Resend(apiKey);
-  }
-
-  // ============================================================
-  // EMAIL VERIFICATION EMAIL
-  // ============================================================
-
-  private async sendVerificationEmail(email: string, code: string) {
-    const resend = this.getResendClient();
-
-    const { data, error } = await resend.emails.send({
-      from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
-      to: email,
-      subject: 'Verify your Junior Ranger account',
-      html: `
-        <h2>Verify your email</h2>
-        <p>Thank you for signing up for Junior Ranger.</p>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
-        <p>Please enter this code in the app to verify your email address.</p>
-      `,
-    });
-
-    if (error) {
-      console.error('Failed to send verification email:', error);
-      throw new Error('Unable to send verification email');
-    }
-
-    console.log('Verification email sent:', data?.id);
-  }
-
-  // ============================================================
-  // 2FA EMAIL
-  // ============================================================
-
-  private async sendTwoFactorEmail(email: string, code: string) {
-    const resend = this.getResendClient();
-
-    const { data, error } = await resend.emails.send({
-      from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
-      to: email,
-      subject: 'Your Junior Ranger login verification code',
-      html: `
-        <h2>Two-Factor Authentication</h2>
-        <p>A login attempt was made for your Junior Ranger account.</p>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
-        <p>This code will expire in 5 minutes.</p>
-      `,
-    });
-
-    if (error) {
-      console.error('Failed to send 2FA email:', error);
-      throw new Error('Unable to send two-factor authentication email');
-    }
-
-    console.log('2FA email sent:', data?.id);
-  }
 
   // ============================================================
   // SIGN UP
@@ -196,7 +125,7 @@ async resendCode(email: string) {
       })
       .execute();
 
-    await this.sendVerificationEmail(email, code);
+    await this.emailService.sendVerificationCode(email, code);
 
     return {
       message: isRanger
@@ -286,7 +215,7 @@ async resendCode(email: string) {
       console.log(`Code : ${code}`);
       console.log('=================================');
 
-      await this.sendTwoFactorEmail(user.email, code);
+      await this.emailService.sendTwoFactorCode(user.email, code);
 
       return {
         message: 'Two-factor authentication required',

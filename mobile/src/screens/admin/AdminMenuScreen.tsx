@@ -33,7 +33,7 @@ export default function AdminMenuScreen() {
   useEffect(() => {
     getAdminUsers()
       .then(setUsersPreview)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const confirmLogout = async () => {
@@ -98,7 +98,10 @@ export default function AdminMenuScreen() {
     {
       title: "Feed",
       image: require("../../../assets/images/feed.png"),
-      onPress: () => {},
+      onPress: () =>
+        navigation.navigate("AnnouncementManagement", {
+          userRole: "admin",
+        }),
     },
     {
       title: 'Notices & Events',

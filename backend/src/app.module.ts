@@ -15,6 +15,7 @@ import { ActivityPostsModule } from './modules/activity-posts/activity-posts.mod
 import { ReactionsModule } from './modules/reaction/reactions.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     ReactionsModule,
     FeedModule,
     UploadsModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

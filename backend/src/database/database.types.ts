@@ -24,6 +24,19 @@ export type ReactionTargetType =
   | 'event'
   | 'activity_post'
   | 'club_activity';
+export type NotificationType =
+  | 'level_up'
+  | 'badge_unlocked'
+  | 'event_registration'
+  | 'event_registration_cancelled'
+  | 'event_update'
+  | 'event_cancelled'
+  | 'event_reminder';
+export type NotificationDeliveryChannel = 'email';
+export type NotificationDeliveryStatus =
+  | 'sent'
+  | 'failed';
+
 
 export interface UsersTable {
   id: string;
@@ -263,6 +276,39 @@ export interface ClubActivitiesTable {
   updated_at: Date | null;
 }
 
+export interface NotificationsTable {
+  id: string;
+  user_id: string;
+  event_id: string | null;
+  type: NotificationType;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: Date;
+}
+
+export interface NotificationPreferencesTable {
+  id: Generated<string>;
+  user_id: string;
+  event_updates_enabled: boolean;
+  event_reminders_enabled: boolean;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+export interface NotificationDeliveryLogsTable {
+  id: Generated<string>;
+  notification_id: string | null;
+  user_id: string;
+  event_id: string | null;
+  channel: NotificationDeliveryChannel;
+  status: NotificationDeliveryStatus;
+  recipient_email: string | null;
+  provider_message_id: string | null;
+  error_message: string | null;
+  created_at: Date;
+}
+
 export interface Database {
   users: UsersTable;
   cohorts: CohortsTable;
@@ -284,5 +330,8 @@ export interface Database {
   activity_posts: ActivityPostsTable;
   reactions: ReactionsTable;
   club_activities: ClubActivitiesTable;
+  notifications: NotificationsTable;
+  notification_preferences: NotificationPreferencesTable;
+  notification_delivery_logs: NotificationDeliveryLogsTable;
 }
 

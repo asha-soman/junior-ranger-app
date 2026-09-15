@@ -299,15 +299,6 @@ const getRegistrationButtonLabel = () => {
           >
             Try Again
           </Button>
-
-          <Button
-            mode="text"
-            onPress={() =>
-              navigation.goBack()
-            }
-          >
-            Back to Events
-          </Button>
         </View>
 
         <AppBottomTabBar

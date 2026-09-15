@@ -1,16 +1,11 @@
-import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../../database/database.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
-import { Resend } from 'resend';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -25,95 +20,43 @@ async resendCode(email: string) {
     );
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = Math.floor(
+    100000 + Math.random() * 900000,
+  ).toString();
 
-  this.verificationCodes[email] = code;
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await this.db
+    .deleteFrom('auth_challenges')
+    .where('email', '=', email)
+    .execute();
+
+  await this.db
+    .insertInto('auth_challenges')
+    .values({
+      id: randomUUID(),
+      email,
+      code,
+      expires_at: expiresAt,
+      created_at: new Date(),
+    })
+    .execute();
+
   this.resendTimestamps[email] = now;
 
-  await this.sendVerificationEmail(email, code);
+  await this.emailService.sendVerificationCode(email, code);
 
   return {
     message: 'Verification code resent successfully',
   };
 }
 
-  private verificationCodes: Record<string, string> = {};
   private resendTimestamps: Record<string, number> = {};
   constructor(
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
-
-  // ============================================================
-  // RESEND CLIENT
-  // ============================================================
-
-  private getResendClient() {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not configured');
-    }
-
-    return new Resend(apiKey);
-  }
-
-  // ============================================================
-  // EMAIL VERIFICATION EMAIL
-  // ============================================================
-
-  private async sendVerificationEmail(email: string, code: string) {
-    const resend = this.getResendClient();
-
-    const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: email,
-      subject: 'Verify your Junior Ranger account',
-      html: `
-        <h2>Verify your email</h2>
-        <p>Thank you for signing up for Junior Ranger.</p>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
-        <p>Please enter this code in the app to verify your email address.</p>
-      `,
-    });
-
-    if (error) {
-      console.error('Failed to send verification email:', error);
-      throw new Error('Unable to send verification email');
-    }
-
-    console.log('Verification email sent:', data?.id);
-  }
-
-  // ============================================================
-  // 2FA EMAIL
-  // ============================================================
-
-  private async sendTwoFactorEmail(email: string, code: string) {
-    const resend = this.getResendClient();
-
-    const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: email,
-      subject: 'Your Junior Ranger login verification code',
-      html: `
-        <h2>Two-Factor Authentication</h2>
-        <p>A login attempt was made for your Junior Ranger account.</p>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
-        <p>This code will expire in 5 minutes.</p>
-      `,
-    });
-
-    if (error) {
-      console.error('Failed to send 2FA email:', error);
-      throw new Error('Unable to send two-factor authentication email');
-    }
-
-    console.log('2FA email sent:', data?.id);
-  }
 
   // ============================================================
   // SIGN UP
@@ -147,6 +90,7 @@ async resendCode(email: string) {
         is_active: !isRanger,
         approval_status: isRanger ? 'pending' : 'approved',
         is_deleted: false,
+        email_verified: false,
 
         // 2FA defaults
         two_factor_enabled: false,
@@ -161,9 +105,27 @@ async resendCode(email: string) {
       100000 + Math.random() * 900000,
     ).toString();
 
-    this.verificationCodes[email] = code;
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await this.sendVerificationEmail(email, code);
+    // Remove any previous verification challenge for this email
+    await this.db
+      .deleteFrom('auth_challenges')
+      .where('email', '=', email)
+      .execute();
+
+    // Store the new verification challenge
+    await this.db
+      .insertInto('auth_challenges')
+      .values({
+        id: randomUUID(),
+        email,
+        code,
+        expires_at: expiresAt,
+        created_at: new Date(),
+      })
+      .execute();
+
+    await this.emailService.sendVerificationCode(email, code);
 
     return {
       message: isRanger
@@ -210,6 +172,12 @@ async resendCode(email: string) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (!user.email_verified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
+    }
+
     if (!user.is_active || user.approval_status !== 'approved') {
       throw new UnauthorizedException(
         user.approval_status !== 'approved'
@@ -247,11 +215,7 @@ async resendCode(email: string) {
       console.log(`Code : ${code}`);
       console.log('=================================');
 
-      /*
-       * Enable this once you have the
-       * RESEND_API_KEY in your .env file.
-       */
-      // await this.sendTwoFactorEmail(user.email, code);
+      await this.emailService.sendTwoFactorCode(user.email, code);
 
       return {
         message: 'Two-factor authentication required',
@@ -294,23 +258,53 @@ async resendCode(email: string) {
   // ============================================================
 
   async verifyCode(email: string, code: string) {
-    const storedCode = this.verificationCodes[email];
+    const challenge = await this.db
+      .selectFrom('auth_challenges')
+      .selectAll()
+      .where('email', '=', email)
+      .executeTakeFirst();
 
-    if (!storedCode) {
+    if (!challenge) {
       throw new BadRequestException(
         'No verification code found',
       );
     }
 
-    if (storedCode !== code) {
+    if (
+      new Date().getTime() >
+      new Date(challenge.expires_at).getTime()
+    ) {
+      await this.db
+        .deleteFrom('auth_challenges')
+        .where('id', '=', challenge.id)
+        .execute();
+
+      throw new BadRequestException(
+        'Verification code has expired',
+      );
+    }
+
+    if (challenge.code !== code) {
       throw new BadRequestException(
         'Invalid verification code',
       );
     }
 
-    console.log(`Email ${email} verified successfully`);
+    await this.db
+      .updateTable('users')
+      .set({
+        email_verified: true,
+        updated_at: new Date(),
+      })
+      .where('email', '=', email)
+      .execute();
 
-    delete this.verificationCodes[email];
+    await this.db
+      .deleteFrom('auth_challenges')
+      .where('id', '=', challenge.id)
+      .execute();
+
+    console.log(`Email ${email} verified successfully`);
 
     return {
       message: 'Email verified successfully',

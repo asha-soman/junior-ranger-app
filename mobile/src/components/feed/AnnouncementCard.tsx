@@ -19,10 +19,12 @@ import ReactionBar from "./ReactionBar";
 
 type Props = {
     item: FeedItem;
+    reactionsReadOnly?: boolean;
 };
 
 export default function AnnouncementCard({
     item,
+    reactionsReadOnly = false,
 }: Props) {
     const formattedDate =
         item.created_at
@@ -85,7 +87,10 @@ export default function AnnouncementCard({
 
             {/* REACTIONS */}
 
-            <ReactionBar item={item} />
+            <ReactionBar
+                item={item}
+                readOnly={reactionsReadOnly}
+            />
         </View>
     );
 }

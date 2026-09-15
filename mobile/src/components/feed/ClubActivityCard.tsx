@@ -17,10 +17,12 @@ import ReactionBar from "./ReactionBar";
 
 type Props = {
     item: FeedItem;
+    reactionsReadOnly?: boolean;
 };
 
 export default function ClubActivityCard({
     item,
+    reactionsReadOnly = false,
 }: Props) {
     const activityDate = item.activity_date
         ? new Date(item.activity_date)
@@ -121,7 +123,10 @@ export default function ClubActivityCard({
             </View>
 
             {/* REACTIONS */}
-            <ReactionBar item={item} />
+            <ReactionBar
+                item={item}
+                readOnly={reactionsReadOnly}
+            />
         </View>
     );
 }

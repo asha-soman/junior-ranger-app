@@ -20,6 +20,8 @@ import ReactionBar from "./ReactionBar";
 type Props = {
     item: FeedItem;
 
+    reactionsReadOnly?: boolean;
+
     isOwner?: boolean;
 
     onEdit?: () => void;
@@ -29,6 +31,7 @@ type Props = {
 
 export default function ActivityPostCard({
     item,
+    reactionsReadOnly = false,
     isOwner = false,
     onEdit,
     onDelete,
@@ -284,7 +287,10 @@ export default function ActivityPostCard({
           REACTIONS
       ========================== */}
 
-            <ReactionBar item={item} />
+            <ReactionBar
+                item={item}
+                readOnly={reactionsReadOnly}
+            />
         </View>
     );
 }

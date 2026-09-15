@@ -20,8 +20,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import {
+    RouteProp,
     useFocusEffect,
     useNavigation,
+    useRoute,
 } from "@react-navigation/native";
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -53,6 +55,12 @@ import ActivityPostCard from "../../components/feed/ActivityPostCard";
 
 type NavigationProp =
     NativeStackNavigationProp<
+        AuthStackParamList,
+        "SocialFeed"
+    >;
+
+type SocialFeedRouteProp =
+    RouteProp<
         AuthStackParamList,
         "SocialFeed"
     >;
@@ -99,6 +107,23 @@ export default function SocialFeedScreen() {
     const navigation =
         useNavigation<NavigationProp>();
 
+    const route =
+        useRoute<SocialFeedRouteProp>();
+
+    /* ======================================================
+       USER ROLE
+    ====================================================== */
+
+    const { userRole } =
+        route.params;
+
+    const isJuniorRanger =
+        userRole === "junior_ranger";
+
+    const canManageFeed =
+        userRole === "admin" ||
+        userRole === "ranger";
+
     /* ======================================================
        STATE
     ====================================================== */
@@ -127,7 +152,7 @@ export default function SocialFeedScreen() {
 
     /*
      * Search text entered by
-     * the Junior Ranger.
+     * the current user.
      */
     const [
         searchText,
@@ -258,6 +283,15 @@ export default function SocialFeedScreen() {
         async (
             postId: string,
         ) => {
+            /*
+             * Activity post management
+             * from Social Feed belongs
+             * only to Junior Rangers.
+             */
+            if (!isJuniorRanger) {
+                return;
+            }
+
             try {
                 console.log(
                     "Deleting activity post:",
@@ -357,13 +391,7 @@ export default function SocialFeedScreen() {
                 (item) => {
                     /*
                      * These properties already
-                     * exist in our FeedItem type.
-                     *
-                     * We deliberately DON'T use
-                     * item.description here,
-                     * because description is not
-                     * currently declared on your
-                     * FeedItem interface.
+                     * exist in FeedItem.
                      */
                     const searchableText = [
                         item.title,
@@ -372,10 +400,9 @@ export default function SocialFeedScreen() {
                         item.author_name,
 
                         /*
-                         * We also include type so
-                         * searching words such as
-                         * event or announcement can
-                         * still return results.
+                         * Include item type so
+                         * searches such as
+                         * "event" still work.
                          */
                         item.type,
                     ]
@@ -418,6 +445,7 @@ export default function SocialFeedScreen() {
                 return (
                     <AnnouncementCard
                         item={item}
+                        reactionsReadOnly={userRole === "admin"}
                     />
                 );
 
@@ -429,12 +457,25 @@ export default function SocialFeedScreen() {
                 return (
                     <EventCard
                         item={item}
+                        reactionsReadOnly={userRole === "admin"}
                         onViewEvent={() =>
                             navigation.navigate(
                                 "EventDetails",
                                 {
-                                    eventId: item.id,
-                                    userRole: "junior_ranger",
+                                    eventId:
+                                        item.id,
+
+                                    /*
+                                     * Pass actual
+                                     * logged-in role.
+                                     *
+                                     * JR gets registration
+                                     * behaviour.
+                                     *
+                                     * Admin/Ranger gets
+                                     * management behaviour.
+                                     */
+                                    userRole,
                                 },
                             )
                         }
@@ -449,6 +490,7 @@ export default function SocialFeedScreen() {
                 return (
                     <ClubActivityCard
                         item={item}
+                        reactionsReadOnly={userRole === "admin"}
                     />
                 );
 
@@ -457,7 +499,14 @@ export default function SocialFeedScreen() {
             ------------------------- */
 
             case "activity_post": {
+                /*
+                 * Admin/Ranger must NOT
+                 * become owners of JR posts,
+                 * even if there is ever some
+                 * unexpected ID condition.
+                 */
                 const isOwner =
+                    isJuniorRanger &&
                     !!currentUserId &&
                     item.created_by_user_id ===
                     currentUserId;
@@ -465,22 +514,29 @@ export default function SocialFeedScreen() {
                 return (
                     <ActivityPostCard
                         item={item}
+                        reactionsReadOnly={userRole === "admin"}
                         isOwner={
                             isOwner
                         }
-                        onEdit={() =>
-                            navigation.navigate(
-                                "ActivityPostForm",
-                                {
-                                    postId:
-                                        item.id,
-                                },
-                            )
+                        onEdit={
+                            isOwner
+                                ? () =>
+                                    navigation.navigate(
+                                        "ActivityPostForm",
+                                        {
+                                            postId:
+                                                item.id,
+                                        },
+                                    )
+                                : undefined
                         }
-                        onDelete={() =>
-                            handleDeletePost(
-                                item.id,
-                            )
+                        onDelete={
+                            isOwner
+                                ? () =>
+                                    handleDeletePost(
+                                        item.id,
+                                    )
+                                : undefined
                         }
                     />
                 );
@@ -612,6 +668,7 @@ export default function SocialFeedScreen() {
                         tintColor="#376E62"
                     />
                 }
+
                 /* ==================================================
                    HEADER
                 ================================================== */
@@ -619,8 +676,8 @@ export default function SocialFeedScreen() {
                 ListHeaderComponent={
                     <>
                         {/* -------------------------
-                TITLE
-            ------------------------- */}
+                            TITLE
+                        ------------------------- */}
 
                         <View
                             style={
@@ -640,14 +697,17 @@ export default function SocialFeedScreen() {
                                     styles.subtitle
                                 }
                             >
-                                See what's happening in
-                                your club.
+                                {isJuniorRanger
+                                    ? "See what's happening in your club."
+                                    : canManageFeed
+                                        ? "View what's happening across your cohorts."
+                                        : "See what's happening in your club."}
                             </Text>
                         </View>
 
                         {/* -------------------------
-                SEARCH BAR
-            ------------------------- */}
+                            SEARCH BAR
+                        ------------------------- */}
 
                         <View
                             style={
@@ -701,8 +761,8 @@ export default function SocialFeedScreen() {
                         </View>
 
                         {/* -------------------------
-                FILTERS
-            ------------------------- */}
+                            FILTERS
+                        ------------------------- */}
 
                         <View
                             style={
@@ -754,67 +814,70 @@ export default function SocialFeedScreen() {
                         </View>
 
                         {/* -------------------------
-                SHARE POST
-            ------------------------- */}
+                            SHARE POST
+                            JUNIOR RANGER ONLY
+                        ------------------------- */}
 
-                        <TouchableOpacity
-                            style={
-                                styles.sharePostCard
-                            }
-                            onPress={() =>
-                                navigation.navigate(
-                                    "ActivityPostForm",
-                                )
-                            }
-                            activeOpacity={
-                                0.85
-                            }
-                        >
-                            <View
+                        {isJuniorRanger && (
+                            <TouchableOpacity
                                 style={
-                                    styles.sharePostIcon
+                                    styles.sharePostCard
+                                }
+                                onPress={() =>
+                                    navigation.navigate(
+                                        "ActivityPostForm",
+                                    )
+                                }
+                                activeOpacity={
+                                    0.85
                                 }
                             >
+                                <View
+                                    style={
+                                        styles.sharePostIcon
+                                    }
+                                >
+                                    <Ionicons
+                                        name="add"
+                                        size={27}
+                                        color="#FFFFFF"
+                                    />
+                                </View>
+
+                                <View
+                                    style={
+                                        styles.sharePostTextContainer
+                                    }
+                                >
+                                    <Text
+                                        style={
+                                            styles.sharePostTitle
+                                        }
+                                    >
+                                        Share A Post
+                                    </Text>
+
+                                    <Text
+                                        style={
+                                            styles.sharePostSubtitle
+                                        }
+                                    >
+                                        Tell your club about an
+                                        activity you've done.
+                                    </Text>
+                                </View>
+
                                 <Ionicons
-                                    name="add"
-                                    size={27}
-                                    color="#FFFFFF"
+                                    name="chevron-forward"
+                                    size={22}
+                                    color="#376E62"
                                 />
-                            </View>
-
-                            <View
-                                style={
-                                    styles.sharePostTextContainer
-                                }
-                            >
-                                <Text
-                                    style={
-                                        styles.sharePostTitle
-                                    }
-                                >
-                                    Share A Post
-                                </Text>
-
-                                <Text
-                                    style={
-                                        styles.sharePostSubtitle
-                                    }
-                                >
-                                    Tell your club about an
-                                    activity you've done.
-                                </Text>
-                            </View>
-
-                            <Ionicons
-                                name="chevron-forward"
-                                size={22}
-                                color="#376E62"
-                            />
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+                        )}
 
                         {/* -------------------------
-                SEARCH RESULT LABEL
-            ------------------------- */}
+                            SEARCH RESULT LABEL
+                        ------------------------- */}
 
                         {searchText.trim() !==
                             "" && (
@@ -869,7 +932,9 @@ export default function SocialFeedScreen() {
                         >
                             {searchText.trim()
                                 ? `We couldn't find anything matching "${searchText.trim()}".`
-                                : "Posts and activities from your club will appear here."}
+                                : isJuniorRanger
+                                    ? "Posts and activities from your club will appear here."
+                                    : "Posts and activities from your cohorts will appear here."}
                         </Text>
 
                         {searchText.trim() !==

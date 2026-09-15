@@ -39,6 +39,7 @@ import AttendanceManagementScreen from '../screens/events/AttendanceManagementSc
 import SettingsScreen from "../screens/settings/SettingsScreen";
 import AnnouncementManagementScreen from "../screens/announcements/AnnouncementManagementScreen";
 import AnnouncementFormScreen from "../screens/announcements/AnnouncementFormScreen";
+import FeedManagementScreen from "../screens/feed/FeedManagementScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -132,7 +133,15 @@ export type AuthStackParamList = {
     cohortId?: string;
   }
   | undefined;
-  SocialFeed: undefined;
+  SocialFeed: {
+    userRole:
+    | "admin"
+    | "ranger"
+    | "junior_ranger";
+  };
+  FeedManagement: {
+    userRole: "admin" | "ranger";
+  };
   AttendanceManagement: {
     eventId: string;
     userRole: 'admin' | 'ranger';
@@ -433,6 +442,15 @@ export default function AuthNavigator() {
         options={{
           ...authHeaderOptions,
           title: "Feed",
+        }}
+      />
+
+      <Stack.Screen
+        name="FeedManagement"
+        component={FeedManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Feed Management",
         }}
       />
 

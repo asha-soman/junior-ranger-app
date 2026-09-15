@@ -99,9 +99,12 @@ export default function AdminMenuScreen() {
       title: "Feed",
       image: require("../../../assets/images/feed.png"),
       onPress: () =>
-        navigation.navigate("AnnouncementManagement", {
-          userRole: "admin",
-        }),
+        navigation.navigate(
+          "FeedManagement",
+          {
+            userRole: "admin",
+          },
+        )
     },
     {
       title: 'Notices & Events',

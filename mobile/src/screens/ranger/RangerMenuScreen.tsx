@@ -289,7 +289,7 @@ export default function RangerMenuScreen() {
           ]}
           onPress={() =>
             navigation.navigate(
-              "AnnouncementManagement",
+              "FeedManagement",
               {
                 userRole: "ranger",
               },

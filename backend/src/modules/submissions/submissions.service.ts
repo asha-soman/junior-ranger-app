@@ -75,25 +75,42 @@ export class SubmissionsService {
       );
     }
 
-    const submission = await this.db
-      .insertInto('adventure_submissions')
-      .values({
-        id: randomUUID(),
-        adventure_id: adventureId,
-        cohort_id: assignedCohortMembership.cohort_id,
-        junior_ranger_user_id: user.userId,
-        submission_text: dto.submission_text,
-        image_url: dto.image_url ?? null,
-        status: 'submitted',
-        feedback: null,
-        reviewed_by_ranger_id: null,
-        submitted_at: new Date(),
-        reviewed_at: null,
-        created_at: new Date(),
-        updated_at: null,
-      })
-      .returningAll()
-      .executeTakeFirst();
+        let imageId: string | null = null;
+        if (dto.image_url) {
+            const image = await this.db
+                .insertInto('images')
+                .values({
+                    id: randomUUID(),
+                    secure_url: dto.image_url,
+                    metadata: dto.image_metadata ? JSON.stringify(dto.image_metadata) : null,
+                    is_deleted: false,
+                    created_at: new Date(),
+                    updated_at: null,
+                })
+                .returning('id')
+                .executeTakeFirst();
+            imageId = image?.id ?? null;
+        }
+
+        const submission = await this.db
+            .insertInto('adventure_submissions')
+            .values({
+                id: randomUUID(),
+                adventure_id: adventureId,
+                cohort_id: assignedCohortMembership.cohort_id,
+                junior_ranger_user_id: user.userId,
+                submission_text: dto.submission_text,
+                image_id: imageId,
+                status: 'submitted',
+                feedback: null,
+                reviewed_by_ranger_id: null,
+                submitted_at: new Date(),
+                reviewed_at: null,
+                created_at: new Date(),
+                updated_at: null,
+            })
+            .returningAll()
+            .executeTakeFirst();
 
     return {
       message: 'Adventure submitted successfully',
@@ -155,31 +172,33 @@ export class SubmissionsService {
       );
     }
 
-    let query = this.db
-      .selectFrom('adventure_submissions')
-      .innerJoin(
-        'users',
-        'users.id',
-        'adventure_submissions.junior_ranger_user_id',
-      )
-      .select([
-        'adventure_submissions.id',
-        'adventure_submissions.adventure_id',
-        'adventure_submissions.cohort_id',
-        'adventure_submissions.junior_ranger_user_id',
-        'adventure_submissions.submission_text',
-        'adventure_submissions.image_url',
-        'adventure_submissions.status',
-        'adventure_submissions.feedback',
-        'adventure_submissions.reviewed_by_ranger_id',
-        'adventure_submissions.submitted_at',
-        'adventure_submissions.reviewed_at',
-        'adventure_submissions.created_at',
-        'adventure_submissions.updated_at',
-        'users.name as junior_ranger_name',
-        'users.email as junior_ranger_email',
-      ])
-      .where('adventure_submissions.adventure_id', '=', adventureId);
+        let query = this.db
+            .selectFrom('adventure_submissions')
+            .innerJoin(
+                'users',
+                'users.id',
+                'adventure_submissions.junior_ranger_user_id',
+            )
+            .leftJoin('images', 'images.id', 'adventure_submissions.image_id')
+            .select([
+                'adventure_submissions.id',
+                'adventure_submissions.adventure_id',
+                'adventure_submissions.cohort_id',
+                'adventure_submissions.junior_ranger_user_id',
+                'adventure_submissions.submission_text',
+                'images.secure_url as image_url',
+                'images.metadata as image_metadata',
+                'adventure_submissions.status',
+                'adventure_submissions.feedback',
+                'adventure_submissions.reviewed_by_ranger_id',
+                'adventure_submissions.submitted_at',
+                'adventure_submissions.reviewed_at',
+                'adventure_submissions.created_at',
+                'adventure_submissions.updated_at',
+                'users.name as junior_ranger_name',
+                'users.email as junior_ranger_email',
+            ])
+            .where('adventure_submissions.adventure_id', '=', adventureId);
 
     // If the ranger manages assigned cohorts, show only submissions from those cohorts
     if (managedCohortIds.length > 0) {
@@ -274,12 +293,28 @@ export class SubmissionsService {
       );
     }
 
-    const submission = await this.db
-      .selectFrom('adventure_submissions')
-      .selectAll()
-      .where('adventure_id', '=', adventureId)
-      .where('junior_ranger_user_id', '=', user.userId)
-      .executeTakeFirst();
+        const submission = await this.db
+            .selectFrom('adventure_submissions')
+            .leftJoin('images', 'images.id', 'adventure_submissions.image_id')
+            .select([
+                'adventure_submissions.id',
+                'adventure_submissions.adventure_id',
+                'adventure_submissions.cohort_id',
+                'adventure_submissions.junior_ranger_user_id',
+                'adventure_submissions.submission_text',
+                'images.secure_url as image_url',
+                'images.metadata as image_metadata',
+                'adventure_submissions.status',
+                'adventure_submissions.feedback',
+                'adventure_submissions.reviewed_by_ranger_id',
+                'adventure_submissions.submitted_at',
+                'adventure_submissions.reviewed_at',
+                'adventure_submissions.created_at',
+                'adventure_submissions.updated_at',
+            ])
+            .where('adventure_submissions.adventure_id', '=', adventureId)
+            .where('adventure_submissions.junior_ranger_user_id', '=', user.userId)
+            .executeTakeFirst();
 
     return {
       submission: submission || null,
@@ -311,24 +346,41 @@ export class SubmissionsService {
       throw new ForbiddenException('You can only update your own submission');
     }
 
-    if (submission.status === 'approved') {
-      throw new ForbiddenException('Approved submissions cannot be edited');
-    }
+        if (submission.status === 'approved') {
+            throw new ForbiddenException('Approved submissions cannot be edited');
+        }
 
-    const updatedSubmission = await this.db
-      .updateTable('adventure_submissions')
-      .set({
-        submission_text: dto.submission_text,
-        image_url: dto.image_url ?? null,
-        status: 'submitted',
-        feedback: null,
-        reviewed_by_ranger_id: null,
-        reviewed_at: null,
-        updated_at: new Date(),
-      })
-      .where('id', '=', submissionId)
-      .returningAll()
-      .executeTakeFirst();
+        let imageId = submission.image_id;
+        if (dto.image_url) {
+            const image = await this.db
+                .insertInto('images')
+                .values({
+                    id: randomUUID(),
+                    secure_url: dto.image_url,
+                    metadata: dto.image_metadata ? JSON.stringify(dto.image_metadata) : null,
+                    is_deleted: false,
+                    created_at: new Date(),
+                    updated_at: null,
+                })
+                .returning('id')
+                .executeTakeFirst();
+            imageId = image?.id ?? null;
+        }
+
+        const updatedSubmission = await this.db
+            .updateTable('adventure_submissions')
+            .set({
+                submission_text: dto.submission_text,
+                image_id: imageId,
+                status: 'submitted',
+                feedback: null,
+                reviewed_by_ranger_id: null,
+                reviewed_at: null,
+                updated_at: new Date(),
+            })
+            .where('id', '=', submissionId)
+            .returningAll()
+            .executeTakeFirst();
 
     return {
       message: 'Submission updated successfully',

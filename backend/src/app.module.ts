@@ -14,6 +14,7 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 import { ActivityPostsModule } from './modules/activity-posts/activity-posts.module';
 import { ReactionsModule } from './modules/reaction/reactions.module';
 import { FeedModule } from './modules/feed/feed.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
 
 @Module({
@@ -34,6 +35,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
     ActivityPostsModule,
     ReactionsModule,
     FeedModule,
+    UploadsModule,
     GamificationModule
   ],
   controllers: [AppController],

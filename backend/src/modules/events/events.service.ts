@@ -339,6 +339,12 @@ export class EventsService {
         );
       }
 
+      if (event.status === 'cancelled') {
+        throw new BadRequestException(
+          'This event has been cancelled',
+        );
+      }
+
       if (event.status !== 'published') {
         throw new ForbiddenException(
           'This event is not available',

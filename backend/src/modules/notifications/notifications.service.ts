@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../email/email.service';
@@ -498,6 +498,68 @@ export class NotificationsService {
         })
         .returningAll()
         .executeTakeFirstOrThrow();
+    }
+
+  async getMyNotifications(userId: string) {
+    return this.db
+      .selectFrom('notifications')
+      .selectAll()
+      .where('user_id', '=', userId)
+      .orderBy('created_at', 'desc')
+      .execute();
+    }
+
+    async markAsRead(
+      notificationId: string,
+      userId: string,
+    ) {
+      const notification = await this.db
+        .updateTable('notifications')
+        .set({
+          is_read: true,
+        })
+        .where('id', '=', notificationId)
+        .where('user_id', '=', userId)
+        .returningAll()
+        .executeTakeFirst();
+
+      if (!notification) {
+        throw new NotFoundException(
+          'Notification not found',
+        );
+      }
+
+      return notification;
+    }
+
+    async markAllAsRead(userId: string) {
+      await this.db
+        .updateTable('notifications')
+        .set({
+          is_read: true,
+        })
+        .where('user_id', '=', userId)
+        .where('is_read', '=', false)
+        .execute();
+
+      return {
+        message: 'All notifications marked as read',
+      };
+    }
+
+    async getUnreadCount(userId: string) {
+      const result = await this.db
+        .selectFrom('notifications')
+        .select(({ fn }) =>
+          fn.count<number>('id').as('count'),
+        )
+        .where('user_id', '=', userId)
+        .where('is_read', '=', false)
+        .executeTakeFirst();
+
+      return {
+        count: Number(result?.count ?? 0),
+      };
     }
 
 }

@@ -3,15 +3,40 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from './database/database.module'
+import { UsersModule } from './modules/users/users.module';;
+import { AdminModule } from './modules/admin/admin.module';
+import { AdventuresModule } from './modules/adventures/adventures.module';
+import { CohortsModule } from './modules/cohorts/cohorts.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { EventsModule } from './modules/events/events.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { ActivityPostsModule } from './modules/activity-posts/activity-posts.module';
+import { ReactionsModule } from './modules/reaction/reactions.module';
+import { FeedModule } from './modules/feed/feed.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env'],
     }),
     DatabaseModule,
+    UsersModule,
     AuthModule,
+    AdminModule,
+    AdventuresModule,
+    CohortsModule,
+    SubmissionsModule,
+    EventsModule,
+    AnnouncementsModule,
+    ActivityPostsModule,
+    ReactionsModule,
+    FeedModule,
+    UploadsModule,
+    GamificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

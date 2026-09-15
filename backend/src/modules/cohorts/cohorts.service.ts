@@ -87,6 +87,7 @@ async findAllCohorts(
   user: { userId: string; email: string; role: string },
   page = 1,
   limit = 20,
+  searchName = '',
 ) {
   const safePage =
     Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
@@ -181,12 +182,21 @@ async findAllCohorts(
       .where('cohorts.is_deleted', '=', false);
   }
 
-  const totalQuery = this.db
-    .selectFrom('cohorts')
-    .select((eb) => eb.fn.countAll<number>().as('total'))
-    .where('is_deleted', '=', false);
+    const normalizedSearchName = searchName.trim();
 
-  const totalResult = await totalQuery.executeTakeFirst();
+  if (normalizedSearchName) {
+    query = query.where(
+      'cohorts.name',
+      'ilike',
+      `%${normalizedSearchName}%`,
+    );
+  }
+
+  const totalResult = await query
+    .clearSelect()
+    .select((eb) => eb.fn.countAll().as('total'))
+    .executeTakeFirst();
+
   const total = Number(totalResult?.total ?? 0);
 
   const cohorts = await query

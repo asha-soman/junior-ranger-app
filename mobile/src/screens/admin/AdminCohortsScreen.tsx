@@ -57,10 +57,11 @@ export default function AdminCohortsScreen() {
       setIsFiltering(true);
     }
 
-    const result = await getCohortsPaginated(
-      page,
-      COHORTS_PER_PAGE,
-    );
+  const result = await getCohortsPaginated(
+    page,
+    COHORTS_PER_PAGE,
+    searchName.trim(),
+  );
 
     setCohorts(result.cohorts);
     setCurrentPage(result.pagination.page);
@@ -85,15 +86,19 @@ export default function AdminCohortsScreen() {
   );
 
   useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true;
-      return;
-    }
-  }, [searchName]);
+  if (!hasMounted.current) {
+    hasMounted.current = true;
+    return;
+  }
 
-  const filteredCohorts = cohorts.filter((cohort) =>
-    cohort.name.toLowerCase().includes(searchName.toLowerCase().trim()),
-  );
+  const timer = setTimeout(() => {
+    loadCohorts(1);
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [searchName]);
+
+  const filteredCohorts = cohorts;
 
   if (loading) {
     return (

@@ -81,11 +81,13 @@ export interface PaginatedCohorts {
 export const getCohortsPaginated = async (
   page = 1,
   limit = 20,
+  searchName = "",
 ): Promise<PaginatedCohorts> => {
   const response = await apiClient.get("/cohorts", {
     params: {
       page,
       limit,
+      searchName,
     },
   });
 

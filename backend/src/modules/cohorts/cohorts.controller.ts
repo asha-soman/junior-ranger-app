@@ -59,12 +59,14 @@ export class CohortsController {
     };
   },
   @Query('page') page = '1',
-  @Query('limit') limit = '20',
+@Query('limit') limit = '20',
+@Query('searchName') searchName = '',
 ) {
   return this.cohortsService.findAllCohorts(
     req.user,
     Number(page),
     Number(limit),
+    searchName,
   );
 }
 

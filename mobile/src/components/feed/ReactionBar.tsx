@@ -23,7 +23,7 @@ import {
 
 type Props = {
     item: FeedItem;
-
+    readOnly?: boolean;
     onReactionChanged?: (
         itemId: string,
         reactionCounts: Record<
@@ -81,6 +81,7 @@ const emptyCounts: Record<
 
 export default function ReactionBar({
     item,
+    readOnly = false,
     onReactionChanged,
 }: Props) {
     const [counts, setCounts] = useState<
@@ -174,6 +175,9 @@ export default function ReactionBar({
     const handleReaction = async (
         reactionType: ReactionType,
     ) => {
+        if (readOnly) {
+            return;
+        }
         if (loadingReaction) {
             return;
         }
@@ -315,7 +319,7 @@ export default function ReactionBar({
                     <TouchableOpacity
                         key={reaction.key}
                         activeOpacity={0.7}
-                        disabled={!!loadingReaction}
+                        disabled={!!loadingReaction || readOnly}
                         onPress={() =>
                             handleReaction(reaction.key)
                         }

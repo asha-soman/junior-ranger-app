@@ -281,10 +281,25 @@ export default function RangerMenuScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.menuOption, { justifyContent: "space-between" }]}
+          style={[
+            styles.menuOption,
+            {
+              justifyContent: "space-between",
+            },
+          ]}
+          onPress={() =>
+            navigation.navigate(
+              "FeedManagement",
+              {
+                userRole: "ranger",
+              },
+            )
+          }
         >
           <Image
-            source={require("../../../assets/images/feed.png")}
+            source={require(
+              "../../../assets/images/feed.png"
+            )}
             style={styles.menuImage}
           />
 
@@ -297,20 +312,30 @@ export default function RangerMenuScreen() {
               paddingHorizontal: 12,
             }}
           >
-            <Text style={{ fontSize: 20, fontWeight: "700", color: "#111" }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#111",
+              }}
+            >
               Feed
             </Text>
 
-            <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+            <Ionicons
+              name="chevron-forward"
+              size={28}
+              color="#2F6F61"
+            />
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.menuOption, { justifyContent: "space-between" }]}
           onPress={() =>
-           navigation.navigate("EventsHub", {
-            userRole: "ranger",
-           })
+            navigation.navigate("EventsHub", {
+              userRole: "ranger",
+            })
           }
         >
           <Image

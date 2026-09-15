@@ -33,7 +33,7 @@ export class ReactionsController {
 
     // Junior Ranger adds or changes reaction
     @Post()
-    @Roles('junior_ranger')
+    @Roles('ranger', 'junior_ranger')
     setReaction(
         @Body() dto: SetReactionDto,
         @Req() req: Request & { user: AuthUser },
@@ -65,7 +65,7 @@ export class ReactionsController {
 
     // Junior Ranger removes their reaction
     @Delete(':targetType/:targetId')
-    @Roles('junior_ranger')
+    @Roles('ranger', 'junior_ranger')
     removeReaction(
         @Param('targetType')
         targetType: ReactionTargetType,

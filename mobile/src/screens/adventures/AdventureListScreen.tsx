@@ -6,7 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import {
     Adventure,
-    getAllAdventures,
+    getAllAdventuresPaginated,
 } from '../../services/adventures/adventureService';
 import { adventureStyles as styles } from '../../styles/AdventureStyles';
 
@@ -20,6 +20,12 @@ export default function AdventureListScreen({ navigation, route }: Props) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalAdventures, setTotalAdventures] = useState(0);
+
+    const ADVENTURES_PER_PAGE = 6;
+
     const canCreateAdventure = userRole === 'ranger' || userRole === 'admin';
 
     console.log('AdventureList route params:', route.params);
@@ -30,22 +36,27 @@ export default function AdventureListScreen({ navigation, route }: Props) {
         fetchAdventures();
     }, []);
 
-    const fetchAdventures = async () => {
-        // if (!cohortId) return;
+    const fetchAdventures = async (page = 1) => {
+    try {
+        setLoading(true);
+        setError('');
 
-        try {
-            setLoading(true);
-            setError('');
+        const response = await getAllAdventuresPaginated(
+            page,
+            ADVENTURES_PER_PAGE
+        );
 
-            const data = await getAllAdventures();
-            setAdventures(data);
-        } catch (err) {
-            console.log('Get all adventures error:', err);
-            setError('Unable to load adventures. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+        setAdventures(response.data);
+        setCurrentPage(response.pagination.page);
+        setTotalPages(response.pagination.totalPages);
+        setTotalAdventures(response.pagination.total);
+    } catch (err) {
+        console.error('Error fetching adventures:', err);
+        setError('Failed to load adventures.');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const renderAdventure = ({ item }: { item: Adventure }) => (
         <Card
@@ -116,11 +127,47 @@ export default function AdventureListScreen({ navigation, route }: Props) {
                 )}
 
                 <FlatList
-                    data={adventures}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderAdventure}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                />
+    data={adventures}
+    keyExtractor={(item) => item.id}
+    renderItem={renderAdventure}
+    contentContainerStyle={{ paddingBottom: 20 }}
+    ListFooterComponent={
+        <View
+            style={{
+                paddingVertical: 20,
+                alignItems: 'center',
+            }}
+        >
+            <Text style={{ marginBottom: 10 }}>
+                {totalAdventures} adventures found
+            </Text>
+
+            <View
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                }}
+            >
+                <Button
+                    mode="outlined"
+                    disabled={currentPage === 1 || loading}
+                    onPress={() => fetchAdventures(currentPage - 1)}
+                >
+                    Previous
+                </Button>
+
+                <Button
+                    mode="contained"
+                    disabled={currentPage === totalPages || loading}
+                    onPress={() => fetchAdventures(currentPage + 1)}
+                >
+                    Next
+                </Button>
+            </View>
+        </View>
+    }
+/>
             </View>
         </View>
     );

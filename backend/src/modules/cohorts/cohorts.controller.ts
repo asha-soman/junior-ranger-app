@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
   Patch,
+  Query,
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -49,17 +50,23 @@ export class CohortsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'ranger', 'junior_ranger')
   async findAllCohorts(
-    @Req()
-    req: Request & {
-      user: {
-        userId: string;
-        email: string;
-        role: string;
-      };
-    },
-  ) {
-    return this.cohortsService.findAllCohorts(req.user);
-  }
+  @Req()
+  req: Request & {
+    user: {
+      userId: string;
+      email: string;
+      role: string;
+    };
+  },
+  @Query('page') page = '1',
+  @Query('limit') limit = '20',
+) {
+  return this.cohortsService.findAllCohorts(
+    req.user,
+    Number(page),
+    Number(limit),
+  );
+}
 
   //Get all members of a particular cohort
   @Get(':id/members')

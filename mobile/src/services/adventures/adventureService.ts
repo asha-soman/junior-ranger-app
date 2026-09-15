@@ -41,6 +41,32 @@ export const getAllAdventures = async (): Promise<Adventure[]> => {
     return response.data;
 };
 
+export interface AdventuresPagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface PaginatedAdventures {
+    data: Adventure[];
+    pagination: AdventuresPagination;
+}
+
+export const getAllAdventuresPaginated = async (
+    page = 1,
+    limit = 20
+): Promise<PaginatedAdventures> => {
+    const response = await apiClient.get('/adventures/paginated', {
+        params: {
+            page,
+            limit,
+        },
+    });
+
+    return response.data;
+};
+
 export const getAdventuresByCohort = async (
     cohortId: string
 ): Promise<Adventure[]> => {

@@ -49,6 +49,36 @@ export const getSubmissionsForAdventure = async (
     return response.data;
 };
 
+export interface SubmissionsPagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface PaginatedSubmissions {
+    data: AdventureSubmission[];
+    pagination: SubmissionsPagination;
+}
+
+export const getSubmissionsForAdventurePaginated = async (
+    adventureId: string,
+    page = 1,
+    limit = 20
+): Promise<PaginatedSubmissions> => {
+    const response = await apiClient.get(
+        `/adventures/${adventureId}/submissions/paginated`,
+        {
+            params: {
+                page,
+                limit,
+            },
+        }
+    );
+
+    return response.data;
+};
+
 export const reviewSubmission = async (
     submissionId: string,
     payload: ReviewSubmissionPayload

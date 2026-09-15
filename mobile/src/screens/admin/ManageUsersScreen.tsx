@@ -4,14 +4,20 @@ import { Ionicons } from "@expo/vector-icons";
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { AdminUser, getAdminUsers } from "../../services/admin/adminService";
-import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import { AdminUser, getAdminUsersPaginated, } from "../../services/admin/adminService";import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 
 type RouteProps = RouteProp<AuthStackParamList, "ManageUsers">;
 
 export default function ManageUsersScreen() {
   const route = useRoute<RouteProps>();
   const initialUsers = route.params?.initialUsers ?? [];
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  // Temporary page size for testing pagination with current dataset
+  const USERS_PER_PAGE = 6;
+
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
   const [loading, setLoading] = useState(initialUsers.length === 0);
   const [selectedRole, setSelectedRole] = useState("all");
@@ -24,7 +30,13 @@ export default function ManageUsersScreen() {
   const [searchName, setSearchName] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
 
-  const loadUsers = async (role = "all", status = "all", name = "") => {
+  const loadUsers = async (
+  role = "all",
+  status = "all",
+  name = "",
+  page = 1,
+  ) => {
+
     try {
       setErrorMessage("");
       if (loading) {
@@ -33,8 +45,19 @@ export default function ManageUsersScreen() {
         setIsFiltering(true);
       }
 
-      const data = await getAdminUsers(role, status, name);
-      setUsers(data);
+  const result = await getAdminUsersPaginated(
+    role,
+    status,
+    name,
+    page,
+    USERS_PER_PAGE,
+  );
+
+setUsers(result.data);
+setCurrentPage(result.pagination.page);
+setTotalPages(result.pagination.totalPages);
+setTotalUsers(result.pagination.total);
+
     } catch (error: any) {
       setErrorMessage(
         error?.response?.data?.message ||
@@ -47,71 +70,69 @@ export default function ManageUsersScreen() {
     }
   };
 
-  useEffect(() => {
-    if (initialUsers.length === 0) {
-      loadUsers();
-    }
-  }, []);
+useEffect(() => {
+  loadUsers("all", "all", "", 1);
+}, []);
 
   useEffect(() => {
     if (activeFilterSection !== "search") return;
 
-    const timeoutId = setTimeout(() => {
-      setSelectedRole("all");
-      setSelectedStatus("all");
-      loadUsers("all", "all", searchName);
-    }, 500);
+const timeoutId = setTimeout(() => {
+  setSelectedRole("all");
+  setSelectedStatus("all");
+  loadUsers("all", "all", searchName, 1);
+}, 500);
 
-    return () => clearTimeout(timeoutId);
-  }, [searchName]);
+return () => clearTimeout(timeoutId);
+}, [searchName]);
 
-  const openSearchSection = () => {
-    setActiveFilterSection(activeFilterSection === "search" ? null : "search");
+const openSearchSection = () => {
+  setActiveFilterSection(activeFilterSection === "search" ? null : "search");
 
-    setSelectedRole("all");
-    setSelectedStatus("all");
-    loadUsers("all", "all", "");
-  };
+  setSelectedRole("all");
+  setSelectedStatus("all");
+  loadUsers("all", "all", "", 1);
+};
 
-  const openFilterSection = () => {
-    setActiveFilterSection(
-      activeFilterSection === "filters" ? null : "filters",
-    );
+const openFilterSection = () => {
+  setActiveFilterSection(
+    activeFilterSection === "filters" ? null : "filters",
+  );
 
-    setSearchName("");
-    loadUsers("all", "all", "");
-  };
+  setSearchName("");
+  loadUsers("all", "all", "", 1);
+};
 
-  const handleSearchSubmit = () => {
-    setSelectedRole("all");
-    setSelectedStatus("all");
-    loadUsers("all", "all", searchName);
-  };
+const handleSearchSubmit = () => {
+  setSelectedRole("all");
+  setSelectedStatus("all");
+  loadUsers("all", "all", searchName, 1);
+};
 
-  const handleRoleFilter = (role: string) => {
-    setSelectedRole(role);
-    loadUsers(role, selectedStatus, "");
-  };
+const handleRoleFilter = (role: string) => {
+  setSelectedRole(role);
+  loadUsers(role, selectedStatus, "", 1);
+};
 
-  const handleStatusFilter = (status: string) => {
-    setSelectedStatus(status);
-    loadUsers(selectedRole, status, "");
-  };
+const handleStatusFilter = (status: string) => {
+  setSelectedStatus(status);
+  loadUsers(selectedRole, status, "", 1);
+};
 
-  const formatRole = (role: string) => {
-    if (role === "junior_ranger") return "Junior";
-    return role.charAt(0).toUpperCase() + role.slice(1);
-  };
+const formatRole = (role: string) => {
+  if (role === "junior_ranger") return "Junior";
+  return role.charAt(0).toUpperCase() + role.slice(1);
+};
 
-  const formatStatus = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
+const formatStatus = (status: string) => {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
 
-  const getStatusBadgeStyle = (status: string) => {
-    if (status === "approved") return styles.approvedBadge;
-    if (status === "pending") return styles.pendingBadge;
-    return styles.rejectedBadge;
-  };
+const getStatusBadgeStyle = (status: string) => {
+  if (status === "approved") return styles.approvedBadge;
+  if (status === "pending") return styles.pendingBadge;
+  return styles.rejectedBadge;
+};
 
   return (
     <View style={styles.container}>
@@ -291,7 +312,83 @@ export default function ManageUsersScreen() {
                 </Text>
               </View>
             </View>
-          ))
+                   ))
+        )}
+
+        {!loading && users.length > 0 && (
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 8,
+              marginBottom: 12,
+              fontWeight: "600",
+              color: "#555",
+            }}
+          >
+            {totalUsers} users found
+          </Text>
+        )}
+
+        {!loading && totalPages > 1 && (
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 20,
+              gap: 12,
+            }}
+          >
+            <TouchableOpacity
+              disabled={currentPage === 1}
+              onPress={() =>
+                loadUsers(
+                  selectedRole,
+                  selectedStatus,
+                  searchName,
+                  currentPage - 1,
+                )
+              }
+              style={{
+                backgroundColor:
+                  currentPage === 1 ? "#CCCCCC" : "#376E62",
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "700" }}>
+                Previous
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{ fontWeight: "700" }}>
+              {currentPage} / {totalPages}
+            </Text>
+
+            <TouchableOpacity
+              disabled={currentPage === totalPages}
+              onPress={() =>
+                loadUsers(
+                  selectedRole,
+                  selectedStatus,
+                  searchName,
+                  currentPage + 1,
+                )
+              }
+              style={{
+                backgroundColor:
+                  currentPage === totalPages ? "#CCCCCC" : "#376E62",
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "700" }}>
+                Next
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
       <AppBottomTabBar role="admin" activeTab="menu"/>

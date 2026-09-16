@@ -15,6 +15,7 @@ import { ActivityPostsModule } from './modules/activity-posts/activity-posts.mod
 import { ReactionsModule } from './modules/reaction/reactions.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { StorageModule } from './modules/storage/storage.module';
     ReactionsModule,
     FeedModule,
     StorageModule,
+    GamificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

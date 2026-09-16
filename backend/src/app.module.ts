@@ -3,8 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
-import { DatabaseModule } from './database/database.module'
-import { UsersModule } from './modules/users/users.module';;
+import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './modules/users/users.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AdventuresModule } from './modules/adventures/adventures.module';
 import { CohortsModule } from './modules/cohorts/cohorts.module';
@@ -16,6 +16,7 @@ import { ReactionsModule } from './modules/reaction/reactions.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { StorageModule } from './modules/storage/storage.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
 
 @Module({
@@ -38,9 +39,10 @@ import { GamificationModule } from './modules/gamification/gamification.module';
     FeedModule,
     UploadsModule,
     ScheduleModule.forRoot(),
+    StorageModule,
     GamificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -17,11 +17,13 @@ import ReactionBar from "./ReactionBar";
 
 type Props = {
     item: FeedItem;
+    reactionsReadOnly?: boolean;
     onViewEvent?: () => void;
 };
 
 export default function EventCard({
     item,
+    reactionsReadOnly = false,
     onViewEvent,
 }: Props) {
     const eventDate =
@@ -155,7 +157,10 @@ export default function EventCard({
             </View>
 
             {/* REACTIONS */}
-            <ReactionBar item={item} />
+            <ReactionBar
+                item={item}
+                readOnly={reactionsReadOnly}
+            />
         </View>
     );
 }

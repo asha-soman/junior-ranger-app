@@ -118,6 +118,13 @@ export type AuthStackParamList = {
   CreateAdventure: { cohortId?: string } | undefined;
   EditAdventure: { adventureId: string };
   SubmitAdventure: { adventureId: string };
+  SubmitAdventureTask: {
+    taskId: string;
+    taskTitle: string;
+    taskDescription: string;
+    xpReward: number;
+    adventureId: string;
+  };
   AdventureSubmissions: { adventureId: string };
   ReviewSubmission: { submissionId: string };
   EventsHub:

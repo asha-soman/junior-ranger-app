@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -49,6 +50,21 @@ export class SubmissionsController {
       adventureId,
       dto,
       req.user,
+    );
+  }
+
+  @Get('adventures/:adventureId/submissions/paginated')
+  getSubmissionsForAdventurePaginated(
+    @Param('adventureId') adventureId: string,
+    @Req() req: Request & { user: AuthUser },
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.submissionsService.getSubmissionsForAdventurePaginated(
+      adventureId,
+      req.user,
+      Number(page),
+      Number(limit),
     );
   }
 

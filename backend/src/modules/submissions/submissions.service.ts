@@ -213,7 +213,164 @@ export class SubmissionsService {
       .orderBy('adventure_submissions.submitted_at', 'desc')
       .execute();
   }
+  async getSubmissionsForAdventurePaginated(
+    adventureId: string,
+    user: AuthUser,
+    page = 1,
+    limit = 20,
+  ) {
+    if (user.role === 'junior_ranger') {
+      throw new ForbiddenException(
+        'Junior Rangers cannot view all submissions',
+      );
+    }
 
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, Number(limit) || 20),
+    );
+    const offset = (safePage - 1) * safeLimit;
+
+    const adventure = await this.db
+      .selectFrom('adventures')
+      .selectAll()
+      .where('id', '=', adventureId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!adventure) {
+      throw new NotFoundException('Adventure not found');
+    }
+
+    if (user.role === 'admin') {
+      throw new ForbiddenException(
+        'Admins cannot review adventure submissions',
+      );
+    }
+
+    const managedAssignedCohorts = await this.db
+      .selectFrom('cohort_adventures')
+      .innerJoin(
+        'cohorts',
+        'cohorts.id',
+        'cohort_adventures.cohort_id',
+      )
+      .select('cohort_adventures.cohort_id')
+      .where(
+        'cohort_adventures.adventure_id',
+        '=',
+        adventureId,
+      )
+      .where('cohort_adventures.is_deleted', '=', false)
+      .where('cohorts.is_deleted', '=', false)
+      .where((eb) =>
+        eb.or([
+          eb(
+            'cohorts.created_by_ranger_id',
+            '=',
+            user.userId,
+          ),
+          eb(
+            'cohorts.assigned_ranger_id',
+            '=',
+            user.userId,
+          ),
+        ]),
+      )
+      .execute();
+
+    const managedCohortIds = managedAssignedCohorts.map(
+      (item) => item.cohort_id,
+    );
+
+    if (
+      managedCohortIds.length === 0 &&
+      adventure.created_by_user_id !== user.userId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to view submissions for this adventure',
+      );
+    }
+
+    let query = this.db
+      .selectFrom('adventure_submissions')
+      .innerJoin(
+        'users',
+        'users.id',
+        'adventure_submissions.junior_ranger_user_id',
+      )
+      .select([
+        'adventure_submissions.id',
+        'adventure_submissions.adventure_id',
+        'adventure_submissions.cohort_id',
+        'adventure_submissions.junior_ranger_user_id',
+        'adventure_submissions.submission_text',
+        'adventure_submissions.image_id',
+        'adventure_submissions.status',
+        'adventure_submissions.feedback',
+        'adventure_submissions.reviewed_by_ranger_id',
+        'adventure_submissions.submitted_at',
+        'adventure_submissions.reviewed_at',
+        'adventure_submissions.created_at',
+        'adventure_submissions.updated_at',
+        'users.name as junior_ranger_name',
+        'users.email as junior_ranger_email',
+      ])
+      .where(
+        'adventure_submissions.adventure_id',
+        '=',
+        adventureId,
+      );
+
+    if (managedCohortIds.length > 0) {
+      query = query.where(
+        'adventure_submissions.cohort_id',
+        'in',
+        managedCohortIds,
+      );
+    }
+
+    const submissions = await query
+      .orderBy('adventure_submissions.submitted_at', 'desc')
+      .limit(safeLimit)
+      .offset(offset)
+      .execute();
+
+    let countQuery = this.db
+      .selectFrom('adventure_submissions')
+      .select((eb) =>
+        eb.fn.countAll<number>().as('count'),
+      )
+      .where(
+        'adventure_submissions.adventure_id',
+        '=',
+        adventureId,
+      );
+
+    if (managedCohortIds.length > 0) {
+      countQuery = countQuery.where(
+        'adventure_submissions.cohort_id',
+        'in',
+        managedCohortIds,
+      );
+    }
+
+    const totalResult = await countQuery.executeTakeFirst();
+
+    const total = Number(totalResult?.count ?? 0);
+    const totalPages = Math.ceil(total / safeLimit);
+
+    return {
+      data: submissions,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages,
+      },
+    };
+  }
   async reviewSubmission(
     submissionId: string,
     dto: ReviewSubmissionDto,
@@ -331,7 +488,6 @@ export class SubmissionsService {
         'Only Junior Rangers can update submissions',
       );
     }
-
     const submission = await this.db
       .selectFrom('adventure_submissions')
       .selectAll()

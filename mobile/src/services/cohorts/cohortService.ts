@@ -95,6 +95,37 @@ export const getCohorts = async (): Promise<Cohort[]> => {
   return cohorts;
 };
 
+export interface CohortsPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedCohorts {
+  cohorts: Cohort[];
+  pagination: CohortsPagination;
+}
+
+export const getCohortsPaginated = async (
+  page = 1,
+  limit = 20,
+  searchName = "",
+): Promise<PaginatedCohorts> => {
+  const response = await apiClient.get("/cohorts", {
+    params: {
+      page,
+      limit,
+      searchName,
+    },
+  });
+
+  return {
+    cohorts: response.data.cohorts,
+    pagination: response.data.pagination,
+  };
+};
+
 export const getCohortById = async (id: string): Promise<Cohort> => {
   const response = await apiClient.get(`/cohorts/${id}`);
   return response.data.cohort;

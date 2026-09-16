@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
+  ParseFilePipeBuilder,
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
@@ -28,12 +29,16 @@ export class StorageController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
-        ],
-      }),
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: 'image/png',
+        })
+        .addMaxSizeValidator({
+          maxSize: 10 * 1024 * 1024,
+        })
+        .build({
+          errorHttpStatusCode: 400,
+        }),
     )
     file: Express.Multer.File,
     @Req() req: any,

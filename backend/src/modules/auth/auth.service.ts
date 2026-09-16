@@ -9,48 +9,44 @@ import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
+  async resendCode(email: string) {
+    const now = Date.now();
+    const lastResend = this.resendTimestamps[email];
 
-async resendCode(email: string) {
-  const now = Date.now();
-  const lastResend = this.resendTimestamps[email];
+    if (lastResend && now - lastResend < 60000) {
+      throw new BadRequestException(
+        'Please wait 60 seconds before requesting another verification code',
+      );
+    }
 
-  if (lastResend && now - lastResend < 60000) {
-    throw new BadRequestException(
-      'Please wait 60 seconds before requesting another verification code',
-    );
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.db
+      .deleteFrom('auth_challenges')
+      .where('email', '=', email)
+      .execute();
+
+    await this.db
+      .insertInto('auth_challenges')
+      .values({
+        id: randomUUID(),
+        email,
+        code,
+        expires_at: expiresAt,
+        created_at: new Date(),
+      })
+      .execute();
+
+    this.resendTimestamps[email] = now;
+
+    await this.emailService.sendVerificationCode(email, code);
+
+    return {
+      message: 'Verification code resent successfully',
+    };
   }
-
-  const code = Math.floor(
-    100000 + Math.random() * 900000,
-  ).toString();
-
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await this.db
-    .deleteFrom('auth_challenges')
-    .where('email', '=', email)
-    .execute();
-
-  await this.db
-    .insertInto('auth_challenges')
-    .values({
-      id: randomUUID(),
-      email,
-      code,
-      expires_at: expiresAt,
-      created_at: new Date(),
-    })
-    .execute();
-
-  this.resendTimestamps[email] = now;
-
-  await this.emailService.sendVerificationCode(email, code);
-
-  return {
-    message: 'Verification code resent successfully',
-  };
-}
-
   private resendTimestamps: Record<string, number> = {};
   constructor(
     private readonly db: DatabaseService,
@@ -92,18 +88,18 @@ async resendCode(email: string) {
         is_deleted: false,
         email_verified: false,
 
-        // 2FA defaults
         two_factor_enabled: false,
         two_factor_code: null,
         two_factor_expiry: null,
+
+        total_xp: 0,
+        current_level: 1,
       })
       .returningAll()
       .executeTakeFirst();
 
     // Email verification code
-    const code = Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -163,10 +159,7 @@ async resendCode(email: string) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password_hash,
-    );
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
@@ -191,9 +184,7 @@ async resendCode(email: string) {
     // ==========================================================
 
     if (user.two_factor_enabled) {
-      const code = Math.floor(
-        100000 + Math.random() * 900000,
-      ).toString();
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
 
       // Code expires after 5 minutes
       const expiry = new Date(Date.now() + 5 * 60 * 1000);
@@ -315,10 +306,7 @@ async resendCode(email: string) {
   // ENABLE / DISABLE 2FA
   // ============================================================
 
-  async updateTwoFactorStatus(
-    userId: string,
-    enabled: boolean,
-  ) {
+  async updateTwoFactorStatus(userId: string, enabled: boolean) {
     const updatedUser = await this.db
       .updateTable('users')
       .set({
@@ -331,11 +319,7 @@ async resendCode(email: string) {
         updated_at: new Date(),
       })
       .where('id', '=', userId)
-      .returning([
-        'id',
-        'email',
-        'two_factor_enabled',
-      ])
+      .returning(['id', 'email', 'two_factor_enabled'])
       .executeTakeFirst();
 
     if (!updatedUser) {
@@ -347,8 +331,7 @@ async resendCode(email: string) {
         ? 'Two-factor authentication enabled'
         : 'Two-factor authentication disabled',
 
-      two_factor_enabled:
-        updatedUser.two_factor_enabled,
+      two_factor_enabled: updatedUser.two_factor_enabled,
     };
   }
 
@@ -356,10 +339,7 @@ async resendCode(email: string) {
   // VERIFY 2FA CODE
   // ============================================================
 
-  async verifyTwoFactorCode(
-    email: string,
-    code: string,
-  ) {
+  async verifyTwoFactorCode(email: string, code: string) {
     const user = await this.db
       .selectFrom('users')
       .selectAll()
@@ -371,25 +351,15 @@ async resendCode(email: string) {
     }
 
     if (!user.two_factor_enabled) {
-      throw new BadRequestException(
-        'Two-factor authentication is not enabled',
-      );
+      throw new BadRequestException('Two-factor authentication is not enabled');
     }
 
-    if (
-      !user.two_factor_code ||
-      !user.two_factor_expiry
-    ) {
-      throw new BadRequestException(
-        'No two-factor authentication code found',
-      );
+    if (!user.two_factor_code || !user.two_factor_expiry) {
+      throw new BadRequestException('No two-factor authentication code found');
     }
 
     // Check expiry BEFORE validating the code
-    if (
-      new Date().getTime() >
-      new Date(user.two_factor_expiry).getTime()
-    ) {
+    if (new Date().getTime() > new Date(user.two_factor_expiry).getTime()) {
       // Clear expired code
       await this.db
         .updateTable('users')
@@ -407,9 +377,7 @@ async resendCode(email: string) {
     }
 
     if (user.two_factor_code !== code) {
-      throw new UnauthorizedException(
-        'Invalid two-factor authentication code',
-      );
+      throw new UnauthorizedException('Invalid two-factor authentication code');
     }
 
     // Clear code after successful verification

@@ -100,12 +100,11 @@ export default function AdminCohortDetailsScreen() {
   };
 
   useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      loadCohortDetails();
-      loadAdventures();
-    }, [cohortId])
-  );
+  useCallback(() => {
+    setLoading(true);
+    loadCohortDetails();
+  }, [cohortId])
+);
 
   const handleAssignAdventure = async () => {
     if (!selectedAdventureId) {
@@ -397,8 +396,14 @@ export default function AdminCohortDetailsScreen() {
                   paddingVertical: 16,
                   alignItems: "center",
                   marginTop: 12,
-                }}
-                onPress={() => setShowAdventureDropdown(!showAdventureDropdown)}
+              }}
+              onPress={() => {
+                if (!showAdventureDropdown) {
+                  loadAdventures();
+                }
+
+                setShowAdventureDropdown(!showAdventureDropdown);
+              }}
               >
                 <Ionicons name="map-outline" size={24} color="#2F6F61" />
                 <Text

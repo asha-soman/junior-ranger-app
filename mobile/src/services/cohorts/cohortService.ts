@@ -1,5 +1,15 @@
 import apiClient from "../api/client";
 
+let cohortsCache: Cohort[] | null = null;
+let cohortsCacheTime = 0;
+
+const COHORT_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const clearCohortsCache = () => {
+  cohortsCache = null;
+  cohortsCacheTime = 0;
+};
+
 export interface Cohort {
   id: string;
   name: string;
@@ -62,8 +72,27 @@ export interface ValidateInviteCodeResponse {
 }
 
 export const getCohorts = async (): Promise<Cohort[]> => {
+  const now = Date.now();
+
+  // Return cached data if it is still valid
+  if (
+    cohortsCache &&
+    now - cohortsCacheTime < COHORT_CACHE_DURATION
+  ) {
+    console.log("Using cached cohorts");
+    return cohortsCache;
+  }
+
+  // Fetch fresh data from the API
+  console.log("Fetching cohorts from API");
+
   const response = await apiClient.get("/cohorts");
-  return response.data.cohorts;
+  const cohorts: Cohort[] = response.data.cohorts;
+
+  cohortsCache = cohorts;
+  cohortsCacheTime = now;
+
+  return cohorts;
 };
 
 export interface CohortsPagination {
@@ -106,6 +135,9 @@ export const createCohort = async (
   payload: CreateCohortPayload,
 ): Promise<Cohort> => {
   const response = await apiClient.post("/cohorts", payload);
+
+  clearCohortsCache();
+
   return response.data.cohort;
 };
 
@@ -114,6 +146,9 @@ export const updateCohort = async (
   payload: UpdateCohortPayload,
 ): Promise<Cohort> => {
   const response = await apiClient.patch(`/cohorts/${id}`, payload);
+
+  clearCohortsCache();
+
   return response.data.cohort;
 };
 

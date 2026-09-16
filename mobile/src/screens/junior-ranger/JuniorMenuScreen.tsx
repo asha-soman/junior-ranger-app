@@ -363,7 +363,9 @@ export default function JuniorMenuScreen() {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() =>
-            navigation.navigate("SocialFeed")
+            navigation.navigate("SocialFeed", {
+              userRole: "junior_ranger",
+            })
           }
           style={[
             styles.menuOption,

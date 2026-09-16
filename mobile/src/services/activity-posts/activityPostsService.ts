@@ -15,6 +15,40 @@ export type CreateActivityPostPayload = {
     cohort_id: string;
     image_url?: string;
 };
+export type UpdateActivityPostPayload = {
+    content?: string;
+    image_url?: string;
+};
+
+export async function getActivityPostById(
+    postId: string,
+): Promise<ActivityPost> {
+    const response = await apiClient.get(
+        `/activity-posts/${postId}/details`,
+    );
+
+    return response.data.post ?? response.data;
+}
+
+export async function updateActivityPost(
+    postId: string,
+    payload: UpdateActivityPostPayload,
+): Promise<ActivityPost> {
+    const response = await apiClient.patch(
+        `/activity-posts/${postId}`,
+        payload,
+    );
+
+    return response.data.post ?? response.data;
+}
+
+export async function deleteActivityPost(
+    postId: string,
+): Promise<void> {
+    await apiClient.delete(
+        `/activity-posts/${postId}`,
+    );
+}
 
 export async function createActivityPost(
     payload: CreateActivityPostPayload,

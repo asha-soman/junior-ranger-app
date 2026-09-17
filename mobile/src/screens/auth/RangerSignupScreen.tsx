@@ -1,21 +1,8 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import { signupRanger } from "../../services/auth/authService";
 import { RangerSignupScreenStyles as styles } from "@/src/styles/RangerSignupScreenStyles";
 
@@ -122,12 +109,19 @@ const RangerSignupScreen = ({ route, navigation }: Props) => {
     try {
       setLoading(true);
 
-      const result = await signupRanger(payload);
+    const result = await signupRanger(payload);
 
-      Alert.alert("Success", "Account created successfully.");
-        navigation.replace("Login");
+    Alert.alert(
+      "Success",
+      "Account created successfully. Please verify your email."
+    );
 
-        resetForm();
+    navigation.replace("Verification", {
+      email: payload.email,
+      mode: "email",
+    });
+
+    resetForm();
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||

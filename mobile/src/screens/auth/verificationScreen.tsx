@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, View, Alert } from "react-native";
+import { View, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { HelperText, Text } from "react-native-paper";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -170,19 +170,13 @@ export default function VerificationScreen() {
 
       // After signup verification, return to login.
       navigation.replace("Login");
-    } catch (error) {
-      console.error(
-        "Verification error:",
-        error,
-      );
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong during verification";
 
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError(
-          "Something went wrong during verification",
-        );
-      }
+      setApiError(message);
     } finally {
       setIsLoading(false);
     }
@@ -216,79 +210,60 @@ export default function VerificationScreen() {
         "Success",
         "A new verification code has been sent.",
       );
-    } catch (error) {
-      console.error(
-        "Resend code error:",
-        error,
-      );
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Could not resend code";
 
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError(
-          "Could not resend code",
-        );
-      }
+      setApiError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoBack = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-
-    navigation.navigate("Login");
-  };
-
   return (
-    <View style={screenStyles.container}>
-      <View style={screenStyles.content}>
-        <Pressable
-          onPress={handleGoBack}
-          style={screenStyles.backButton}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={24}
+    <View style={verificationStyles.containerVerification}>
+      <View style={verificationStyles.pageContent}>
+        <View style={verificationStyles.formCard}>
+          <Text
+            style={verificationStyles.title}
+          >
+            {mode === "2fa"
+              ? "Two-Factor Authentication"
+              : "Verification Code"}
+          </Text>
+
+          <Text
+            style={
+              verificationStyles.description
+            }
+          >
+            {mode === "2fa"
+              ? "Please enter the 6-digit authentication code sent to your email address."
+              : "Please enter the 6-digit code sent to the email address you provided."}
+          </Text>
+
+          <VerificationForm
+            code={code}
+            error={errors.code}
+            isLoading={isLoading}
+            onChangeCode={(value) => {
+              setCode(value);
+              setErrors({});
+              setApiError("");
+            }}
+            onConfirm={handleConfirm}
+            onResendCode={handleResendCode}
           />
-        </Pressable>
 
-        <Text
-          style={verificationStyles.title}
-        >
-          {mode === "2fa"
-            ? "Two-Factor Authentication"
-            : "Verification Code"}
-        </Text>
-
-        <Text
-          style={
-            verificationStyles.description
-          }
-        >
-          {mode === "2fa"
-            ? "Please enter the 6-digit authentication code sent to your email address."
-            : "Please enter the 6-digit code sent to the email address you provided."}
-        </Text>
-
-        <VerificationForm
-          code={code}
-          error={errors.code}
-          isLoading={isLoading}
-          onChangeCode={setCode}
-          onConfirm={handleConfirm}
-          onResendCode={handleResendCode}
-        />
-
-        <HelperText
-          type="error"
-          visible={!!apiError}
-        >
-          {apiError}
-        </HelperText>
+          <HelperText
+            type="error"
+            visible={!!apiError}
+          >
+            {apiError}
+          </HelperText>
+        </View>
       </View>
     </View>
   );

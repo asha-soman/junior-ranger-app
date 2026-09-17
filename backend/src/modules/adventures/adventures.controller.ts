@@ -8,6 +8,7 @@ import {
   Post,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -57,6 +58,19 @@ export class AdventuresController {
       cohortId,
       dto,
       req.user,
+    );
+  }
+
+  @Get('adventures/paginated')
+  getAllAdventuresPaginated(
+    @Req() req: Request & { user: AuthUser },
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.adventuresService.getAllAdventuresPaginated(
+      req.user,
+      Number(page),
+      Number(limit),
     );
   }
 

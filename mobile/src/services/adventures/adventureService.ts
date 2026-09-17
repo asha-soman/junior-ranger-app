@@ -51,6 +51,18 @@ export interface AdventureTask {
   updated_at: string | null;
 }
 
+export interface AdventuresPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedAdventures {
+  data: Adventure[];
+  pagination: AdventuresPagination;
+}
+
 export interface CreateAdventureTaskPayload {
   title: string;
   description?: string;
@@ -64,6 +76,25 @@ export interface UpdateAdventureTaskPayload {
   xp_reward?: number;
   task_order?: number;
 }
+
+export const getAllAdventuresPaginated =
+  async (
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedAdventures> => {
+    const response =
+      await apiClient.get(
+        '/adventures/paginated',
+        {
+          params: {
+            page,
+            limit,
+          },
+        },
+      );
+
+    return response.data;
+  };
 
 export const getAllAdventures =
   async (): Promise<Adventure[]> => {

@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 
@@ -49,67 +50,83 @@ type Props =
 export default function AdventureSubmissionsScreen({
   route,
 }: Props) {
-  const { adventureId } =
-    route.params;
+  const { adventureId } = route.params;
 
-  const [
-    submissions,
-    setSubmissions,
-  ] = useState<
+  const [submissions, setSubmissions] = useState<
     AdventureTaskCompletion[]
   >([]);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [
-    error,
-    setError,
-  ] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState('');
 
   const [
     feedbackById,
     setFeedbackById,
-  ] = useState<
-    Record<string, string>
-  >({});
+  ] = useState<Record<string, string>>({});
 
   const [
     reviewingId,
     setReviewingId,
-  ] = useState<
-    string | null
-  >(null);
+  ] = useState<string | null>(null);
 
-  const fetchSubmissions =
-    async () => {
-      try {
-        setLoading(true);
-        setError('');
+  const SUBMISSIONS_PER_PAGE = 6;
 
-        const data =
-          await getTaskCompletionsForAdventure(
-            adventureId,
-          );
+  const totalSubmissions =
+    submissions.length;
 
-        setSubmissions(data);
-      } catch (err: any) {
-        console.log(
-          'Fetch task submissions error:',
-          err,
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      totalSubmissions /
+        SUBMISSIONS_PER_PAGE,
+    ),
+  );
+
+  const paginatedSubmissions =
+    useMemo(() => {
+      const startIndex =
+        (currentPage - 1) *
+        SUBMISSIONS_PER_PAGE;
+
+      return submissions.slice(
+        startIndex,
+        startIndex +
+          SUBMISSIONS_PER_PAGE,
+      );
+    }, [
+      submissions,
+      currentPage,
+    ]);
+
+  const fetchSubmissions = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const data =
+        await getTaskCompletionsForAdventure(
+          adventureId,
         );
 
-        setError(
-          err?.response?.data
-            ?.message ||
-            'Unable to load task submissions.',
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      setSubmissions(data);
+      setCurrentPage(1);
+    } catch (err: any) {
+      console.log(
+        'Fetch task submissions error:',
+        err,
+      );
+
+      setError(
+        err?.response?.data?.message ||
+          'Unable to load task submissions.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -151,14 +168,11 @@ export default function AdventureSubmissionsScreen({
           {
             status,
             feedback:
-              feedback ||
-              undefined,
+              feedback || undefined,
           },
         );
 
-      if (
-        status === 'approved'
-      ) {
+      if (status === 'approved') {
         const xpAwarded =
           result.xp_awarded ?? 0;
 
@@ -170,9 +184,7 @@ export default function AdventureSubmissionsScreen({
             ` ${xpAwarded} XP was awarded.`;
         }
 
-        if (
-          result.level_changed
-        ) {
+        if (result.level_changed) {
           message +=
             ` Junior Ranger reached Level ${result.current_level}!`;
         }
@@ -203,8 +215,7 @@ export default function AdventureSubmissionsScreen({
       );
 
       const message =
-        err?.response?.data
-          ?.message ||
+        err?.response?.data?.message ||
         'Unable to review this task.';
 
       Alert.alert(
@@ -227,8 +238,7 @@ export default function AdventureSubmissionsScreen({
       reviewingId === item.id;
 
     const isPending =
-      item.status ===
-      'submitted';
+      item.status === 'submitted';
 
     return (
       <Card
@@ -470,7 +480,9 @@ export default function AdventureSubmissionsScreen({
     <View
       style={styles.container}
     >
-      <View style={styles.header}>
+      <View
+        style={styles.header}
+      >
         <Text
           style={
             styles.headerTitle
@@ -504,13 +516,14 @@ export default function AdventureSubmissionsScreen({
           <Text
             style={styles.emptyText}
           >
-            No task submissions
-            yet.
+            No task submissions yet.
           </Text>
         )}
 
       <FlatList
-        data={submissions}
+        data={
+          paginatedSubmissions
+        }
         keyExtractor={(item) =>
           item.id
         }
@@ -524,6 +537,81 @@ export default function AdventureSubmissionsScreen({
         refreshing={loading}
         onRefresh={
           fetchSubmissions
+        }
+        ListFooterComponent={
+          totalSubmissions > 0 ? (
+            <View
+              style={{
+                paddingVertical: 20,
+                alignItems:
+                  'center',
+              }}
+            >
+              <Text
+                style={{
+                  marginBottom: 10,
+                }}
+              >
+                {totalSubmissions}{' '}
+                submissions found
+              </Text>
+
+              <View
+                style={{
+                  flexDirection:
+                    'row',
+                  alignItems:
+                    'center',
+                  gap: 10,
+                }}
+              >
+                <Button
+                  mode="outlined"
+                  disabled={
+                    currentPage ===
+                      1 ||
+                    loading
+                  }
+                  onPress={() =>
+                    setCurrentPage(
+                      (page) =>
+                        Math.max(
+                          1,
+                          page - 1,
+                        ),
+                    )
+                  }
+                >
+                  Previous
+                </Button>
+
+                <Text>
+                  {currentPage} /{' '}
+                  {totalPages}
+                </Text>
+
+                <Button
+                  mode="contained"
+                  disabled={
+                    currentPage ===
+                      totalPages ||
+                    loading
+                  }
+                  onPress={() =>
+                    setCurrentPage(
+                      (page) =>
+                        Math.min(
+                          totalPages,
+                          page + 1,
+                        ),
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              </View>
+            </View>
+          ) : null
         }
       />
     </View>

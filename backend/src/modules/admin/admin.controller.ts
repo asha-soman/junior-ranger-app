@@ -34,16 +34,30 @@ export class AdminController {
     @Query('role') role?: string,
     @Query('status') status?: string,
     @Query('name') name?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
   ) {
-    return this.adminService.getAllUsers(role, status, name);
-  }
+    return this.adminService.getAllUsers(
+      role,
+      status,
+      name,
+      Number(page),
+      Number(limit),
+  );
+}
 
   @Get('cohorts')
-  getAllCohorts(
-    @Query('name') name?: string,
-  ) {
-    return this.adminService.getAllCohorts(name);
-  }
+getAllCohorts(
+  @Query('name') name?: string,
+  @Query('page') page = '1',
+  @Query('limit') limit = '20',
+) {
+  return this.adminService.getAllCohorts(
+    name,
+    Number(page),
+    Number(limit),
+  );
+}
 
   @Get('cohorts/:id')
   getCohortById(@Param('id') id: string) {

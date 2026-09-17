@@ -19,34 +19,37 @@ export class AuthService {
       );
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = Math.floor(
+    100000 + Math.random() * 900000,
+  ).toString();
 
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await this.db
-      .deleteFrom('auth_challenges')
-      .where('email', '=', email)
-      .execute();
+  await this.db
+    .deleteFrom('auth_challenges')
+    .where('email', '=', email)
+    .execute();
 
-    await this.db
-      .insertInto('auth_challenges')
-      .values({
-        id: randomUUID(),
-        email,
-        code,
-        expires_at: expiresAt,
-        created_at: new Date(),
-      })
-      .execute();
+  await this.db
+    .insertInto('auth_challenges')
+    .values({
+      id: randomUUID(),
+      email,
+      code,
+      expires_at: expiresAt,
+      created_at: new Date(),
+    })
+    .execute();
 
-    this.resendTimestamps[email] = now;
+  this.resendTimestamps[email] = now;
 
-    await this.emailService.sendVerificationCode(email, code);
+  await this.emailService.sendVerificationCode(email, code);
 
     return {
       message: 'Verification code resent successfully',
     };
   }
+
   private resendTimestamps: Record<string, number> = {};
   constructor(
     private readonly db: DatabaseService,

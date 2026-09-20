@@ -85,6 +85,7 @@ export interface AdventuresTable {
   id: string;
   title: string;
   description: string;
+  image_url: string | null;
   task_instructions: string | null;
   cohort_id: string;
   due_date: Date | null;

@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "../../services/submissions/submissionService";
 import {
   View,
   Text,
@@ -38,6 +41,7 @@ export default function EditCohortScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,6 +53,7 @@ export default function EditCohortScreen() {
       setName(cohort.name || "");
       setDescription(cohort.description || "");
       setLocation(cohort.location || "");
+      if (cohort.image_url) setImageUri(cohort.image_url);
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -65,6 +70,25 @@ export default function EditCohortScreen() {
     loadCohort();
   }, []);
 
+  
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Sorry, we need camera roll permissions to make this work!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleUpdateCohort = async () => {
     if (!name.trim() || !location.trim()) {
       Alert.alert("Validation Error", "Name and location are required");
@@ -74,11 +98,19 @@ export default function EditCohortScreen() {
     try {
       setSaving(true);
 
+
+      let finalImageUrl = imageUri;
+      if (imageUri && imageUri.startsWith('file://')) {
+        finalImageUrl = await uploadImage(imageUri);
+      }
+
       await updateCohort(cohortId, {
         name: name.trim(),
         description: description.trim(),
         location: location.trim(),
+        image_url: finalImageUrl || undefined,
       });
+
 
       Alert.alert("Success", "Cohort updated successfully");
       navigation.goBack();
@@ -160,6 +192,18 @@ export default function EditCohortScreen() {
           >
             Edit Cohort
           </Text>
+
+          
+          <Text style={styles.detailLabel}>Cohort Image</Text>
+          <TouchableOpacity onPress={pickImage} style={{ alignItems: "center", marginVertical: 10 }}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+            ) : (
+              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: "#e1e1e1", justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ color: "#666" }}>Add Image</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
           <Text style={styles.detailLabel}>Cohort Name</Text>
           <TextInput

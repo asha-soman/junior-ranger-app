@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
+import { Image,
   View,
   Text,
   ScrollView,

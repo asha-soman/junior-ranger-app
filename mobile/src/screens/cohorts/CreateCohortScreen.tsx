@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "../../services/submissions/submissionService";
 import {
   View,
   Text,
@@ -36,7 +39,27 @@ export default function CreateCohortScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Sorry, we need camera roll permissions to make this work!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
 
   const handleCreateCohort = async () => {
     if (!name.trim() || !location.trim()) {
@@ -47,11 +70,19 @@ export default function CreateCohortScreen() {
     try {
       setLoading(true);
 
+
+      let uploadedImageUrl = undefined;
+      if (imageUri) {
+        uploadedImageUrl = await uploadImage(imageUri);
+      }
+
       await createCohort({
         name: name.trim(),
         description: description.trim(),
         location: location.trim(),
+        image_url: uploadedImageUrl,
       });
+
 
       Alert.alert("Success", "Cohort created successfully");
       navigation.goBack();
@@ -74,6 +105,18 @@ export default function CreateCohortScreen() {
       >
         <View style={styles.detailCard}>
           <Text style={styles.detailTitleCentered}>Create Cohort</Text>
+
+          
+          <Text style={styles.detailLabel}>Cohort Image</Text>
+          <TouchableOpacity onPress={pickImage} style={{ alignItems: "center", marginVertical: 10 }}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+            ) : (
+              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: "#e1e1e1", justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ color: "#666" }}>Add Image</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
           <Text style={styles.detailLabel}>Cohort Name</Text>
           <TextInput

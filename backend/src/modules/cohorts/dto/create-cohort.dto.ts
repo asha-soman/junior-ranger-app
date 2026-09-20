@@ -14,4 +14,8 @@ export class CreateCohortDto {
   @IsNotEmpty()
   @MaxLength(255)
   location!: string;
+
+  @IsString()
+  @IsOptional()
+  image_url?: string;
 }

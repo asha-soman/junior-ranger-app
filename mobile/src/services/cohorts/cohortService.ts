@@ -15,6 +15,7 @@ export interface Cohort {
   name: string;
   description: string | null;
   location: string | null;
+  image_url?: string | null;
   created_by_ranger_id: string | null;
   assigned_ranger_id: string | null;
   created_at: string | null;
@@ -37,12 +38,14 @@ export interface CreateCohortPayload {
   name: string;
   description?: string;
   location: string;
+  image_url?: string;
 }
 
 export interface UpdateCohortPayload {
   name?: string;
   description?: string;
   location?: string;
+  image_url?: string;
 }
 
 export interface InviteCode {

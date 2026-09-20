@@ -5,7 +5,7 @@ import React, {
   useState,
 } from 'react';
 
-import {
+import { Image,
   ActivityIndicator,
   Animated,
   Dimensions,

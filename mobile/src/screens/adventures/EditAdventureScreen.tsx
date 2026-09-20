@@ -3,6 +3,9 @@ import React, {
   useState,
 } from 'react';
 
+import { Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "../../services/submissions/submissionService";
 import {
   View,
   Text,
@@ -80,6 +83,7 @@ export default function EditAdventureScreen({
     dueDate,
     setDueDate,
   ] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   const [
     status,
@@ -251,6 +255,25 @@ export default function EditAdventureScreen({
           taskIndex !== index,
       ),
     );
+  };
+
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Sorry, we need camera roll permissions to make this work!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
   const validate = () => {

@@ -57,6 +57,7 @@ export class CohortsService {
         name: dto.name,
         description: dto.description ?? null,
         location: dto.location,
+        image_url: dto.image_url ?? null,
         created_by_ranger_id: user.userId,
         assigned_ranger_id: user.role === 'ranger' ? user.userId : null,
         is_deleted: false,
@@ -114,6 +115,7 @@ async findAllCohorts(
         'cohorts.name',
         'cohorts.description',
         'cohorts.location',
+        'cohorts.image_url',
         'cohorts.created_by_ranger_id',
         'cohorts.assigned_ranger_id',
         'assigned_ranger.name as assigned_ranger_name',
@@ -140,6 +142,7 @@ async findAllCohorts(
         'cohorts.name',
         'cohorts.description',
         'cohorts.location',
+        'cohorts.image_url',
         'cohorts.created_by_ranger_id',
         'cohorts.assigned_ranger_id',
         'assigned_ranger.name as assigned_ranger_name',
@@ -169,6 +172,7 @@ async findAllCohorts(
         'cohorts.name',
         'cohorts.description',
         'cohorts.location',
+        'cohorts.image_url',
         'cohorts.created_by_ranger_id',
         'cohorts.assigned_ranger_id',
         'assigned_ranger.name as assigned_ranger_name',
@@ -254,6 +258,7 @@ async findAllCohorts(
         'cohorts.name',
         'cohorts.description',
         'cohorts.location',
+        'cohorts.image_url',
         'cohorts.created_by_ranger_id',
         'cohorts.assigned_ranger_id',
         'assigned_ranger.name as assigned_ranger_name',
@@ -663,6 +668,7 @@ async findAllCohorts(
         'cohorts.id as cohort_id',
         'cohorts.name as cohort_name',
         'cohorts.description as cohort_description',
+        'cohorts.image_url as cohort_image_url',
       ])
       .where('invite_codes.code', '=', code.toUpperCase())
       .executeTakeFirst();
@@ -689,6 +695,7 @@ async findAllCohorts(
         id: inviteCode.cohort_id,
         name: inviteCode.cohort_name,
         description: inviteCode.cohort_description,
+        image_url: inviteCode.cohort_image_url,
       },
     };
   }

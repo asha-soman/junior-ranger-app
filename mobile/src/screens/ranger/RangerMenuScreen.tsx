@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React, {
+  useCallback,
+  useState,
+} from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Pressable, Alert, Platform } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";import {
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { adminStyles as styles } from "../../styles/AdminManagementStyles";
 import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 import { removeToken } from "../../utils/secureStore";
+
+import {
+  getMyProfile,
+} from "../../services/profile/profileService";
+import apiClient from "../../services/api/client";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -17,6 +27,74 @@ type NavigationProp = NativeStackNavigationProp<
 export default function RangerMenuScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [accountMenuVisible, setAccountMenuVisible] = useState(false);
+
+  const [avatarSource, setAvatarSource] =
+    useState<string | null>(null);
+
+    const loadAvatar = async (
+  avatarUrl: string | null,
+) => {
+  if (!avatarUrl) {
+    setAvatarSource(null);
+    return;
+  }
+
+  try {
+    const response = await apiClient.get(
+      avatarUrl,
+      {
+        responseType: "arraybuffer",
+      },
+    );
+
+    const bytes = new Uint8Array(
+      response.data,
+    );
+
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(
+        bytes[i],
+      );
+    }
+
+    const base64 = btoa(binary);
+
+    setAvatarSource(
+      `data:image/jpeg;base64,${base64}`,
+    );
+  } catch (error) {
+    console.log(
+      "Failed to load ranger avatar:",
+      error,
+    );
+
+    setAvatarSource(null);
+  }
+};
+
+useFocusEffect(
+  useCallback(() => {
+    const refreshAvatar = async () => {
+      try {
+        const profile =
+          await getMyProfile();
+
+        await loadAvatar(
+          profile.avatar_url,
+        );
+      } catch (error) {
+        console.log(
+          "Failed to refresh ranger avatar:",
+          error,
+        );
+      }
+    };
+
+    refreshAvatar();
+  }, []),
+);
 
   const confirmLogout = async () => {
     await removeToken();
@@ -92,18 +170,35 @@ export default function RangerMenuScreen() {
               }}
             >
               <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  backgroundColor: "#376e62",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Ionicons name="people-circle" size={32} color="#FFFFFF" />
-              </View>
+  style={{
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#376e62",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    overflow: "hidden",
+  }}
+>
+  {avatarSource ? (
+    <Image
+      source={{ uri: avatarSource }}
+      style={{
+        width: 46,
+        height: 46,
+        borderRadius: 23,
+      }}
+      resizeMode="cover"
+    />
+  ) : (
+    <Ionicons
+      name="people-circle"
+      size={32}
+      color="#FFFFFF"
+    />
+  )}
+</View>
 
               <View>
                 <Text
@@ -209,12 +304,38 @@ export default function RangerMenuScreen() {
 
       <View style={styles.menuHeader}>
         <TouchableOpacity
-          style={styles.menuHeaderIcon}
-          onPress={() => setAccountMenuVisible(true)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="people-circle" size={34} color="#FFFFFF" />
-        </TouchableOpacity>
+  style={[
+    styles.menuHeaderIcon,
+    {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+  ]}
+  onPress={() => setAccountMenuVisible(true)}
+  activeOpacity={0.8}
+>
+  {avatarSource ? (
+    <Image
+      source={{ uri: avatarSource }}
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+      }}
+      resizeMode="cover"
+    />
+  ) : (
+    <Ionicons
+      name="people-circle"
+      size={48}
+      color="#FFFFFF"
+    />
+  )}
+</TouchableOpacity>
 
         <Text style={styles.menuTitle}>Ranger Dashboard</Text>
       </View>

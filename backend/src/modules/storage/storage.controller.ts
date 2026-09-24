@@ -31,7 +31,7 @@ export class StorageController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: 'image/png',
+          fileType: /^image\/(jpeg|png)$/,
         })
         .addMaxSizeValidator({
           maxSize: 10 * 1024 * 1024,

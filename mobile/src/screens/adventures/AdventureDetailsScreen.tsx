@@ -1638,25 +1638,101 @@ export default function AdventureDetailsScreen({
 
                           {task.status ===
                             'rejected' && (
-                            <View
-                              style={
-                                styles.missionRejectedBox
-                              }
-                            >
-                              <Ionicons
-                                name="refresh"
-                                size={19}
-                                color="#A95434"
-                              />
-
-                              <Text
+                            <>
+                              <View
                                 style={
-                                  styles.missionRejectedText
+                                  styles.missionRejectedBox
                                 }
                               >
-                                Your Ranger has asked for some changes. Please review the feedback and try again.
-                              </Text>
-                            </View>
+                                <Ionicons
+                                  name="refresh"
+                                  size={19}
+                                  color="#A95434"
+                                />
+
+                                <View style={{ flex: 1 }}>
+                                  <Text
+                                    style={
+                                      styles.missionRejectedText
+                                    }
+                                  >
+                                    Needs a little more work. Your Ranger has left some feedback for you.
+                                  </Text>
+
+                                  {task.feedback ? (
+                                    <View
+                                      style={{
+                                        marginTop: 12,
+                                        padding: 12,
+                                        borderRadius: 10,
+                                        backgroundColor: '#FFFDFC',
+                                        borderWidth: 1,
+                                        borderColor: '#F0D1C4',
+                                      }}
+                                    >
+                                      <Text
+                                        style={{
+                                          fontSize: 13,
+                                          fontWeight: '700',
+                                          color: '#8B4A32',
+                                          marginBottom: 5,
+                                        }}
+                                      >
+                                        Ranger's Feedback
+                                      </Text>
+
+                                      <Text
+                                        style={{
+                                          fontSize: 14,
+                                          lineHeight: 20,
+                                          color: '#5F514C',
+                                        }}
+                                      >
+                                        {task.feedback}
+                                      </Text>
+                                    </View>
+                                  ) : null}
+                                </View>
+                              </View>
+
+                              <Button
+                                mode="contained"
+                                icon="pencil-outline"
+                                style={[
+                                  styles.missionStartButton,
+                                  { marginTop: 12 },
+                                ]}
+                                contentStyle={
+                                  styles.missionStartButtonContent
+                                }
+                                labelStyle={
+                                  styles.missionStartButtonLabel
+                                }
+                                onPress={() =>
+                                  navigation.navigate(
+                                    'SubmitAdventureTask',
+                                    {
+                                      taskId: task.id,
+                                      taskTitle: task.title,
+                                      taskDescription:
+                                        adventureTasks.find(
+                                          (item) =>
+                                            item.id === task.id,
+                                        )?.description ?? '',
+                                      xpReward: task.xp_reward,
+                                      adventureId: adventure.id,
+                                      previousSubmission:
+                                        task.submission_text ?? '',
+                                      rangerFeedback:
+                                        task.feedback ?? '',
+                                      isResubmission: true,
+                                    },
+                                  )
+                                }
+                              >
+                                Edit & Resubmit Task
+                              </Button>
+                            </>
                           )}
                         </View>
                       );

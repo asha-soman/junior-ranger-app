@@ -324,12 +324,17 @@ export default function SubmitAdventureTaskScreen({
     taskTitle,
     taskDescription,
     xpReward,
+    previousSubmission,
+    rangerFeedback,
+    isResubmission = false,
   } = route.params;
 
   const [
     submissionText,
     setSubmissionText,
-  ] = useState('');
+  ] = useState(
+    previousSubmission ?? '',
+  );
 
 
   const [
@@ -444,7 +449,9 @@ export default function SubmitAdventureTaskScreen({
                 styles.headerTitle
               }
             >
-              Task Submitted
+              {isResubmission
+                ? 'Task Resubmitted'
+                : 'Task Submitted'}
             </Text>
           </View>
 
@@ -543,9 +550,9 @@ export default function SubmitAdventureTaskScreen({
                   28,
               }}
             >
-              Your task has
-              been submitted
-              successfully.
+              {isResubmission
+                ? 'Great work! Your updated task has been sent back to your Ranger for review.'
+                : 'Your task has been submitted successfully.'}
             </Text>
 
             {/* SUBMITTED TASK CARD */}
@@ -589,7 +596,9 @@ export default function SubmitAdventureTaskScreen({
                     5,
                 }}
               >
-                Submitted Task
+                {isResubmission
+                  ? 'Resubmitted Task'
+                  : 'Submitted Task'}
               </Text>
 
               <Text
@@ -680,7 +689,9 @@ export default function SubmitAdventureTaskScreen({
             styles.headerTitle
           }
         >
-          Submit Task
+          {isResubmission
+            ? 'Resubmit Task'
+            : 'Submit Task'}
         </Text>
       </View>
 
@@ -770,6 +781,59 @@ export default function SubmitAdventureTaskScreen({
             submission.
           </Text>
         )}
+
+        {isResubmission && rangerFeedback ? (
+          <View
+            style={{
+              marginBottom: 20,
+              padding: 16,
+              borderRadius: 14,
+              backgroundColor: '#FFF5EF',
+              borderWidth: 1,
+              borderColor: '#F1C8B7',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <Text style={{ fontSize: 18, marginRight: 8 }}>🌱</Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#934E34',
+                }}
+              >
+                Ranger's Feedback
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 21,
+                color: '#5E514C',
+              }}
+            >
+              {rangerFeedback}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 13,
+                lineHeight: 19,
+                color: '#876B60',
+                marginTop: 10,
+              }}
+            >
+              Update your answer using this feedback and try again!
+            </Text>
+          </View>
+        ) : null}
 
         <Text
           style={{
@@ -888,7 +952,9 @@ export default function SubmitAdventureTaskScreen({
             styles.submitButton
           }
         >
-          Submit Task
+          {isResubmission
+            ? 'Resubmit Task'
+            : 'Submit Task'}
         </Button>
 
         <Button

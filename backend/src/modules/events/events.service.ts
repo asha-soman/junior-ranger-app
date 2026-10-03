@@ -4,6 +4,7 @@ import { DatabaseService } from '../../database/database.service';
 import type { AttendanceStatus} from '../../database/database.types';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type AuthUser = {
   userId: string;
@@ -13,7 +14,10 @@ type AuthUser = {
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private async validateCohortPermission(
     cohortId: string,
@@ -335,6 +339,12 @@ export class EventsService {
         );
       }
 
+      if (event.status === 'cancelled') {
+        throw new BadRequestException(
+          'This event has been cancelled',
+        );
+      }
+
       if (event.status !== 'published') {
         throw new ForbiddenException(
           'This event is not available',
@@ -455,8 +465,8 @@ export class EventsService {
       );
     }
 
-    return this.db.transaction().execute(
-      async (trx) => {
+      const registration = await this.db.transaction().execute(
+        async (trx) => {
         /*Lock the event while checking capacity*/
         const event = await trx
           .selectFrom('events')
@@ -595,7 +605,7 @@ export class EventsService {
 
         /*
         * Previously cancelled registration:
-        * reactivate row instead of creating another one.
+        * reactivate row instead of creating another one
         */
         if (existingRegistration) {
           return trx
@@ -647,8 +657,60 @@ export class EventsService {
           })
           .returningAll()
           .executeTakeFirstOrThrow();
-      },
-    );
+        },
+      );
+    const event = await this.db
+      .selectFrom('events')
+      .select([
+        'id',
+        'title',
+        'start_time',
+      ])
+      .where('id', '=', eventId)
+      .executeTakeFirst();
+
+    if (event) {
+      try {
+        await this.notificationsService
+          .notifyEventRegistration({
+            userId: user.userId,
+            email: user.email,
+            eventId: event.id,
+            eventTitle: event.title,
+          });
+      } catch (error) {
+        console.error(
+          'Registration succeeded but notification creation failed:',
+          error,
+        );
+      }
+
+    const now = new Date();
+
+    const hoursUntilEvent =
+      (event.start_time.getTime() - now.getTime()) /
+      (1000 * 60 * 60);
+
+      if (
+        hoursUntilEvent > 0 &&
+        hoursUntilEvent <= 24
+      ) {
+        try {
+          await this.notificationsService.notifyEventReminder({
+            userId: user.userId,
+            email: user.email,
+            eventId: event.id,
+            eventTitle: event.title,
+          });
+        } catch (error) {
+          console.error(
+            'Registration succeeded but event reminder failed:',
+            error,
+          );
+        }
+      }
+    }
+    return registration;
   }
 
   async cancelRegistration(
@@ -665,6 +727,7 @@ export class EventsService {
       .selectFrom('events')
       .select([
         'id',
+        'title',
         'start_time',
         'is_deleted',
       ])
@@ -719,10 +782,8 @@ export class EventsService {
       );
     }
 
-    return this.db
-      .updateTable(
-        'event_registrations',
-      )
+    const cancelledRegistration = await this.db
+      .updateTable('event_registrations')
       .set({
         status: 'cancelled',
         cancelled_at: new Date(),
@@ -735,6 +796,22 @@ export class EventsService {
       )
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    try {
+      await this.notificationsService
+        .notifyEventRegistrationCancellation({
+          userId: user.userId,
+          email: user.email,
+          eventId: event.id,
+          eventTitle: event.title,
+        });
+    } catch (error) {
+      console.error(
+        'Registration cancellation succeeded but notification creation failed:',
+        error,
+      );
+    }
+    return cancelledRegistration;  
   }
 
   async getEventForManagement(
@@ -865,10 +942,67 @@ export class EventsService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
+    const importantDetailsChanged =
+      existingEvent.start_time.getTime() !==
+        updatedEvent.start_time.getTime() ||
+      existingEvent.end_time.getTime() !==
+        updatedEvent.end_time.getTime() ||
+      existingEvent.location !== updatedEvent.location;
+
+      if (
+        importantDetailsChanged &&
+        updatedEvent.status === 'published'
+      ) {
+        const participants = await this.db
+          .selectFrom('event_registrations')
+          .innerJoin(
+            'users',
+            'users.id',
+            'event_registrations.junior_ranger_user_id',
+          )
+          .select([
+            'users.id as user_id',
+            'users.email as email',
+          ])
+          .where(
+            'event_registrations.event_id',
+            '=',
+            eventId,
+          )
+          .where(
+            'event_registrations.status',
+            '=',
+            'registered',
+          )
+          .where(
+            'users.is_deleted',
+            '=',
+            false,
+          )
+          .execute();
+
+        for (const participant of participants) {
+          try {
+            await this.notificationsService.notifyEventUpdate({
+              userId: participant.user_id,
+              email: participant.email,
+              eventId: updatedEvent.id,
+              eventTitle: updatedEvent.title,
+            });
+          } catch (error) {
+            console.error(
+              `Event update succeeded but notification failed for user ${participant.user_id}:`,
+              error,
+            );
+          }
+        }
+      }
+
     return {
       message: 'Event updated successfully',
       event: updatedEvent,
     };
+
   }
 
   async getEventParticipants(
@@ -1084,6 +1218,9 @@ export class EventsService {
       );
     }
 
+  // Detect whether a cancelled event is being published again.
+    const previousStatus = event.status;
+
     const updatedEvent = await this.db
       .updateTable('events')
       .set({
@@ -1095,7 +1232,59 @@ export class EventsService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
+      const wasRepublished =
+        previousStatus === 'cancelled' &&
+        updatedEvent.status === 'published';
+
+      if (wasRepublished) {
+        const participants = await this.db
+          .selectFrom('event_registrations')
+          .innerJoin(
+            'users',
+            'users.id',
+            'event_registrations.junior_ranger_user_id',
+          )
+          .select([
+            'users.id as user_id',
+            'users.email as email',
+          ])
+          .where(
+            'event_registrations.event_id',
+            '=',
+            eventId,
+          )
+          .where(
+            'event_registrations.status',
+            '=',
+            'registered',
+          )
+          .where(
+            'users.is_deleted',
+            '=',
+            false,
+          )
+          .execute();
+
+        for (const participant of participants) {
+          try {
+            await this.notificationsService
+              .notifyEventRepublished({
+                userId: participant.user_id,
+                email: participant.email,
+                eventId: updatedEvent.id,
+                eventTitle: updatedEvent.title,
+              });
+          } catch (error) {
+            console.error(
+              `Event was republished but notification failed for user ${participant.user_id}:`,
+              error,
+            );
+          }
+        }
+      }
+
     return updatedEvent;
+    
   }
 
   async cancelEvent(
@@ -1125,6 +1314,50 @@ export class EventsService {
       .where('id', '=', eventId)
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    const participants = await this.db
+      .selectFrom('event_registrations')
+      .innerJoin(
+        'users',
+        'users.id',
+        'event_registrations.junior_ranger_user_id',
+      )
+      .select([
+        'users.id as user_id',
+        'users.email as email',
+      ])
+      .where(
+        'event_registrations.event_id',
+        '=',
+        eventId,
+      )
+      .where(
+        'event_registrations.status',
+        '=',
+        'registered',
+      )
+      .where(
+        'users.is_deleted',
+        '=',
+        false,
+      )
+      .execute();
+
+    for (const participant of participants) {
+      try {
+        await this.notificationsService.notifyEventCancellation({
+          userId: participant.user_id,
+          email: participant.email,
+          eventId: updatedEvent.id,
+          eventTitle: updatedEvent.title,
+        });
+      } catch (error) {
+        console.error(
+          `Event cancellation succeeded but notification failed for user ${participant.user_id}:`,
+          error,
+        );
+      }
+    }
 
     return {
       message: 'Event cancelled successfully',

@@ -1360,7 +1360,7 @@ export const adventureStyles =
       fontSize: 11,
       lineHeight: 16,
     },
-  
+
     /*
      * =====================================
      * ADVENTURE LIST THEME

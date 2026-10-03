@@ -56,6 +56,10 @@ import EditEventScreen from '../screens/events/EditEventScreen';
 import EventDetailsScreen from '../screens/events/EventDetailsScreen';
 import AttendanceManagementScreen from '../screens/events/AttendanceManagementScreen';
 import SettingsScreen from "../screens/settings/SettingsScreen";
+import NotificationsScreen from "../screens/notifications/NotificationsScreen";
+import AnnouncementManagementScreen from "../screens/announcements/AnnouncementManagementScreen";
+import AnnouncementFormScreen from "../screens/announcements/AnnouncementFormScreen";
+import FeedManagementScreen from "../screens/feed/FeedManagementScreen";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -241,6 +245,9 @@ export type AuthStackParamList = {
     | undefined;
 
   Settings: undefined;
+  Notifications: {
+    userRole: "admin" | "ranger" | "junior_ranger";
+  };
 };
 
 const Stack =
@@ -580,6 +587,19 @@ export default function AuthNavigator() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Settings",
+        }}
+      />
+
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Notifications",
+        }}
       />
     </Stack.Navigator>
   );

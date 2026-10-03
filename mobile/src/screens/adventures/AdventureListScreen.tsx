@@ -28,7 +28,7 @@ import {
 
 import {
   Adventure,
-  getAllAdventures,
+  getAllAdventuresPaginated,
 } from '../../services/adventures/adventureService';
 
 import {
@@ -53,6 +53,17 @@ export default function AdventureListScreen({
     setAdventures,
   ] = useState<Adventure[]>([]);
 
+  const [currentPage, setCurrentPage] =
+    useState(1);
+
+  const [totalPages, setTotalPages] =
+    useState(1);
+
+  const [totalAdventures, setTotalAdventures] =
+    useState(0);
+
+  const ADVENTURES_PER_PAGE = 6;
+
   const [
     loading,
     setLoading,
@@ -67,33 +78,49 @@ export default function AdventureListScreen({
     userRole === 'ranger' ||
     userRole === 'admin';
 
+  const fetchAdventures = async (
+    page = 1,
+  ) => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const response =
+        await getAllAdventuresPaginated(
+          page,
+          ADVENTURES_PER_PAGE,
+        );
+
+      setAdventures(response.data);
+
+      setCurrentPage(
+        response.pagination.page,
+      );
+
+      setTotalPages(
+        response.pagination.totalPages,
+      );
+
+      setTotalAdventures(
+        response.pagination.total,
+      );
+    } catch (err) {
+      console.error(
+        'Error fetching adventures:',
+        err,
+      );
+
+      setError(
+        'Failed to load adventures.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAdventures();
   }, []);
-
-  const fetchAdventures =
-    async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        const data =
-          await getAllAdventures();
-
-        setAdventures(data);
-      } catch (err) {
-        console.log(
-          'Get all adventures error:',
-          err,
-        );
-
-        setError(
-          'Unable to load adventures. Please try again.',
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
 
   const formatDueDate = (
     date?: string | null,
@@ -384,9 +411,7 @@ export default function AdventureListScreen({
                         styles.adventureListCountText
                       }
                     >
-                      {
-                        adventures.length
-                      }
+                      {adventures.length}
                     </Text>
                   </View>
                 </View>
@@ -416,6 +441,62 @@ export default function AdventureListScreen({
               </Button>
             )}
           </>
+        }
+
+        ListFooterComponent={
+          <View
+            style={{
+              paddingVertical: 20,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                marginBottom: 10,
+              }}
+            >
+              {totalAdventures} adventures found
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <Button
+                mode="outlined"
+                disabled={
+                  currentPage === 1 ||
+                  loading
+                }
+                onPress={() =>
+                  fetchAdventures(
+                    currentPage - 1,
+                  )
+                }
+              >
+                Previous
+              </Button>
+
+              <Button
+                mode="contained"
+                disabled={
+                  currentPage ===
+                    totalPages ||
+                  loading
+                }
+                onPress={() =>
+                  fetchAdventures(
+                    currentPage + 1,
+                  )
+                }
+              >
+                Next
+              </Button>
+            </View>
+          </View>
         }
       />
     </View>

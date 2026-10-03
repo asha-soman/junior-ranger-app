@@ -108,6 +108,36 @@ export const getSubmissionsForAdventure =
     return response.data;
   };
 
+export interface SubmissionsPagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface PaginatedSubmissions {
+    data: AdventureSubmission[];
+    pagination: SubmissionsPagination;
+}
+
+export const getSubmissionsForAdventurePaginated = async (
+    adventureId: string,
+    page = 1,
+    limit = 20
+): Promise<PaginatedSubmissions> => {
+    const response = await apiClient.get(
+        `/adventures/${adventureId}/submissions/paginated`,
+        {
+            params: {
+                page,
+                limit,
+            },
+        }
+    );
+
+    return response.data;
+};
+
 export const reviewSubmission = async (
   submissionId: string,
   payload: ReviewSubmissionPayload,
@@ -140,6 +170,27 @@ export const updateMySubmission = async (
   );
 
   return response.data.submission;
+};
+
+export const uploadImage = async (imageUri: string): Promise<string> => {
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop() || 'upload.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    
+    formData.append('file', {
+        uri: imageUri,
+        name: filename,
+        type,
+    } as any);
+
+    const response = await apiClient.post('/storage/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    return response.data.imageUrl;
 };
 
 /*

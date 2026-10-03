@@ -144,9 +144,20 @@ export const recoveryStyles = StyleSheet.create({
 });
 
 export const verificationStyles = StyleSheet.create({
+  containerVerification: {
+    flex: 1,
+    justifyContent: "flex-start",
+    paddingTop: 80
+  },
+  pageContent: {
+    flex: 1,
+    justifyContent: "flex-start",
+    paddingHorizontal: 24,
+    paddingTop: 15,
+  },
   formCard: {
     borderRadius: 34,
-    paddingVertical: 34,
+    paddingVertical: 25,
     paddingHorizontal: 18,
     backgroundColor: "#6b8a82",
     shadowColor: "#000",
@@ -160,6 +171,7 @@ export const verificationStyles = StyleSheet.create({
     fontWeight: "700",
     color: "#1a1a1a",
     textAlign: "center",
+    marginTop: 12,
     marginBottom: 12,
   },
   description: {
@@ -176,7 +188,7 @@ export const verificationStyles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     letterSpacing: 8,
-    marginBottom: 10,
+    marginBottom: 2,
   },
   helper: {
     minHeight: 22,
@@ -184,8 +196,7 @@ export const verificationStyles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: "column",
-    gap: 12,
-    marginTop: 8,
+    gap: 12
   },
   confirmButton: {
     borderRadius: 12,

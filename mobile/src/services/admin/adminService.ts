@@ -43,18 +43,52 @@ export interface AdminUser {
   cohort_name: string | null;
 }
 
-export const getAdminUsers = async (role?: string, status?: string, name?: string
-): Promise<AdminUser[]> => {
-  const response = await apiClient.get('/admin/users', {
+export interface AdminUsersPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedAdminUsers {
+  data: AdminUser[];
+  pagination: AdminUsersPagination;
+}
+
+export const getAdminUsersPaginated = async (
+  role = "all",
+  status = "all",
+  name = "",
+  page = 1,
+  limit = 20,
+): Promise<PaginatedAdminUsers> => {
+  const response = await apiClient.get("/admin/users", {
     params: {
-      role: role && role !== 'all' ? role : undefined,
-      status: status && status !== 'all' ? status : undefined,
-      name: name?.trim() ? name.trim() : undefined,
+      role: role !== "all" ? role : undefined,
+      status: status !== "all" ? status : undefined,
+      name: name.trim() ? name.trim() : undefined,
+      page,
+      limit,
     },
   });
 
   return response.data;
+};
 
+export const getAdminUsers = async (
+  role?: string,
+  status?: string,
+  name?: string,
+): Promise<AdminUser[]> => {
+  const response = await getAdminUsersPaginated(
+    role ?? "all",
+    status ?? "all",
+    name ?? "",
+    1,
+    100,
+  );
+
+  return response.data;
 };
 
 export interface AdminCohort {

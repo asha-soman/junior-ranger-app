@@ -28,7 +28,7 @@ export class UsersController {
       req.user.userId,
     );
   }
-  
+
   @Patch('me')
   updateMyProfile(
     @Req() req: Request & { user: AuthUser },

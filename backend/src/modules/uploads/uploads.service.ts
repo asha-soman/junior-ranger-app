@@ -77,7 +77,7 @@ export class UploadsService implements OnModuleInit {
 
     try {
       const bucket = this.storage.bucket(this.bucketName);
-      
+
       const fileExtension = file.originalname.split('.').pop() || 'png';
       const filename = `${uuidv4()}.${fileExtension}`;
       const blob = bucket.file(filename);

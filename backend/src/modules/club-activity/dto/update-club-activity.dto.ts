@@ -1,9 +1,9 @@
 import {
-    IsDateString,
-    IsOptional,
     IsString,
-    IsUrl,
     MaxLength,
+    IsOptional,
+    IsDateString,
+    Matches,
 } from 'class-validator';
 
 export class UpdateClubActivityDto {
@@ -17,8 +17,9 @@ export class UpdateClubActivityDto {
     description?: string;
 
     @IsOptional()
-    @IsUrl({
-        require_protocol: true,
+    @IsString()
+    @Matches(/^\/storage\/files\/[a-zA-Z0-9._-]+$/, {
+        message: 'image_url must be a valid storage file path',
     })
     image_url?: string;
 

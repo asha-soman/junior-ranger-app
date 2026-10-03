@@ -59,6 +59,8 @@ import SettingsScreen from "../screens/settings/SettingsScreen";
 import NotificationsScreen from "../screens/notifications/NotificationsScreen";
 import AnnouncementManagementScreen from "../screens/announcements/AnnouncementManagementScreen";
 import AnnouncementFormScreen from "../screens/announcements/AnnouncementFormScreen";
+import ClubActivityManagementScreen from "../screens/club-activities/ClubActivityManagementScreen";
+import ClubActivityFormScreen from "../screens/club-activities/ClubActivityFormScreen";
 import FeedManagementScreen from "../screens/feed/FeedManagementScreen";
 
 export type AuthStackParamList = {
@@ -159,6 +161,18 @@ export type AuthStackParamList = {
   | {
     userRole: "admin" | "ranger";
     announcementId?: string;
+    cohortId?: string;
+  }
+  | undefined;
+
+  ClubActivityManagement: {
+    userRole: "admin" | "ranger";
+  };
+
+  ClubActivityForm:
+  | {
+    userRole: "admin" | "ranger";
+    activityId?: string;
     cohortId?: string;
   }
   | undefined;
@@ -496,6 +510,24 @@ export default function AuthNavigator() {
         options={{
           ...authHeaderOptions,
           title: "Announcement",
+        }}
+      />
+
+      <Stack.Screen
+        name="ClubActivityManagement"
+        component={ClubActivityManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Club Activities",
+        }}
+      />
+
+      <Stack.Screen
+        name="ClubActivityForm"
+        component={ClubActivityFormScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Club Activity",
         }}
       />
 

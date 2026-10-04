@@ -28,6 +28,7 @@ export class AuthService {
   await this.db
     .deleteFrom('auth_challenges')
     .where('email', '=', email)
+    .where('purpose', '=', 'email_verification')
     .execute();
 
   await this.db
@@ -36,6 +37,7 @@ export class AuthService {
       id: randomUUID(),
       email,
       code,
+      purpose: 'email_verification',
       expires_at: expiresAt,
       created_at: new Date(),
     })
@@ -110,6 +112,7 @@ export class AuthService {
     await this.db
       .deleteFrom('auth_challenges')
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .execute();
 
     // Store the new verification challenge
@@ -119,6 +122,7 @@ export class AuthService {
         id: randomUUID(),
         email,
         code,
+        purpose: 'email_verification',
         expires_at: expiresAt,
         created_at: new Date(),
       })
@@ -256,6 +260,7 @@ export class AuthService {
       .selectFrom('auth_challenges')
       .selectAll()
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .executeTakeFirst();
 
     if (!challenge) {

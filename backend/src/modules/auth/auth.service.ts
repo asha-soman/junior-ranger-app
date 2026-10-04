@@ -451,6 +451,35 @@ export class AuthService {
       };
     }
 
+    const existingChallenge = await this.db
+      .selectFrom('auth_challenges')
+      .select([
+        'id',
+        'created_at',
+      ])
+      .where('email', '=', normalizedEmail)
+      .where('purpose', '=', 'password_reset')
+      .executeTakeFirst();
+
+    if (existingChallenge) {
+      const secondsSinceLastRequest =
+        (Date.now() -
+          new Date(
+            existingChallenge.created_at,
+          ).getTime()) /
+        1000;
+
+      if (secondsSinceLastRequest < 60) {
+        const secondsRemaining = Math.ceil(
+          60 - secondsSinceLastRequest,
+        );
+
+        throw new BadRequestException(
+          `Please wait ${secondsRemaining} seconds before requesting another password reset code`,
+        );
+      }
+    }
+
     // Remove any previous password-reset code for this email.
     await this.db
       .deleteFrom('auth_challenges')

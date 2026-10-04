@@ -7,6 +7,7 @@ type ForgotPasswordFormProps = {
   errors: {
     email?: string;
   };
+  isLoading: boolean;
   onEmailChange: (value: string) => void;
   onCancel: () => void;
   onSubmit: () => void;
@@ -15,6 +16,7 @@ type ForgotPasswordFormProps = {
 export default function ForgotPasswordForm({
   email,
   errors,
+  isLoading,
   onEmailChange,
   onCancel,
   onSubmit,
@@ -48,16 +50,19 @@ export default function ForgotPasswordForm({
         <Button
           mode="contained"
           onPress={onSubmit}
+          loading={isLoading}
+          disabled={isLoading}
           style={recoveryStyles.resetButton}
           contentStyle={recoveryStyles.buttonContent}
           labelStyle={recoveryStyles.resetButtonLabel}
         >
-          Reset Password
+          Send Reset Code
         </Button>
 
         <Button
           mode="outlined"
           onPress={onCancel}
+          disabled={isLoading}
           style={recoveryStyles.cancelButton}
           contentStyle={recoveryStyles.buttonContent}
           labelStyle={recoveryStyles.cancelButtonLabel}

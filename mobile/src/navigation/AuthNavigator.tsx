@@ -1,21 +1,15 @@
 import React from 'react';
 
-import {
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
-
-import {
-  authHeaderOptions,
-} from './navigationStyles';
-
-import {
-  AdminUser,
-} from '../services/admin/adminService';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { authHeaderOptions } from './navigationStyles';
+import { AdminUser } from '../services/admin/adminService';
 
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import RangerSignupScreen from '../screens/auth/RangerSignupScreen';
 import LoginScreen from '../screens/auth/loginScreen';
 import ForgotPasswordScreen from '../screens/auth/forgotPasswordScreen';
+import ResetCodeScreen from '../screens/auth/resetCodeScreen';
+import ResetPasswordScreen from '../screens/auth/resetPasswordScreen';
 import VerificationScreen from '../screens/auth/verificationScreen';
 import SplashScreen from '../screens/auth/SplashScreen';
 
@@ -69,6 +63,8 @@ export type AuthStackParamList = {
     role?: "ranger" | "junior_ranger";
   };
   ForgotPassword: undefined;
+  ResetCode: { email: string };
+  ResetPassword: { resetToken: string };
   Verification: {
     email: string;
     mode?: "email" | "2fa";
@@ -234,6 +230,24 @@ export default function AuthNavigator() {
         options={{
           ...authHeaderOptions,
           title: 'Forgot Password',
+        }}
+      />
+
+      <Stack.Screen
+        name="ResetCode"
+        component={ResetCodeScreen}
+        options={{
+          ...authHeaderOptions,
+          title: 'Verification Code',
+        }}
+      />
+
+      <Stack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{
+          ...authHeaderOptions,
+          title: 'Reset Password',
         }}
       />
 

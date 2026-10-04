@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { View, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { HelperText, Text } from "react-native-paper";
@@ -42,8 +42,15 @@ export default function ForgotPasswordScreen() {
   try {
     setIsLoading(true);
 
-    const result = await forgotPassword({ email });
-    console.log("Recovery success:", result);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    await forgotPassword({
+      email: normalizedEmail,
+    });
+
+    navigation.navigate("ResetCode", {
+      email: normalizedEmail,
+    });
 
   } catch (error) {
     if (error instanceof Error) {
@@ -60,23 +67,56 @@ export default function ForgotPasswordScreen() {
     navigation.navigate("Login");
   };
 
-  return (
-    <View style={screenStyles.container}>
-      <View style={screenStyles.content}>
-        <View style={recoveryStyles.formCard}>
-          <ForgotPasswordForm
-            email={email}
-            errors={errors}
-            onEmailChange={setEmail}
-            onCancel={handleCancel}
-            onSubmit={handleResetPassword}
-          />
+  const formContent = (
+    <ScrollView
+      contentContainerStyle={screenStyles.content}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={recoveryStyles.formCard}>
+        <ForgotPasswordForm
+          email={email}
+          errors={errors}
+          isLoading={isLoading}
+          onEmailChange={setEmail}
+          onCancel={handleCancel}
+          onSubmit={handleResetPassword}
+        />
 
-          <HelperText type="error" visible={!!apiError}>
+        {apiError ? (
+          <HelperText type="error">
             {apiError}
           </HelperText>
-        </View>
+        ) : null}
       </View>
+    </ScrollView>
+  );
+
+  return (
+    <View style={screenStyles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : Platform.OS === "android"
+              ? "height"
+              : undefined
+        }
+        keyboardVerticalOffset={
+          Platform.OS === "ios" ? 80 : 0
+        }
+      >
+        {Platform.OS === "web" ? (
+          formContent
+        ) : (
+          <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+          >
+            {formContent}
+          </TouchableWithoutFeedback>
+        )}
+      </KeyboardAvoidingView>
     </View>
   );
 }

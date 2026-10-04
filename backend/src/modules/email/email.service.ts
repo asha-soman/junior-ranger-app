@@ -94,6 +94,57 @@ export class EmailService {
       data?.id,
     );
   }
+  
+  // FORGOT PASSWORD
+  async sendPasswordResetCode(
+    email: string,
+    code: string,
+  ): Promise<void> {
+    const resend = this.getResendClient();
+
+    const { data, error } = await resend.emails.send({
+      from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+      to: email,
+      subject: 'Reset your Junior Ranger password',
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Reset your password</h2>
+
+          <p>
+            We received a request to reset the password for your
+            Junior Ranger account.
+          </p>
+
+          <p>Your password reset code is:</p>
+
+          <h1>${code}</h1>
+
+          <p>This code will expire in 10 minutes.</p>
+
+          <p>
+            If you did not request a password reset,
+            you can ignore this email.
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error(
+        'Failed to send password reset email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send password reset email',
+      );
+    }
+
+    console.log(
+      'Password reset email sent:',
+      data?.id,
+    );
+  }
 
   // EVENT REGISTRATION CONFIRMATION
   async sendEventRegistrationConfirmation(

@@ -9,6 +9,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
   ScrollView,
   Text,
   View,
@@ -18,6 +19,8 @@ import {
   Button,
   TextInput,
 } from 'react-native-paper';
+
+import * as ImagePicker from 'expo-image-picker';
 
 import {
   NativeStackScreenProps,
@@ -29,6 +32,7 @@ import {
 
 import {
   createTaskCompletion,
+  uploadImage,
 } from '../../services/submissions/submissionService';
 
 import {
@@ -325,6 +329,7 @@ export default function SubmitAdventureTaskScreen({
     taskDescription,
     xpReward,
     previousSubmission,
+    previousImageUrl,
     rangerFeedback,
     isResubmission = false,
   } = route.params;
@@ -336,6 +341,19 @@ export default function SubmitAdventureTaskScreen({
     previousSubmission ?? '',
   );
 
+  /*
+   * imageUri is only used for a NEW image
+   * selected from the Junior Ranger's device.
+   *
+   * previousImageUrl is the already uploaded
+   * image from a rejected task.
+   */
+  const [
+    imageUri,
+    setImageUri,
+  ] = useState<string | null>(
+    null,
+  );
 
   const [
     loading,
@@ -346,6 +364,74 @@ export default function SubmitAdventureTaskScreen({
     submitted,
     setSubmitted,
   ] = useState(false);
+
+  /*
+   * =========================================
+   * IMAGE PICKER
+   * =========================================
+   */
+
+  const pickImage =
+    async () => {
+      try {
+        const permissionResult =
+          await ImagePicker
+            .requestMediaLibraryPermissionsAsync();
+
+        if (
+          !permissionResult.granted
+        ) {
+          Alert.alert(
+            'Permission required',
+            'Please allow access to your photos so you can choose an image for this task.',
+          );
+
+          return;
+        }
+
+        const result =
+          await ImagePicker
+            .launchImageLibraryAsync({
+              mediaTypes:
+                ImagePicker
+                  .MediaTypeOptions
+                  .Images,
+
+              allowsEditing: true,
+
+              quality: 0.8,
+            });
+
+        if (
+          !result.canceled &&
+          result.assets.length > 0
+        ) {
+          setImageUri(
+            result.assets[0].uri,
+          );
+        }
+      } catch (error) {
+        console.log(
+          'Image picker error:',
+          error,
+        );
+
+        Alert.alert(
+          'Unable to choose image',
+          'Something went wrong while selecting the image. Please try again.',
+        );
+      }
+    };
+
+  const removeNewImage = () => {
+    setImageUri(null);
+  };
+
+  /*
+   * =========================================
+   * SUBMIT TASK
+   * =========================================
+   */
 
   const handleSubmit =
     async () => {
@@ -363,12 +449,43 @@ export default function SubmitAdventureTaskScreen({
       try {
         setLoading(true);
 
+        /*
+         * If a NEW image was selected,
+         * upload it to GCS first.
+         *
+         * uploadImage() returns:
+         *
+         * /storage/files/{filename}
+         *
+         * If this is a resubmission and
+         * no new image was selected,
+         * keep the previous image URL.
+         */
+        let finalImageUrl:
+          | string
+          | undefined;
+
+        if (imageUri) {
+          finalImageUrl =
+            await uploadImage(
+              imageUri,
+            );
+        } else if (
+          isResubmission &&
+          previousImageUrl
+        ) {
+          finalImageUrl =
+            previousImageUrl;
+        }
+
         await createTaskCompletion(
           taskId,
           {
             submission_text:
               submissionText.trim(),
 
+            image_url:
+              finalImageUrl,
           },
         );
 
@@ -711,27 +828,43 @@ export default function SubmitAdventureTaskScreen({
         {taskDescription ? (
           <View
             style={{
-              backgroundColor: '#F2F8F6',
+              backgroundColor:
+                '#F2F8F6',
+
               borderWidth: 1,
-              borderColor: '#D6E9E4',
+
+              borderColor:
+                '#D6E9E4',
+
               borderRadius: 14,
+
               padding: 14,
+
               marginTop: 10,
+
               marginBottom: 14,
             }}
           >
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection:
+                  'row',
+
+                alignItems:
+                  'center',
+
                 marginBottom: 7,
               }}
             >
               <Text
                 style={{
                   fontSize: 13,
-                  fontWeight: '800',
-                  color: '#3D786B',
+
+                  fontWeight:
+                    '800',
+
+                  color:
+                    '#3D786B',
                 }}
               >
                 Your Task
@@ -739,18 +872,30 @@ export default function SubmitAdventureTaskScreen({
 
               <View
                 style={{
-                  marginLeft: 'auto',
-                  backgroundColor: '#FFF1BE',
+                  marginLeft:
+                    'auto',
+
+                  backgroundColor:
+                    '#FFF1BE',
+
                   borderRadius: 12,
-                  paddingHorizontal: 9,
-                  paddingVertical: 5,
+
+                  paddingHorizontal:
+                    9,
+
+                  paddingVertical:
+                    5,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 11,
-                    fontWeight: '800',
-                    color: '#8C6718',
+
+                    fontWeight:
+                      '800',
+
+                    color:
+                      '#8C6718',
                   }}
                 >
                   +{xpReward} XP
@@ -761,8 +906,11 @@ export default function SubmitAdventureTaskScreen({
             <Text
               style={{
                 fontSize: 14,
+
                 lineHeight: 21,
-                color: '#4D5A56',
+
+                color:
+                  '#4D5A56',
               }}
             >
               {taskDescription}
@@ -782,30 +930,54 @@ export default function SubmitAdventureTaskScreen({
           </Text>
         )}
 
-        {isResubmission && rangerFeedback ? (
+        {isResubmission &&
+        rangerFeedback ? (
           <View
             style={{
               marginBottom: 20,
+
               padding: 16,
+
               borderRadius: 14,
-              backgroundColor: '#FFF5EF',
+
+              backgroundColor:
+                '#FFF5EF',
+
               borderWidth: 1,
-              borderColor: '#F1C8B7',
+
+              borderColor:
+                '#F1C8B7',
             }}
           >
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection:
+                  'row',
+
+                alignItems:
+                  'center',
+
                 marginBottom: 8,
               }}
             >
-              <Text style={{ fontSize: 18, marginRight: 8 }}>🌱</Text>
+              <Text
+                style={{
+                  fontSize: 18,
+                  marginRight: 8,
+                }}
+              >
+                🌱
+              </Text>
+
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '700',
-                  color: '#934E34',
+
+                  fontWeight:
+                    '700',
+
+                  color:
+                    '#934E34',
                 }}
               >
                 Ranger's Feedback
@@ -815,8 +987,11 @@ export default function SubmitAdventureTaskScreen({
             <Text
               style={{
                 fontSize: 14,
+
                 lineHeight: 21,
-                color: '#5E514C',
+
+                color:
+                  '#5E514C',
               }}
             >
               {rangerFeedback}
@@ -825,12 +1000,18 @@ export default function SubmitAdventureTaskScreen({
             <Text
               style={{
                 fontSize: 13,
+
                 lineHeight: 19,
-                color: '#876B60',
+
+                color:
+                  '#876B60',
+
                 marginTop: 10,
               }}
             >
-              Update your answer using this feedback and try again!
+              Update your answer using
+              this feedback and try
+              again!
             </Text>
           </View>
         ) : null}
@@ -838,8 +1019,13 @@ export default function SubmitAdventureTaskScreen({
         <Text
           style={{
             fontSize: 14,
-            fontWeight: '700',
-            color: '#3D786B',
+
+            fontWeight:
+              '700',
+
+            color:
+              '#3D786B',
+
             marginBottom: 8,
           }}
         >
@@ -863,7 +1049,11 @@ export default function SubmitAdventureTaskScreen({
           ]}
         />
 
-        {/* IMAGE UPLOAD PLACEHOLDER */}
+        {/*
+         * =========================================
+         * TASK IMAGE
+         * =========================================
+         */}
 
         <View
           style={{
@@ -873,68 +1063,309 @@ export default function SubmitAdventureTaskScreen({
           <Text
             style={{
               fontSize: 14,
-              fontWeight: '700',
-              color: '#3D786B',
+
+              fontWeight:
+                '700',
+
+              color:
+                '#3D786B',
+
               marginBottom: 8,
             }}
           >
             Task Image (optional)
           </Text>
 
-          <View
-            style={{
-              borderWidth: 1.5,
-              borderStyle: 'dashed',
-              borderColor: '#A8CDC4',
-              backgroundColor: '#F7FCFA',
-              borderRadius: 14,
-              paddingVertical: 22,
-              paddingHorizontal: 16,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
+          {/*
+           * NEW IMAGE SELECTED
+           */}
+
+          {imageUri ? (
+            <View
               style={{
-                fontSize: 32,
-                marginBottom: 8,
+                borderWidth: 1,
+
+                borderColor:
+                  '#C7DDD7',
+
+                backgroundColor:
+                  '#F7FCFA',
+
+                borderRadius: 14,
+
+                padding: 12,
               }}
             >
-              📷
-            </Text>
+              <Image
+                source={{
+                  uri: imageUri,
+                }}
+                resizeMode="cover"
+                style={{
+                  width: '100%',
 
-            <Text
+                  height: 220,
+
+                  borderRadius: 12,
+
+                  backgroundColor:
+                    '#E8F1EE',
+                }}
+              />
+
+              <Text
+                style={{
+                  fontSize: 12,
+
+                  color:
+                    '#4E6B64',
+
+                  marginTop: 10,
+
+                  marginBottom: 10,
+
+                  textAlign:
+                    'center',
+                }}
+              >
+                This image will be
+                uploaded with your
+                task.
+              </Text>
+
+              <View
+                style={{
+                  flexDirection:
+                    'row',
+
+                  justifyContent:
+                    'center',
+
+                  flexWrap:
+                    'wrap',
+
+                  gap: 8,
+                }}
+              >
+                <Button
+                  mode="outlined"
+                  icon="image-edit-outline"
+                  onPress={
+                    pickImage
+                  }
+                  disabled={
+                    loading
+                  }
+                >
+                  Change Image
+                </Button>
+
+                <Button
+                  mode="text"
+                  icon="delete-outline"
+                  onPress={
+                    removeNewImage
+                  }
+                  disabled={
+                    loading
+                  }
+                  textColor="#A14F3D"
+                >
+                  Remove
+                </Button>
+              </View>
+            </View>
+          ) : isResubmission &&
+            previousImageUrl ? (
+            /*
+             * EXISTING IMAGE FROM REJECTED SUBMISSION
+             *
+             * The stored image URL points to a protected
+             * backend endpoint, so we do not try to render
+             * the relative URL directly here.
+             *
+             * It is retained automatically unless the
+             * Junior Ranger chooses a replacement.
+             */
+            <View
               style={{
-                fontSize: 15,
-                fontWeight: '700',
-                color: '#376E62',
-                marginBottom: 4,
-                textAlign: 'center',
+                borderWidth: 1.5,
+
+                borderColor:
+                  '#A8CDC4',
+
+                backgroundColor:
+                  '#F2F8F6',
+
+                borderRadius: 14,
+
+                paddingVertical: 20,
+
+                paddingHorizontal: 16,
+
+                alignItems:
+                  'center',
+
+                justifyContent:
+                  'center',
               }}
             >
-              Add a photo
-            </Text>
+              <Text
+                style={{
+                  fontSize: 32,
 
-            <Text
+                  marginBottom: 8,
+                }}
+              >
+                🖼️
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 15,
+
+                  fontWeight:
+                    '700',
+
+                  color:
+                    '#376E62',
+
+                  marginBottom: 5,
+
+                  textAlign:
+                    'center',
+                }}
+              >
+                Previous image attached
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 12,
+
+                  color:
+                    '#6F7775',
+
+                  lineHeight: 18,
+
+                  textAlign:
+                    'center',
+
+                  marginBottom: 14,
+                }}
+              >
+                Your previous image will
+                stay attached unless you
+                choose a new one.
+              </Text>
+
+              <Button
+                mode="outlined"
+                icon="image-edit-outline"
+                onPress={
+                  pickImage
+                }
+                disabled={
+                  loading
+                }
+              >
+                Replace Image
+              </Button>
+            </View>
+          ) : (
+            /*
+             * NO IMAGE SELECTED
+             */
+
+            <View
               style={{
-                fontSize: 12,
-                color: '#6F7775',
-                lineHeight: 18,
-                textAlign: 'center',
-                marginBottom: 12,
+                borderWidth: 1.5,
+
+                borderStyle:
+                  'dashed',
+
+                borderColor:
+                  '#A8CDC4',
+
+                backgroundColor:
+                  '#F7FCFA',
+
+                borderRadius: 14,
+
+                paddingVertical: 22,
+
+                paddingHorizontal: 16,
+
+                alignItems:
+                  'center',
+
+                justifyContent:
+                  'center',
               }}
             >
-              Image upload will be available soon.
-            </Text>
+              <Text
+                style={{
+                  fontSize: 32,
 
-            <Button
-              mode="outlined"
-              disabled
-              icon="image-outline"
-            >
-              Choose Image
-            </Button>
-          </View>
+                  marginBottom: 8,
+                }}
+              >
+                📷
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 15,
+
+                  fontWeight:
+                    '700',
+
+                  color:
+                    '#376E62',
+
+                  marginBottom: 4,
+
+                  textAlign:
+                    'center',
+                }}
+              >
+                Add a photo
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 12,
+
+                  color:
+                    '#6F7775',
+
+                  lineHeight: 18,
+
+                  textAlign:
+                    'center',
+
+                  marginBottom: 12,
+                }}
+              >
+                Choose a photo that
+                shows how you completed
+                this task.
+              </Text>
+
+              <Button
+                mode="outlined"
+                icon="image-outline"
+                onPress={
+                  pickImage
+                }
+                disabled={
+                  loading
+                }
+              >
+                Choose Image
+              </Button>
+            </View>
+          )}
         </View>
 
         <Button

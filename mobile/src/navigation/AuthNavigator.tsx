@@ -55,11 +55,11 @@ import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
 import EventDetailsScreen from '../screens/events/EventDetailsScreen';
 import AttendanceManagementScreen from '../screens/events/AttendanceManagementScreen';
-import SettingsScreen from "../screens/settings/SettingsScreen";
-import NotificationsScreen from "../screens/notifications/NotificationsScreen";
-import AnnouncementManagementScreen from "../screens/announcements/AnnouncementManagementScreen";
-import AnnouncementFormScreen from "../screens/announcements/AnnouncementFormScreen";
-import FeedManagementScreen from "../screens/feed/FeedManagementScreen";
+import SettingsScreen from '../screens/settings/SettingsScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import AnnouncementManagementScreen from '../screens/announcements/AnnouncementManagementScreen';
+import AnnouncementFormScreen from '../screens/announcements/AnnouncementFormScreen';
+import FeedManagementScreen from '../screens/feed/FeedManagementScreen';
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -194,6 +194,12 @@ export type AuthStackParamList = {
     xpReward: number;
     adventureId: string;
     previousSubmission?: string;
+
+    // Existing image from a rejected task submission.
+    // This allows the Junior Ranger to keep or replace
+    // the previous image when resubmitting.
+    previousImageUrl?: string | null;
+
     rangerFeedback?: string;
     isResubmission?: boolean;
   };
@@ -223,30 +229,40 @@ export type AuthStackParamList = {
           | 'ranger';
       }
     | undefined;
-    EditEvent:
-    | {
-        eventId: string;
-        userRole: 'admin' | 'ranger';
-    };
-    EventDetails: 
-    | {
-        eventId: string;
-        userRole: 'admin' | 'ranger' | 'junior_ranger';
-    };
-    SocialFeed: undefined;
-    AttendanceManagement: {
-      eventId: string;
-      userRole: 'admin' | 'ranger';
-    };
-    ActivityPostForm:
+
+  EditEvent: {
+    eventId: string;
+    userRole: 'admin' | 'ranger';
+  };
+
+  EventDetails: {
+    eventId: string;
+    userRole:
+      | 'admin'
+      | 'ranger'
+      | 'junior_ranger';
+  };
+
+  SocialFeed: undefined;
+
+  AttendanceManagement: {
+    eventId: string;
+    userRole: 'admin' | 'ranger';
+  };
+
+  ActivityPostForm:
     | {
         postId?: string;
       }
     | undefined;
 
   Settings: undefined;
+
   Notifications: {
-    userRole: "admin" | "ranger" | "junior_ranger";
+    userRole:
+      | 'admin'
+      | 'ranger'
+      | 'junior_ranger';
   };
 };
 
@@ -503,23 +519,23 @@ export default function AuthNavigator() {
         }}
       />
 
-            <Stack.Screen
-                name="EventsHub"
-                component={EventsHubScreen}
-                options={{
-                    ...authHeaderOptions,
-                    title: 'Events',
-                }}
-            />
+      <Stack.Screen
+        name="EventsHub"
+        component={EventsHubScreen}
+        options={{
+          ...authHeaderOptions,
+          title: 'Events',
+        }}
+      />
 
-            <Stack.Screen
-              name="EventDetails"
-              component={EventDetailsScreen}
-              options={{
-                ...authHeaderOptions,
-                title: 'Event Details',
-              }}
-            />
+      <Stack.Screen
+        name="EventDetails"
+        component={EventDetailsScreen}
+        options={{
+          ...authHeaderOptions,
+          title: 'Event Details',
+        }}
+      />
 
       <Stack.Screen
         name="CreateEvent"
@@ -530,23 +546,25 @@ export default function AuthNavigator() {
         }}
       />
 
-            <Stack.Screen
-                name="EditEvent"
-                component={EditEventScreen}
-                options={{
-                    ...authHeaderOptions,
-                    title: 'Edit Event',
-                }}
-            />
+      <Stack.Screen
+        name="EditEvent"
+        component={EditEventScreen}
+        options={{
+          ...authHeaderOptions,
+          title: 'Edit Event',
+        }}
+      />
 
-            <Stack.Screen
-              name="AttendanceManagement"
-              component={AttendanceManagementScreen}
-              options={{
-                ...authHeaderOptions,
-                title: 'Attendance',
-              }}
-            />
+      <Stack.Screen
+        name="AttendanceManagement"
+        component={
+          AttendanceManagementScreen
+        }
+        options={{
+          ...authHeaderOptions,
+          title: 'Attendance',
+        }}
+      />
 
       <Stack.Screen
         name="RangerMenu"
@@ -589,7 +607,7 @@ export default function AuthNavigator() {
         component={SettingsScreen}
         options={{
           ...authHeaderOptions,
-          title: "Settings",
+          title: 'Settings',
         }}
       />
 
@@ -598,7 +616,7 @@ export default function AuthNavigator() {
         component={NotificationsScreen}
         options={{
           ...authHeaderOptions,
-          title: "Notifications",
+          title: 'Notifications',
         }}
       />
     </Stack.Navigator>

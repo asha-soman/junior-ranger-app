@@ -1723,6 +1723,8 @@ export default function AdventureDetailsScreen({
                                       adventureId: adventure.id,
                                       previousSubmission:
                                         task.submission_text ?? '',
+                                      previousImageUrl:
+                                        task.image_url ?? null,
                                       rangerFeedback:
                                         task.feedback ?? '',
                                       isResubmission: true,

@@ -1,7 +1,7 @@
 import {
     IsOptional,
     IsString,
-    IsUrl,
+    Matches,
     MaxLength,
 } from 'class-validator';
 
@@ -13,8 +13,8 @@ export class UpdateActivityPostDto {
 
     @IsOptional()
     @IsString()
-    @IsUrl({
-        require_protocol: true,
+    @Matches(/^\/storage\/files\/[a-zA-Z0-9._-]+$/, {
+        message: 'image_url must be a valid storage file path',
     })
     image_url?: string;
 }

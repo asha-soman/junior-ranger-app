@@ -8,7 +8,6 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
-    Image,
     Platform,
     RefreshControl,
     StyleSheet,
@@ -28,6 +27,8 @@ import {
 } from "@react-navigation/native";
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import AuthenticatedImage from "../../components/common/AuthenticatedImage";
 
 import {
     ClubActivity,
@@ -274,10 +275,8 @@ export default function ClubActivityManagementScreen() {
             <View style={styles.card}>
 
                 {item.image_url && (
-                    <Image
-                        source={{
-                            uri: item.image_url,
-                        }}
+                    <AuthenticatedImage
+                        imageUrl={item.image_url}
                         style={styles.activityImage}
                         resizeMode="cover"
                     />

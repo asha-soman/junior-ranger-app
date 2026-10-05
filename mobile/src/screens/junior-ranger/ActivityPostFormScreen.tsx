@@ -41,6 +41,11 @@ import {
     updateActivityPost,
 } from "../../services/activity-posts/activityPostsService";
 
+import {
+    uploadImage,
+} from "../../services/storage/storageService";
+import AuthenticatedImage from "../../components/common/AuthenticatedImage";
+
 /* ========================================================
    NAVIGATION TYPES
 ======================================================== */
@@ -116,6 +121,11 @@ export default function ActivityPostFormScreen() {
         imageUri,
         setImageUri,
     ] = useState<string | null>(null);
+
+    const [
+        hasNewImage,
+        setHasNewImage,
+    ] = useState(false);
 
     /* ======================================================
        INITIAL LOAD
@@ -287,9 +297,12 @@ export default function ActivityPostFormScreen() {
                     );
 
                 if (!result.canceled) {
+
                     setImageUri(
                         result.assets[0].uri,
                     );
+
+                    setHasNewImage(true);
                 }
             } catch (error) {
                 console.error(
@@ -336,14 +349,17 @@ export default function ActivityPostFormScreen() {
     };
     const handleSubmit =
         async () => {
+
             const trimmedContent =
                 content.trim();
 
-            /* -------------------------
-               VALIDATE CONTENT
-            ------------------------- */
+
+            /*
+             * VALIDATE CONTENT
+             */
 
             if (!trimmedContent) {
+
                 Alert.alert(
                     "Tell us about your activity",
                     "Please write something before sharing your post.",
@@ -352,11 +368,13 @@ export default function ActivityPostFormScreen() {
                 return;
             }
 
-            /* -------------------------
-               VALIDATE COHORT
-            ------------------------- */
+
+            /*
+             * VALIDATE COHORT
+             */
 
             if (!cohort) {
+
                 Alert.alert(
                     "No Club Found",
                     "You need to belong to a club before sharing a post.",
@@ -365,35 +383,67 @@ export default function ActivityPostFormScreen() {
                 return;
             }
 
+
             try {
+
                 setSubmitting(true);
 
-                /* =========================
-                   EDIT MODE
-                ========================== */
+
+                /*
+                 * =================================
+                 * IMAGE UPLOAD
+                 * =================================
+                 *
+                 * Only upload when the Junior Ranger
+                 * has actually selected a NEW image.
+                 *
+                 * Existing /storage/files/... paths
+                 * should not be uploaded again.
+                 */
+
+                let finalImageUrl:
+                    string | undefined =
+                    undefined;
+
+
+                if (
+                    imageUri &&
+                    hasNewImage
+                ) {
+
+                    finalImageUrl =
+                        await uploadImage(
+                            imageUri,
+                        );
+                }
+
+
+                /*
+                 * =================================
+                 * EDIT MODE
+                 * =================================
+                 */
 
                 if (
                     isEditMode &&
                     postId
                 ) {
+
                     await updateActivityPost(
                         postId,
                         {
                             content:
                                 trimmedContent,
 
-                            /*
-                             * Do NOT send imageUri.
-                             *
-                             * It may currently be:
-                             *
-                             * file:///...
-                             *
-                             * Cloud image upload will
-                             * handle this later.
-                             */
+                            ...(finalImageUrl
+                                ? {
+                                    image_url:
+                                        finalImageUrl,
+                                }
+                                : {}),
                         },
                     );
+
 
                     showSuccessAndReturn(
                         "Post Updated!",
@@ -401,33 +451,39 @@ export default function ActivityPostFormScreen() {
                     );
 
                     return;
-
-                    return;
                 }
 
-                /* =========================
-                   CREATE MODE
-                ========================== */
+
+                /*
+                 * =================================
+                 * CREATE MODE
+                 * =================================
+                 */
 
                 await createActivityPost({
+
                     content:
                         trimmedContent,
 
                     cohort_id:
                         cohort.id,
 
-                    /*
-                     * image_url will be added
-                     * once cloud image upload
-                     * is implemented.
-                     */
+                    ...(finalImageUrl
+                        ? {
+                            image_url:
+                                finalImageUrl,
+                        }
+                        : {}),
                 });
+
 
                 showSuccessAndReturn(
                     "Post Shared!",
                     "Your activity has been shared with your club.",
                 );
+
             } catch (error: any) {
+
                 console.error(
                     isEditMode
                         ? "Update post failed:"
@@ -435,6 +491,7 @@ export default function ActivityPostFormScreen() {
                     error?.response?.data ??
                     error,
                 );
+
 
                 Alert.alert(
                     isEditMode
@@ -444,14 +501,19 @@ export default function ActivityPostFormScreen() {
                     error?.response?.data
                         ?.message ||
                     error?.message ||
-                    (isEditMode
-                        ? "Something went wrong while updating your post."
-                        : "Something went wrong while sharing your post."),
+                    (
+                        isEditMode
+                            ? "Something went wrong while updating your post."
+                            : "Something went wrong while sharing your post."
+                    ),
                 );
+
             } finally {
+
                 setSubmitting(false);
             }
         };
+
 
     /* ======================================================
        LOADING
@@ -604,14 +666,25 @@ export default function ActivityPostFormScreen() {
                         styles.imageContainer
                     }
                 >
-                    <Image
-                        source={{
-                            uri: imageUri,
-                        }}
-                        style={
-                            styles.imagePreview
-                        }
-                    />
+                    {imageUri.startsWith("/storage/files/") ? (
+
+                        <AuthenticatedImage
+                            imageUrl={imageUri}
+                            style={styles.imagePreview}
+                            resizeMode="cover"
+                        />
+
+                    ) : (
+
+                        <Image
+                            source={{
+                                uri: imageUri,
+                            }}
+                            style={styles.imagePreview}
+                            resizeMode="cover"
+                        />
+
+                    )}
 
                     <TouchableOpacity
                         style={

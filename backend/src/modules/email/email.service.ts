@@ -322,4 +322,53 @@ export class EmailService {
     return data?.id ?? null;
   }
 
+
+  // PENDING RANGER ACCOUNT APPROVAL
+  async sendPendingRangerApproval(
+    email: string,
+    rangerName: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'Pending Ranger Account Approval',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Pending Ranger Account Approval</h2>
+
+            <p>
+              ${rangerName} has requested a Ranger account
+              and is awaiting approval.
+            </p>
+
+            <p>
+              Please review the account request in the
+              Junior Ranger app.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send pending Ranger approval email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send pending Ranger approval email',
+      );
+    }
+
+    console.log(
+      'Pending Ranger approval email sent:',
+      data?.id,
+    );
+
+    return data?.id;
+  }
+
 }

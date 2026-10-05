@@ -447,6 +447,75 @@ export class NotificationsService {
     }
   }
 
+  async notifyAdminsOfPendingRanger(params: {
+    rangerId: string;
+    rangerName: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'email',
+      ])
+      .where('role', '=', 'admin')
+      .where('is_active', '=', true)
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      const notification =
+        await this.createNotification({
+          userId: admin.id,
+          type: 'ranger_approval_pending',
+          title:
+            'Pending Ranger Account Approval',
+          message:
+            `${params.rangerName} has requested a Ranger account and is awaiting approval.`,
+        });
+
+      try {
+        const providerMessageId =
+          await this.emailService
+            .sendPendingRangerApproval(
+              admin.email,
+              params.rangerName,
+            );
+
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: admin.id,
+          recipientEmail: admin.email,
+          status: 'sent',
+          providerMessageId,
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Unknown email delivery error';
+
+        this.logger.error(
+          `Failed to send pending Ranger approval notification to admin ${admin.id}: ${errorMessage}`,
+        );
+
+        try {
+          await this.logDelivery({
+            notificationId: notification.id,
+            userId: admin.id,
+            recipientEmail: admin.email,
+            status: 'failed',
+            errorMessage,
+          });
+        } catch (logError) {
+          this.logger.error(
+            'Failed to record pending Ranger approval delivery failure',
+            logError,
+          );
+        }
+      }
+    }
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

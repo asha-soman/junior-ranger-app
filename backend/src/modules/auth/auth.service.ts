@@ -6,6 +6,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { randomUUID } from 'crypto';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
   await this.db
     .deleteFrom('auth_challenges')
     .where('email', '=', email)
+    .where('purpose', '=', 'email_verification')
     .execute();
 
   await this.db
@@ -36,6 +38,7 @@ export class AuthService {
       id: randomUUID(),
       email,
       code,
+      purpose: 'email_verification',
       expires_at: expiresAt,
       created_at: new Date(),
     })
@@ -55,6 +58,7 @@ export class AuthService {
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ============================================================
@@ -110,6 +114,7 @@ export class AuthService {
     await this.db
       .deleteFrom('auth_challenges')
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .execute();
 
     // Store the new verification challenge
@@ -119,12 +124,25 @@ export class AuthService {
         id: randomUUID(),
         email,
         code,
+        purpose: 'email_verification',
         expires_at: expiresAt,
         created_at: new Date(),
       })
       .execute();
 
     await this.emailService.sendVerificationCode(email, code);
+
+    if (
+      isRanger &&
+      newUser?.id
+    ) {
+      await this.notificationsService
+        .notifyAdminsOfPendingRanger({
+          rangerId: newUser.id,
+          rangerName:
+            newUser.name ?? newUser.email,
+        });
+    }
 
     return {
       message: isRanger
@@ -256,6 +274,7 @@ export class AuthService {
       .selectFrom('auth_challenges')
       .selectAll()
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .executeTakeFirst();
 
     if (!challenge) {

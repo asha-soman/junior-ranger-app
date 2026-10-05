@@ -31,7 +31,8 @@ export type NotificationType =
   | 'event_registration_cancelled'
   | 'event_update'
   | 'event_cancelled'
-  | 'event_reminder';
+  | 'event_reminder'
+  | 'ranger_approval_pending';
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =
   | 'sent'
@@ -139,6 +140,7 @@ export interface AuthChallengesTable {
   id: string;
   email: string;
   code: string;
+  purpose: 'email_verification' | 'password_reset';
   expires_at: Date;
   created_at: Date;
 }

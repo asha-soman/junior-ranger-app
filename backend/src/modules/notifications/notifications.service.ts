@@ -724,6 +724,64 @@ export class NotificationsService {
     }
   }
 
+  async notifyRangerOfJuniorRangerJoining(params: {
+    rangerId: string;
+    rangerEmail: string;
+    juniorRangerName: string;
+    cohortName: string;
+  }): Promise<void> {
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'junior_ranger_joined_cohort',
+        title: 'New Junior Ranger Joined Your Cohort',
+        message:
+          `${params.juniorRangerName} joined your cohort "${params.cohortName}".`,
+      });
+
+    try {
+      const providerMessageId =
+        await this.emailService
+          .sendJuniorRangerJoinedCohort(
+            params.rangerEmail,
+            params.juniorRangerName,
+            params.cohortName,
+          );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send cohort join email to Ranger ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record cohort join delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

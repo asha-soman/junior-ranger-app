@@ -180,8 +180,6 @@ export class EmailService {
       to: email,
       subject: `Event cancelled: ${eventTitle}`,
       html: `
-        <h2>Event Cancelled</h2>
-
         <p>
           The event <strong>${eventTitle}</strong> has been cancelled.
         </p>
@@ -256,8 +254,6 @@ export class EmailService {
       to: email,
       subject: `Event available again: ${eventTitle}`,
       html: `
-        <h2>Event Available Again</h2>
-
         <p>
           <strong>${eventTitle}</strong> has been published again
           after previously being cancelled.
@@ -337,8 +333,6 @@ export class EmailService {
         subject: 'Pending Ranger Account Approval',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>Pending Ranger Account Approval</h2>
-
             <p>
               ${rangerName} has requested a Ranger account
               and is awaiting approval.
@@ -428,7 +422,7 @@ export class EmailService {
         subject: 'Ranger Account Request Update',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>Ranger Account Request Update</h2>
+            <h2>Ranger Account Status</h2>
 
             <p>Hello ${rangerName},</p>
 
@@ -473,7 +467,6 @@ export class EmailService {
         subject: 'New Adventure Task Submission',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>New Adventure Task Submission</h2>
 
             <p>
               ${juniorRangerName} has submitted
@@ -517,7 +510,6 @@ export class EmailService {
         subject: 'Adventure Task Approved',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>Adventure Task Approved</h2>
 
             <p>Hello ${juniorRangerName},</p>
 
@@ -574,7 +566,6 @@ export class EmailService {
         subject: 'Adventure Task Needs Changes',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>Adventure Task Needs Changes</h2>
 
             <p>Hello ${juniorRangerName},</p>
 
@@ -602,6 +593,49 @@ export class EmailService {
 
       throw new Error(
         'Unable to send task rejection email',
+      );
+    }
+    return data?.id;
+  }
+
+  // JUNIOR RANGER JOINED COHORT
+  async sendJuniorRangerJoinedCohort(
+    email: string,
+    juniorRangerName: string,
+    cohortName: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'New Junior Ranger Joined Your Cohort',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+
+            <p>
+              <strong>${juniorRangerName}</strong>
+              has joined your cohort
+              <strong>${cohortName}</strong>.
+            </p>
+
+            <p>
+              You can view the cohort members in the
+              Junior Ranger app.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send cohort join email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send cohort join email',
       );
     }
 

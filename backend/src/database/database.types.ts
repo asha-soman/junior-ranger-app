@@ -38,7 +38,9 @@ export type NotificationType =
   | 'mission_submitted'
   | 'task_approved'
   | 'task_rejected'
-  | 'junior_ranger_joined_cohort';
+  | 'junior_ranger_joined_cohort'
+  | 'event_participant_registered'
+  | 'event_participant_cancelled';
   
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =

@@ -782,6 +782,31 @@ export class NotificationsService {
     }
   }
 
+  async notifyRangerOfEventRegistrationChange(params: {
+    rangerId: string;
+    juniorRangerName: string;
+    eventId: string;
+    eventTitle: string;
+    action: 'registered' | 'cancelled';
+  }): Promise<void> {
+    const isRegistration =
+      params.action === 'registered';
+
+    await this.createNotification({
+      userId: params.rangerId,
+      type: isRegistration
+        ? 'event_participant_registered'
+        : 'event_participant_cancelled',
+      title: isRegistration
+        ? 'New Event Registration'
+        : 'Event Registration Cancelled',
+      message: isRegistration
+        ? `${params.juniorRangerName} registered for "${params.eventTitle}".`
+        : `${params.juniorRangerName} cancelled their registration for "${params.eventTitle}".`,
+      eventId: params.eventId,
+    });
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

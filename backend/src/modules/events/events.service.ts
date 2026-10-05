@@ -665,11 +665,57 @@ export class EventsService {
         'id',
         'title',
         'start_time',
+        'cohort_id',
       ])
       .where('id', '=', eventId)
       .executeTakeFirst();
 
     if (event) {
+      const juniorRanger = await this.db
+        .selectFrom('users')
+        .select([
+          'id',
+          'name',
+          'email',
+        ])
+        .where('id', '=', user.userId)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      const cohort = await this.db
+        .selectFrom('cohorts')
+        .select([
+          'assigned_ranger_id',
+          'created_by_ranger_id',
+        ])
+        .where('id', '=', event.cohort_id)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      const rangerId =
+        cohort?.assigned_ranger_id ??
+        cohort?.created_by_ranger_id;
+
+      if (rangerId) {
+        try {
+          await this.notificationsService
+            .notifyRangerOfEventRegistrationChange({
+              rangerId,
+              juniorRangerName:
+                juniorRanger?.name ??
+                juniorRanger?.email ??
+                'A Junior Ranger',
+              eventId: event.id,
+              eventTitle: event.title,
+              action: 'registered',
+            });
+        } catch (error) {
+          console.error(
+            'Event registration succeeded but Ranger notification failed:',
+            error,
+          );
+        }
+      }
       try {
         await this.notificationsService
           .notifyEventRegistration({
@@ -730,6 +776,7 @@ export class EventsService {
         'title',
         'start_time',
         'is_deleted',
+        'cohort_id',
       ])
       .where('id', '=', eventId)
       .where('is_deleted', '=', false)
@@ -796,6 +843,52 @@ export class EventsService {
       )
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    const juniorRanger = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'name',
+        'email',
+      ])
+      .where('id', '=', user.userId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    const cohort = await this.db
+      .selectFrom('cohorts')
+      .select([
+        'assigned_ranger_id',
+        'created_by_ranger_id',
+      ])
+      .where('id', '=', event.cohort_id)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    const rangerId =
+      cohort?.assigned_ranger_id ??
+      cohort?.created_by_ranger_id;
+
+    if (rangerId) {
+      try {
+        await this.notificationsService
+          .notifyRangerOfEventRegistrationChange({
+            rangerId,
+            juniorRangerName:
+              juniorRanger?.name ??
+              juniorRanger?.email ??
+              'A Junior Ranger',
+            eventId: event.id,
+            eventTitle: event.title,
+            action: 'cancelled',
+          });
+      } catch (error) {
+        console.error(
+          'Event registration cancellation succeeded but Ranger notification failed:',
+          error,
+        );
+      }
+    }
 
     try {
       await this.notificationsService

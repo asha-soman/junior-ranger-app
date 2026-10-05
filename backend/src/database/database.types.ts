@@ -35,7 +35,10 @@ export type NotificationType =
   | 'ranger_approval_pending'
   | 'ranger_approved'
   | 'ranger_rejected'
-  | 'mission_submitted';
+  | 'mission_submitted'
+  | 'task_approved'
+  | 'task_rejected';
+  
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =
   | 'sent'

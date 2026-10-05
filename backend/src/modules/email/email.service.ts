@@ -502,4 +502,110 @@ export class EmailService {
     return data?.id;
   }
 
+  // ADVENTURE TASK APPROVED
+  async sendTaskApproved(
+    email: string,
+    juniorRangerName: string,
+    taskTitle: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'Adventure Task Approved',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Adventure Task Approved</h2>
+
+            <p>Hello ${juniorRangerName},</p>
+
+            <p>
+              Your submission for the task
+              <strong>${taskTitle}</strong>
+              has been approved.
+            </p>
+
+            <p>
+              Great work! Keep exploring and completing
+              more adventure tasks.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send task approval email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send task approval email',
+      );
+    }
+
+    return data?.id;
+  }
+
+  // ADVENTURE TASK REJECTED
+  async sendTaskRejected(
+    email: string,
+    juniorRangerName: string,
+    taskTitle: string,
+    feedback?: string | null,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const feedbackSection = feedback
+      ? `
+          <p>
+            <strong>Ranger feedback:</strong><br />
+            ${feedback}
+          </p>
+        `
+      : '';
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'Adventure Task Needs Changes',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Adventure Task Needs Changes</h2>
+
+            <p>Hello ${juniorRangerName},</p>
+
+            <p>
+              Your submission for the task
+              <strong>${taskTitle}</strong>
+              was not approved.
+            </p>
+
+            ${feedbackSection}
+
+            <p>
+              Please review the feedback and update
+              your task submission.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send task rejection email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send task rejection email',
+      );
+    }
+
+    return data?.id;
+  }
+
 }

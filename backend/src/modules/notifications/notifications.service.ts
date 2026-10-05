@@ -646,6 +646,84 @@ export class NotificationsService {
     }
   }
 
+  async notifyJuniorRangerOfTaskReview(params: {
+    juniorRangerId: string;
+    juniorRangerEmail: string;
+    juniorRangerName: string;
+    taskTitle: string;
+    status: 'approved' | 'rejected';
+    feedback?: string | null;
+  }): Promise<void> {
+    const isApproved =
+      params.status === 'approved';
+
+    const notification =
+      await this.createNotification({
+        userId: params.juniorRangerId,
+        type: isApproved
+          ? 'task_approved'
+          : 'task_rejected',
+        title: isApproved
+          ? 'Adventure Task Approved'
+          : 'Adventure Task Needs Changes',
+        message: isApproved
+          ? `Your submission for "${params.taskTitle}" has been approved.`
+          : `Your submission for "${params.taskTitle}" needs changes. Please review the Ranger's feedback.`,
+      });
+
+    try {
+      const providerMessageId =
+        isApproved
+          ? await this.emailService
+              .sendTaskApproved(
+                params.juniorRangerEmail,
+                params.juniorRangerName,
+                params.taskTitle,
+              )
+          : await this.emailService
+              .sendTaskRejected(
+                params.juniorRangerEmail,
+                params.juniorRangerName,
+                params.taskTitle,
+                params.feedback,
+              );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.juniorRangerId,
+        recipientEmail:
+          params.juniorRangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send task ${params.status} email to Junior Ranger ${params.juniorRangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.juniorRangerId,
+          recipientEmail:
+            params.juniorRangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record task review delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

@@ -872,6 +872,7 @@ export class SubmissionsService {
         'task_completions.junior_ranger_user_id',
         'task_completions.status',
         'task_completions.xp_awarded',
+        'adventure_tasks.title as task_title',
         'adventure_tasks.xp_reward',
         'adventure_tasks.adventure_id',
         'cohorts.created_by_ranger_id',
@@ -893,7 +894,28 @@ export class SubmissionsService {
       );
     }
 
-    return this.db.transaction().execute(async (trx) => {
+    const juniorRanger = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'name',
+        'email',
+      ])
+      .where(
+        'id',
+        '=',
+        completion.junior_ranger_user_id,
+      )
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!juniorRanger) {
+      throw new NotFoundException(
+        'Junior Ranger not found',
+      );
+    }
+
+    const result = await this.db.transaction().execute(async (trx) => {
       let xpAwardedNow = 0;
       let previousLevel: number | null = null;
       let currentLevel: number | null = null;
@@ -985,6 +1007,22 @@ export class SubmissionsService {
         current_level: currentLevel,
       };
     });
+
+    await this.notificationsService
+      .notifyJuniorRangerOfTaskReview({
+        juniorRangerId: juniorRanger.id,
+        juniorRangerEmail: juniorRanger.email,
+        juniorRangerName:
+          juniorRanger.name ??
+          juniorRanger.email,
+        taskTitle: completion.task_title,
+        status: dto.status,
+        feedback: dto.feedback ?? null,
+      });
+
+    return result;
+
+
   }
 
   private async checkAndAwardBadges(

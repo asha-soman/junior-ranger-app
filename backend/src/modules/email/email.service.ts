@@ -371,4 +371,93 @@ export class EmailService {
     return data?.id;
   }
 
+  // RANGER ACCOUNT APPROVED
+  async sendRangerAccountApproved(
+    email: string,
+    rangerName: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'Your Ranger Account Has Been Approved',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Ranger Account Approved</h2>
+
+            <p>Hello ${rangerName},</p>
+
+            <p>
+              Your Ranger account has been approved.
+            </p>
+
+            <p>
+              You can now sign in to the Junior Ranger app.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send Ranger approval email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send Ranger approval email',
+      );
+    }
+
+    return data?.id;
+  }
+
+  // RANGER ACCOUNT REJECTED
+  async sendRangerAccountRejected(
+    email: string,
+    rangerName: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
+
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'Ranger Account Request Update',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>Ranger Account Request Update</h2>
+
+            <p>Hello ${rangerName},</p>
+
+            <p>
+              Your Ranger account request has been rejected.
+            </p>
+
+            <p>
+              Please contact the Junior Ranger administrative team if you
+              require further information.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send Ranger rejection email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send Ranger rejection email',
+      );
+    }
+
+    return data?.id;
+  }
+
+
+
 }

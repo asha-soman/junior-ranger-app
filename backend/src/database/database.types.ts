@@ -32,7 +32,9 @@ export type NotificationType =
   | 'event_update'
   | 'event_cancelled'
   | 'event_reminder'
-  | 'ranger_approval_pending';
+  | 'ranger_approval_pending'
+  | 'ranger_approved'
+  | 'ranger_rejected';
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =
   | 'sent'

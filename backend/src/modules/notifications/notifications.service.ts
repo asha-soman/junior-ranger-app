@@ -4,6 +4,7 @@ import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../email/email.service';
 import type { NotificationType } from '../../database/database.types';
 
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -512,6 +513,77 @@ export class NotificationsService {
             logError,
           );
         }
+      }
+    }
+  }
+
+  async notifyRangerAccountStatus(params: {
+    rangerId: string;
+    rangerName: string;
+    rangerEmail: string;
+    status: 'approved' | 'rejected';
+  }): Promise<void> {
+    const isApproved =
+      params.status === 'approved';
+
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: isApproved
+          ? 'ranger_approved'
+          : 'ranger_rejected',
+        title: isApproved
+          ? 'Ranger Account Approved'
+          : 'Ranger Account Rejected',
+        message: isApproved
+          ? 'Your Ranger account has been approved. You can now sign in.'
+          : 'Your Ranger account request has been rejected.',
+      });
+
+    try {
+      const providerMessageId =
+        isApproved
+          ? await this.emailService
+              .sendRangerAccountApproved(
+                params.rangerEmail,
+                params.rangerName,
+              )
+          : await this.emailService
+              .sendRangerAccountRejected(
+                params.rangerEmail,
+                params.rangerName,
+              );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send Ranger account ${params.status} email to ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record Ranger account status delivery failure',
+          logError,
+        );
       }
     }
   }

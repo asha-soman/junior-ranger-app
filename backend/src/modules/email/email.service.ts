@@ -458,6 +458,48 @@ export class EmailService {
     return data?.id;
   }
 
+  // MISSION SUBMISSION
+  async sendMissionSubmitted(
+    email: string,
+    juniorRangerName: string,
+    taskTitle: string,
+  ): Promise<string | undefined> {
+    const resend = this.getResendClient();
 
+    const { data, error } =
+      await resend.emails.send({
+        from: 'Junior Ranger <noreply@juniorrangerapp.dev>',
+        to: email,
+        subject: 'New Adventure Task Submission',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>New Adventure Task Submission</h2>
+
+            <p>
+              ${juniorRangerName} has submitted
+              <strong>${taskTitle}</strong> for review.
+            </p>
+
+            <p>
+              Please review the submission in the
+              Junior Ranger app.
+            </p>
+          </div>
+        `,
+      });
+
+    if (error) {
+      console.error(
+        'Failed to send mission submission email:',
+        error,
+      );
+
+      throw new Error(
+        'Unable to send mission submission email',
+      );
+    }
+
+    return data?.id;
+  }
 
 }

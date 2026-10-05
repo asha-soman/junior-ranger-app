@@ -34,7 +34,8 @@ export type NotificationType =
   | 'event_reminder'
   | 'ranger_approval_pending'
   | 'ranger_approved'
-  | 'ranger_rejected';
+  | 'ranger_rejected'
+  | 'mission_submitted';
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =
   | 'sent'

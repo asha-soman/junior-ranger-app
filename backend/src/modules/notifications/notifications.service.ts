@@ -588,6 +588,64 @@ export class NotificationsService {
     }
   }
 
+  async notifyRangerOfMissionSubmission(params: {
+    rangerId: string;
+    rangerEmail: string;
+    juniorRangerName: string;
+    taskTitle: string;
+  }): Promise<void> {
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'mission_submitted',
+        title: 'New Adventure Task Submission',
+        message:
+          `${params.juniorRangerName} submitted "${params.taskTitle}" for review.`,
+      });
+
+    try {
+      const providerMessageId =
+        await this.emailService
+          .sendMissionSubmitted(
+            params.rangerEmail,
+            params.juniorRangerName,
+            params.taskTitle,
+          );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send mission submission email to Ranger ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record mission submission delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

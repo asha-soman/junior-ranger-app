@@ -1,16 +1,11 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-
 import { DatabaseService } from '../../database/database.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ReviewSubmissionDto } from './dto/review-submission.dto';
 import { CreateTaskCompletionDto } from './dto/create-task-completion.dto';
 import { ReviewTaskCompletionDto } from './dto/review-task-completion.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type AuthUser = {
   userId: string;
@@ -20,7 +15,10 @@ type AuthUser = {
 
 @Injectable()
 export class SubmissionsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async createSubmission(
     adventureId: string,
@@ -557,7 +555,11 @@ export class SubmissionsService {
 
     const task = await this.db
       .selectFrom('adventure_tasks')
-      .innerJoin('adventures', 'adventures.id', 'adventure_tasks.adventure_id')
+      .innerJoin(
+        'adventures',
+        'adventures.id',
+        'adventure_tasks.adventure_id',
+      )
       .select([
         'adventure_tasks.id',
         'adventure_tasks.adventure_id',
@@ -570,7 +572,9 @@ export class SubmissionsService {
       .executeTakeFirst();
 
     if (!task) {
-      throw new NotFoundException('Adventure task not found');
+      throw new NotFoundException(
+        'Adventure task not found',
+      );
     }
 
     // Make sure Junior Ranger belongs to the adventure's cohort
@@ -593,21 +597,78 @@ export class SubmissionsService {
       .selectFrom('task_completions')
       .selectAll()
       .where('task_id', '=', taskId)
-      .where('junior_ranger_user_id', '=', user.userId)
+      .where(
+        'junior_ranger_user_id',
+        '=',
+        user.userId,
+      )
       .executeTakeFirst();
 
     if (existingCompletion) {
-      throw new BadRequestException('You have already submitted this task');
+      throw new BadRequestException(
+        'You have already submitted this task',
+      );
     }
 
+    // Find the Ranger responsible for this cohort
+    const cohort = await this.db
+      .selectFrom('cohorts')
+      .select([
+        'assigned_ranger_id',
+        'created_by_ranger_id',
+      ])
+      .where('id', '=', task.cohort_id)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!cohort) {
+      throw new NotFoundException(
+        'Cohort not found',
+      );
+    }
+
+    const rangerId =
+      cohort.assigned_ranger_id ??
+      cohort.created_by_ranger_id;
+
+    // Get Ranger details for the notification
+    const ranger = rangerId
+      ? await this.db
+          .selectFrom('users')
+          .select([
+            'id',
+            'email',
+            'name',
+          ])
+          .where('id', '=', rangerId)
+          .where('role', '=', 'ranger')
+          .where('is_deleted', '=', false)
+          .executeTakeFirst()
+      : undefined;
+
+    // Get Junior Ranger details for the notification
+    const juniorRanger = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'name',
+        'email',
+      ])
+      .where('id', '=', user.userId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    // Create the task completion
     const completion = await this.db
       .insertInto('task_completions')
       .values({
         id: randomUUID(),
         task_id: taskId,
         junior_ranger_user_id: user.userId,
-        submission_text: dto.submission_text ?? null,
-        image_url: dto.image_url ?? null,
+        submission_text:
+          dto.submission_text ?? null,
+        image_url:
+          dto.image_url ?? null,
         status: 'submitted',
         feedback: null,
         reviewed_by_ranger_id: null,
@@ -619,6 +680,20 @@ export class SubmissionsService {
       })
       .returningAll()
       .executeTakeFirst();
+
+    // Notify the Ranger after the task was successfully submitted
+    if (ranger) {
+      await this.notificationsService
+        .notifyRangerOfMissionSubmission({
+          rangerId: ranger.id,
+          rangerEmail: ranger.email,
+          juniorRangerName:
+            juniorRanger?.name ??
+            juniorRanger?.email ??
+            'A Junior Ranger',
+          taskTitle: task.title,
+        });
+    }
 
     return {
       message: 'Task submitted successfully',

@@ -166,19 +166,28 @@ export default function NotificationsScreen({
                 error?.response?.data?.message;
 
             if (
-                status === 400 &&
-                message ===
+              status === 400 &&
+              message ===
                 'This event has been cancelled'
             ) {
-                Alert.alert(
+              Alert.alert(
                 'Event cancelled',
                 'This event is no longer available.',
-                );
+              );
 
-                return;
+              return;
             }
 
-          throw error;
+            if (status === 404) {
+              Alert.alert(
+                'Event no longer available',
+                'This event has been deleted and is no longer available.',
+              );
+
+              return;
+            }
+
+            throw error;
         }
             
           navigation.navigate('EventDetails', {

@@ -245,11 +245,96 @@ export class EventsService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    return {
-      message: 'Event created successfully',
-      event,
-    };
-  }
+    if (
+      user.role === 'ranger' ||
+      user.role === 'admin'
+    ) {
+      const creator = await this.db
+        .selectFrom('users')
+        .select([
+          'id',
+          'name',
+          'email',
+        ])
+        .where('id', '=', user.userId)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      try {
+        await this.notificationsService
+          .notifyAdminsOfEventCreation({
+            creatorId: user.userId,
+            creatorName:
+              creator?.name ??
+              creator?.email ??
+              (user.role === 'admin'
+                ? 'An Admin'
+                : 'A Ranger'),
+            creatorRole: user.role,
+            eventId: event.id,
+            eventTitle: event.title,
+          });
+      } catch (error) {
+        console.error(
+          'Event created but Admin notification failed:',
+          error,
+        );
+      }
+    }
+
+    if (
+      user.role === 'admin' &&
+      event.cohort_id
+    ) {
+      const cohort = await this.db
+        .selectFrom('cohorts')
+        .select([
+          'assigned_ranger_id',
+          'created_by_ranger_id',
+        ])
+        .where('id', '=', event.cohort_id)
+        .executeTakeFirst();
+
+      const rangerId =
+        cohort?.assigned_ranger_id ??
+        cohort?.created_by_ranger_id;
+
+      if (rangerId) {
+        const admin = await this.db
+          .selectFrom('users')
+          .select([
+            'name',
+            'email',
+          ])
+          .where('id', '=', user.userId)
+          .where('is_deleted', '=', false)
+          .executeTakeFirst();
+
+        try {
+          await this.notificationsService
+            .notifyRangerOfAdminEventCreation({
+              rangerId,
+              adminName:
+                admin?.name ??
+                admin?.email ??
+                'An Admin',
+              eventId: event.id,
+              eventTitle: event.title,
+            });
+        } catch (error) {
+          console.error(
+            'Event created but Ranger notification failed:',
+            error,
+          );
+        }
+      }
+    }
+
+      return {
+        message: 'Event created successfully',
+        event,
+      };
+    }
 
   async getEventDetails(
     eventId: string,
@@ -1091,6 +1176,163 @@ export class EventsService {
         }
       }
 
+    if (
+      user.role === 'ranger' ||
+      user.role === 'admin'
+    ) {
+      const updater = await this.db
+        .selectFrom('users')
+        .select([
+          'id',
+          'name',
+          'email',
+        ])
+        .where('id', '=', user.userId)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      try {
+        await this.notificationsService
+          .notifyAdminsOfEventUpdate({
+            updaterId: user.userId,
+            updaterName:
+              updater?.name ??
+              updater?.email ??
+              (user.role === 'admin'
+                ? 'An Admin'
+                : 'A Ranger'),
+            updaterRole: user.role,
+            eventId: updatedEvent.id,
+            eventTitle: updatedEvent.title,
+          });
+      } catch (error) {
+        console.error(
+          'Event updated but Admin notification failed:',
+          error,
+        );
+      }
+    }
+
+    if (user.role === 'admin') {
+      const admin = await this.db
+        .selectFrom('users')
+        .select([
+          'name',
+          'email',
+        ])
+        .where('id', '=', user.userId)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      const adminName =
+        admin?.name ??
+        admin?.email ??
+        'An Admin';
+
+      const cohortChanged =
+        existingEvent.cohort_id !==
+        updatedEvent.cohort_id;
+
+      if (cohortChanged) {
+        // Notify the Ranger of the OLD cohort.
+        if (existingEvent.cohort_id) {
+          const oldCohort = await this.db
+            .selectFrom('cohorts')
+            .select([
+              'assigned_ranger_id',
+              'created_by_ranger_id',
+            ])
+            .where('id', '=', existingEvent.cohort_id)
+            .executeTakeFirst();
+
+          const oldRangerId =
+            oldCohort?.assigned_ranger_id ??
+            oldCohort?.created_by_ranger_id;
+
+          if (oldRangerId) {
+            try {
+              await this.notificationsService
+                .notifyRangerOfEventRemovedFromCohort({
+                  rangerId: oldRangerId,
+                  adminName,
+                  eventId: updatedEvent.id,
+                  eventTitle: updatedEvent.title,
+                });
+            } catch (error) {
+              console.error(
+                'Event updated but old cohort Ranger notification failed:',
+                error,
+              );
+            }
+          }
+        }
+
+        // Notify the Ranger of the NEW cohort.
+        if (updatedEvent.cohort_id) {
+          const newCohort = await this.db
+            .selectFrom('cohorts')
+            .select([
+              'assigned_ranger_id',
+              'created_by_ranger_id',
+            ])
+            .where('id', '=', updatedEvent.cohort_id)
+            .executeTakeFirst();
+
+          const newRangerId =
+            newCohort?.assigned_ranger_id ??
+            newCohort?.created_by_ranger_id;
+
+          if (newRangerId) {
+            try {
+              await this.notificationsService
+                .notifyRangerOfEventAssignedToCohort({
+                  rangerId: newRangerId,
+                  adminName,
+                  eventId: updatedEvent.id,
+                  eventTitle: updatedEvent.title,
+                });
+            } catch (error) {
+              console.error(
+                'Event updated but new cohort Ranger notification failed:',
+                error,
+              );
+            }
+          }
+        }
+      } else if (updatedEvent.cohort_id) {
+        // The event stayed in the same cohort.
+        const cohort = await this.db
+          .selectFrom('cohorts')
+          .select([
+            'assigned_ranger_id',
+            'created_by_ranger_id',
+          ])
+          .where('id', '=', updatedEvent.cohort_id)
+          .executeTakeFirst();
+
+        const rangerId =
+          cohort?.assigned_ranger_id ??
+          cohort?.created_by_ranger_id;
+
+        if (rangerId) {
+          try {
+            await this.notificationsService
+              .notifyRangerOfAdminEventUpdate({
+                rangerId,
+                adminName,
+                eventId: updatedEvent.id,
+                eventTitle: updatedEvent.title,
+              });
+          } catch (error) {
+            console.error(
+              'Event updated but cohort Ranger notification failed:',
+              error,
+            );
+          }
+        }
+      }
+    }
+
     return {
       message: 'Event updated successfully',
       event: updatedEvent,
@@ -1462,7 +1704,8 @@ export class EventsService {
     eventId: string,
     user: AuthUser,
   ) {
-    await this.getManageableEvent(eventId, user);
+    const existingEvent =
+      await this.getManageableEvent(eventId, user);
 
     await this.db
       .updateTable('events')
@@ -1472,6 +1715,80 @@ export class EventsService {
       })
       .where('id', '=', eventId)
       .execute();
+
+    // Notify Admins that the event was deleted.
+    if (
+      user.role === 'ranger' ||
+      user.role === 'admin'
+    ) {
+      const deleter = await this.db
+        .selectFrom('users')
+        .select([
+          'name',
+          'email',
+        ])
+        .where('id', '=', user.userId)
+        .where('is_deleted', '=', false)
+        .executeTakeFirst();
+
+      const deleterName =
+        deleter?.name ??
+        deleter?.email ??
+        (user.role === 'admin'
+          ? 'An Admin'
+          : 'A Ranger');
+
+      try {
+        await this.notificationsService
+          .notifyAdminsOfEventDeletion({
+            deleterId: user.userId,
+            deleterName,
+            deleterRole: user.role,
+            eventTitle: existingEvent.title,
+          });
+      } catch (error) {
+        console.error(
+          'Event deleted but Admin notification failed:',
+          error,
+        );
+      }
+
+      // If an Admin deleted the event, notify
+      // the Ranger responsible for its cohort.
+      if (
+        user.role === 'admin' &&
+        existingEvent.cohort_id
+      ) {
+        const cohort = await this.db
+          .selectFrom('cohorts')
+          .select([
+            'assigned_ranger_id',
+            'created_by_ranger_id',
+          ])
+          .where('id', '=', existingEvent.cohort_id)
+          .executeTakeFirst();
+
+        const rangerId =
+          cohort?.assigned_ranger_id ??
+          cohort?.created_by_ranger_id;
+
+        if (rangerId) {
+          try {
+            await this.notificationsService
+              .notifyRangerOfAdminEventDeletion({
+                rangerId,
+                adminName: deleterName,
+                eventTitle: existingEvent.title,
+              });
+          } catch (error) {
+            console.error(
+              'Event deleted but cohort Ranger notification failed:',
+              error,
+            );
+          }
+        }
+      }
+    }
 
     return {
       message: 'Event deleted successfully',

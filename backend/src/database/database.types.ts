@@ -41,7 +41,15 @@ export type NotificationType =
   | 'junior_ranger_joined_cohort'
   | 'event_participant_registered'
   | 'event_participant_cancelled'
-  | 'activity_post_created';
+  | 'activity_post_created'
+  | 'event_created'
+  | 'event_updated'
+  | 'cohort_event_created'
+  | 'cohort_event_updated'
+  | 'cohort_event_removed'
+  | 'cohort_event_assigned'
+  | 'event_deleted'
+  | 'cohort_event_deleted';
   
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =

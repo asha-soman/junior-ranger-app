@@ -820,6 +820,230 @@ export class NotificationsService {
     });
   }
 
+  async notifyAdminsOfEventCreation(params: {
+    creatorId: string;
+    creatorName: string;
+    creatorRole: 'admin' | 'ranger';
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who created the event
+      if (admin.id === params.creatorId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_created',
+          title: 'New Event Created',
+          message:
+            `${params.creatorName} created the event "${params.eventTitle}".`,
+          eventId: params.eventId,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyAdminsOfEventUpdate(params: {
+    updaterId: string;
+    updaterName: string;
+    updaterRole: 'admin' | 'ranger';
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who updated the event
+      if (admin.id === params.updaterId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_updated',
+          title: 'Event Updated',
+          message:
+            `${params.updaterName} updated the event "${params.eventTitle}".`,
+          eventId: params.eventId,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event update notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfAdminEventCreation(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_created',
+        title: 'New Cohort Event',
+        message:
+          `${params.adminName} created the event "${params.eventTitle}" for your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event notification for Ranger ${params.rangerId}`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfAdminEventUpdate(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_updated',
+        title: 'Cohort Event Updated',
+        message:
+          `${params.adminName} updated the event "${params.eventTitle}" for your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event update notification for Ranger ${params.rangerId}`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfEventRemovedFromCohort(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_removed',
+        title: 'Event Moved From Your Cohort',
+        message:
+          `${params.adminName} moved the event "${params.eventTitle}" from your cohort.`,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify Ranger ${params.rangerId} that an event was moved from their cohort`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfEventAssignedToCohort(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_assigned',
+        title: 'Event Assigned to Your Cohort',
+        message:
+          `${params.adminName} assigned the event "${params.eventTitle}" to your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify Ranger ${params.rangerId} that an event was assigned to their cohort`,
+        error,
+      );
+    }
+  }
+
+  async notifyAdminsOfEventDeletion(params: {
+    deleterId: string;
+    deleterName: string;
+    deleterRole: 'admin' | 'ranger';
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who deleted the event
+      if (admin.id === params.deleterId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_deleted',
+          title: 'Event Deleted',
+          message:
+            `${params.deleterName} deleted the event "${params.eventTitle}".`,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event deletion notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfAdminEventDeletion(params: {
+    rangerId: string;
+    adminName: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_deleted',
+        title: 'Cohort Event Deleted',
+        message:
+          `${params.adminName} deleted the event "${params.eventTitle}" from your cohort.`,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event deletion notification for Ranger ${params.rangerId}`,
+        error,
+      );
+    }
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

@@ -807,6 +807,19 @@ export class NotificationsService {
     });
   }
 
+  async notifyRangerOfActivityPost(params: {
+    rangerId: string;
+    juniorRangerName: string;
+  }): Promise<void> {
+    await this.createNotification({
+      userId: params.rangerId,
+      type: 'activity_post_created',
+      title: 'New Activity Post',
+      message:
+        `${params.juniorRangerName} created a new activity post.`,
+    });
+  }
+
   async updatePreferences(
     userId: string,
     preferences: {

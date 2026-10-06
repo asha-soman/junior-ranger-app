@@ -40,7 +40,8 @@ export type NotificationType =
   | 'task_rejected'
   | 'junior_ranger_joined_cohort'
   | 'event_participant_registered'
-  | 'event_participant_cancelled';
+  | 'event_participant_cancelled'
+  | 'activity_post_created';
   
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =

@@ -139,6 +139,7 @@ export interface AuthChallengesTable {
   id: string;
   email: string;
   code: string;
+  purpose: 'email_verification' | 'password_reset';
   expires_at: Date;
   created_at: Date;
 }

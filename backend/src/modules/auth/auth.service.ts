@@ -4,7 +4,7 @@ import { DatabaseService } from '../../database/database.service';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { EmailService } from '../email/email.service';
 
 @Injectable()
@@ -28,6 +28,7 @@ export class AuthService {
   await this.db
     .deleteFrom('auth_challenges')
     .where('email', '=', email)
+    .where('purpose', '=', 'email_verification')
     .execute();
 
   await this.db
@@ -36,6 +37,7 @@ export class AuthService {
       id: randomUUID(),
       email,
       code,
+      purpose: 'email_verification',
       expires_at: expiresAt,
       created_at: new Date(),
     })
@@ -110,6 +112,7 @@ export class AuthService {
     await this.db
       .deleteFrom('auth_challenges')
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .execute();
 
     // Store the new verification challenge
@@ -119,6 +122,7 @@ export class AuthService {
         id: randomUUID(),
         email,
         code,
+        purpose: 'email_verification',
         expires_at: expiresAt,
         created_at: new Date(),
       })
@@ -256,6 +260,7 @@ export class AuthService {
       .selectFrom('auth_challenges')
       .selectAll()
       .where('email', '=', email)
+      .where('purpose', '=', 'email_verification')
       .executeTakeFirst();
 
     if (!challenge) {
@@ -419,4 +424,271 @@ export class AuthService {
       },
     };
   }
+
+  // ============================================================
+  // FORGOT PASSWORD CODE
+  // ============================================================
+
+  async forgotPassword(email: string) {
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    const user = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'email',
+      ])
+      .where('email', '=', normalizedEmail)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    // Always return the same response if the account does not exist.
+    if (!user) {
+      return {
+        message:
+          'If an account exists for this email, a password reset code has been sent.',
+      };
+    }
+
+    const existingChallenge = await this.db
+      .selectFrom('auth_challenges')
+      .select([
+        'id',
+        'created_at',
+      ])
+      .where('email', '=', normalizedEmail)
+      .where('purpose', '=', 'password_reset')
+      .executeTakeFirst();
+
+    if (existingChallenge) {
+      const secondsSinceLastRequest =
+        (Date.now() -
+          new Date(
+            existingChallenge.created_at,
+          ).getTime()) /
+        1000;
+
+      if (secondsSinceLastRequest < 60) {
+        const secondsRemaining = Math.ceil(
+          60 - secondsSinceLastRequest,
+        );
+
+        throw new BadRequestException(
+          `Please wait ${secondsRemaining} seconds before requesting another password reset code`,
+        );
+      }
+    }
+
+    // Remove any previous password-reset code for this email.
+    await this.db
+      .deleteFrom('auth_challenges')
+      .where('email', '=', normalizedEmail)
+      .where('purpose', '=', 'password_reset')
+      .execute();
+
+    // Generate a 6-digit reset code.
+    const code = randomInt(
+      100000,
+      1000000,
+    ).toString();
+
+    // Reset code expires after 10 minutes.
+    const expiresAt = new Date(
+      Date.now() + 10 * 60 * 1000,
+    );
+
+    await this.db
+      .insertInto('auth_challenges')
+      .values({
+        id: randomUUID(),
+        email: normalizedEmail,
+        code,
+        purpose: 'password_reset',
+        expires_at: expiresAt,
+        created_at: new Date(),
+      })
+      .execute();
+
+    try {
+      await this.emailService.sendPasswordResetCode(
+        normalizedEmail,
+        code,
+      );
+    } catch (error) {
+      // Do not leave a valid reset challenge if the email
+      // could not be delivered.
+      await this.db
+        .deleteFrom('auth_challenges')
+        .where('email', '=', normalizedEmail)
+        .where('purpose', '=', 'password_reset')
+        .execute();
+
+      throw error;
+    }
+
+    return {
+      message:
+        'If an account exists for this email, a password reset code has been sent.',
+    };
+  }
+
+  // ============================================================
+  // VERIFY RESET PASSWORD CODE
+  // ============================================================
+
+  async verifyResetCode(
+    email: string,
+    code: string,
+  ) {
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    const challenge = await this.db
+      .selectFrom('auth_challenges')
+      .selectAll()
+      .where('email', '=', normalizedEmail)
+      .where('purpose', '=', 'password_reset')
+      .executeTakeFirst();
+
+    if (!challenge) {
+      throw new BadRequestException(
+        'Invalid or expired password reset code',
+      );
+    }
+
+    if (challenge.expires_at < new Date()) {
+      await this.db
+        .deleteFrom('auth_challenges')
+        .where('id', '=', challenge.id)
+        .execute();
+
+      throw new BadRequestException(
+        'Password reset code has expired',
+      );
+    }
+
+    if (challenge.code !== code) {
+      throw new BadRequestException(
+        'Invalid password reset code',
+      );
+    }
+
+    const user = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'email',
+      ])
+      .where('email', '=', normalizedEmail)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new BadRequestException(
+        'Unable to reset password',
+      );
+    }
+
+    const resetToken =
+      await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          email: normalizedEmail,
+          purpose: 'password_reset',
+        },
+        {
+          expiresIn: '10m',
+        },
+      );
+
+    return {
+      message:
+        'Password reset code verified successfully',
+      reset_token: resetToken,
+    };
+  }
+
+  // ============================================================
+  // RESET PASSWORD
+  // ============================================================
+
+  async resetPassword(
+    resetToken: string,
+    newPassword: string,
+    confirmPassword: string,
+  ) {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException(
+        'Passwords do not match',
+      );
+    }
+
+    let payload: {
+      sub: string;
+      email: string;
+      purpose: string;
+    };
+
+    try {
+      payload =
+        await this.jwtService.verifyAsync<{
+          sub: string;
+          email: string;
+          purpose: string;
+        }>(resetToken);
+    } catch {
+      throw new BadRequestException(
+        'Invalid or expired password reset token',
+      );
+    }
+
+    if (payload.purpose !== 'password_reset') {
+      throw new BadRequestException(
+        'Invalid password reset token',
+      );
+    }
+
+    const user = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'email',
+      ])
+      .where('id', '=', payload.sub)
+      .where('email', '=', payload.email)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new BadRequestException(
+        'Unable to reset password',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(
+      newPassword,
+      10,
+    );
+
+    await this.db
+      .updateTable('users')
+      .set({
+        password_hash: passwordHash,
+      })
+      .where('id', '=', user.id)
+      .execute();
+
+    // Invalidate the password-reset challenge after changing it.
+    await this.db
+      .deleteFrom('auth_challenges')
+      .where('email', '=', payload.email)
+      .where('purpose', '=', 'password_reset')
+      .execute();
+
+    return {
+      message: 'Password reset successfully',
+    };
+  }
+
 }

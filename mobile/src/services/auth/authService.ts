@@ -106,6 +106,48 @@ export const resendCode = async (
   return response.data;
 };
 
+export interface VerifyResetCodePayload {
+  email: string;
+  code: string;
+}
+
+export interface VerifyResetCodeResponse {
+  message: string;
+  reset_token: string;
+}
+
+export const verifyResetCode = async (
+  payload: VerifyResetCodePayload
+): Promise<VerifyResetCodeResponse> => {
+  const response = await apiClient.post(
+    "/auth/verify-reset-code",
+    payload
+  );
+
+  return response.data;
+};
+
+export interface ResetPasswordPayload {
+  resetToken: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export const resetPassword = async (
+  payload: ResetPasswordPayload
+): Promise<ResetPasswordResponse> => {
+  const response = await apiClient.post(
+    "/auth/reset-password",
+    payload
+  );
+
+  return response.data;
+};
+
 export const verifyTwoFactorCode = async (
   data: VerifyCodePayload
 ): Promise<VerifyCodeResponse> => {

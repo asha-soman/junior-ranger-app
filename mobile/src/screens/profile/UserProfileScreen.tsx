@@ -1,3 +1,4 @@
+import apiClient from '../../services/api/client';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,6 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import * as ImagePicker from 'expo-image-picker';
 import { Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -22,6 +25,10 @@ import {
 } from '../../services/profile/profileService';
 
 import {
+  uploadImage,
+} from '../../services/submissions/submissionService';
+
+import {
   EarnedBadge,
   GamificationProgress,
   getMyBadges,
@@ -33,6 +40,7 @@ import {
 } from '../../styles/UserProfileStyles';
 
 import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
+
 
 type Props = NativeStackScreenProps<
   AuthStackParamList,
@@ -64,10 +72,16 @@ export default function UserProfileScreen({
     useState('');
 
   const [saving, setSaving] =
-    useState(false);
+  useState(false);
 
-  const [validationError, setValidationError] =
-    useState('');
+const [uploadingPhoto, setUploadingPhoto] =
+  useState(false);
+
+  const [avatarSource, setAvatarSource] =
+  useState<string | null>(null);
+
+const [validationError, setValidationError] =
+  useState('');
 
   const [achievementsExpanded, setAchievementsExpanded] =
     useState(false);
@@ -78,7 +92,53 @@ export default function UserProfileScreen({
   const [cohortExpanded, setCohortExpanded] =
     useState(false);
 
-  const loadProfile = async () => {
+const loadAvatar = async (
+  avatarUrl: string | null,
+) => {
+  if (!avatarUrl) {
+    setAvatarSource(null);
+    return;
+  }
+
+  try {
+
+    const response = await apiClient.get(
+      avatarUrl,
+      {
+        responseType: 'arraybuffer',
+      },
+    );
+
+    const bytes = new Uint8Array(
+      response.data,
+    );
+
+    let binary = '';
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(
+        bytes[i],
+      );
+    }
+
+    const base64 = btoa(binary);
+
+    setAvatarSource(
+      `data:image/jpeg;base64,${base64}`,
+    );
+  } catch (error: any) {
+    console.log(
+      'Failed to load avatar:',
+      error?.response?.status ||
+        error?.message ||
+        error,
+    );
+
+    setAvatarSource(null);
+  }
+};
+
+const loadProfile = async () => {
     try {
       setLoading(true);
       setError('');
@@ -87,6 +147,7 @@ export default function UserProfileScreen({
         await getMyProfile();
 
       setProfile(profileData);
+      await loadAvatar(profileData.avatar_url);
 
       if (
         profileData.role ===
@@ -122,10 +183,14 @@ export default function UserProfileScreen({
   };
 
   useFocusEffect(
-    useCallback(() => {
-      loadProfile();
-    }, []),
-  );
+  useCallback(() => {
+    const loadScreenData = async () => {
+      await loadProfile();
+    };
+
+    loadScreenData();
+  }, []),
+);
 
   const formatRole = (
     role: UserProfile['role'],
@@ -158,6 +223,70 @@ export default function UserProfileScreen({
     setIsEditing(false);
   };
 
+  const handleProfilePictureUpload = async () => {
+  try {
+    setUploadingPhoto(true);
+    setValidationError('');
+
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      setValidationError(
+        'Permission to access photos is required.',
+      );
+      return;
+    }
+
+    const result =
+      await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const imageUri = result.assets[0].uri;
+
+    const imageUrl =
+      await uploadImage(imageUri);
+
+const updatedProfile =
+  await updateMyProfile({
+    avatar_url: imageUrl,
+  });
+
+console.log(
+  'Updated profile:',
+  updatedProfile,
+);
+
+setProfile(updatedProfile);
+
+await loadAvatar(
+  updatedProfile.avatar_url,
+);
+
+} catch (error: any) {
+  console.log(
+    'Profile picture upload error:',
+    error,
+  );
+
+  setValidationError(
+    error?.response?.data?.message ||
+      error?.message ||
+      'Unable to upload profile picture.',
+  );
+} finally {
+  setUploadingPhoto(false);
+}
+};
+
   const handleSaveProfile = async () => {
     const trimmedName = editedName.trim();
 
@@ -171,7 +300,9 @@ export default function UserProfileScreen({
       setValidationError('');
 
       const updatedProfile =
-        await updateMyProfile(trimmedName);
+        await updateMyProfile({
+         name: trimmedName,
+      });
 
       setProfile(updatedProfile);
       setIsEditing(false);
@@ -231,6 +362,7 @@ export default function UserProfileScreen({
   };
 
   if (loading) {
+
     return (
       <View style={styles.container}>
         <View
@@ -324,42 +456,47 @@ export default function UserProfileScreen({
               styles.avatarContainer
             }
           >
-            <View
-              style={
-                isJuniorRanger
-                  ? styles.juniorAvatarRing
-                  : undefined
-              }
-            >
-              {profile.avatar_url ? (
-                <Image
-                  source={{
-                    uri: profile.avatar_url,
-                  }}
-                  style={styles.avatar}
-                />
-              ) : (
-                <View
-                  style={
-                    styles.avatarPlaceholder
-                  }
-                >
-                  <Ionicons
-                    name={
-                      isJuniorRanger
-                        ? 'leaf'
-                        : 'person'
-                    }
-                    size={
-                      isJuniorRanger
-                        ? 52
-                        : 65
-                    }
-                    color="#376E62"
-                  />
-                </View>
-              )}
-            </View>
+           <TouchableOpacity
+  onPress={handleProfilePictureUpload}
+  disabled={uploadingPhoto}
+  style={
+    isJuniorRanger
+      ? styles.juniorAvatarRing
+      : undefined
+  }
+>
+  {uploadingPhoto ? (
+  <View style={styles.avatarPlaceholder}>
+    <ActivityIndicator
+      size="large"
+      color="#376E62"
+    />
+  </View>
+) : avatarSource ? (
+  <Image
+    source={{
+      uri: avatarSource,
+    }}
+    style={styles.avatar}
+  />
+) : (
+  <View style={styles.avatarPlaceholder}>
+    <Ionicons
+      name={
+        isJuniorRanger
+          ? 'leaf'
+          : 'person'
+      }
+      size={
+        isJuniorRanger
+          ? 52
+          : 65
+      }
+      color="#376E62"
+    />
+  </View>
+)}
+</TouchableOpacity>
 
             {isJuniorRanger && (
               <View

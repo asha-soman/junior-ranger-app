@@ -29,11 +29,14 @@ export const getMyProfile = async (): Promise<UserProfile> => {
 };
 
 export const updateMyProfile = async (
-  name: string,
+  updates: {
+    name?: string;
+    avatar_url?: string;
+  },
 ): Promise<UserProfile> => {
   const response = await apiClient.patch(
     '/users/me',
-    { name },
+    updates,
     {
       timeout: 3000,
     },

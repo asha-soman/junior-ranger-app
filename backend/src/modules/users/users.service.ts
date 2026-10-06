@@ -103,14 +103,19 @@ export class UsersService {
       );
     }
 
-    await this.db
-      .updateTable('users')
-      .set({
+  await this.db
+    .updateTable('users')
+    .set({
+      ...(dto.name !== undefined && {
         name: dto.name,
-      })
-      .where('id', '=', userId)
-      .where('is_deleted', '=', false)
-      .execute();
+      }),
+      ...(dto.avatar_url !== undefined && {
+        avatar_url: dto.avatar_url,
+      }),
+    })
+    .where('id', '=', userId)
+    .where('is_deleted', '=', false)
+    .execute();
 
     return this.getMyProfile(userId);
   }

@@ -225,8 +225,18 @@ export const getTaskCompletionsForAdventure =
   async (
     adventureId: string,
   ): Promise<AdventureTaskCompletion[]> => {
+    console.log(
+      'Loading submissions for adventure:',
+      adventureId,
+    );
+
     const response = await apiClient.get(
       `/adventures/${adventureId}/task-completions`,
+    );
+
+    console.log(
+      'Submissions returned from backend:',
+      JSON.stringify(response.data, null, 2),
     );
 
     return response.data;

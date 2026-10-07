@@ -57,10 +57,7 @@ export class StorageController {
   }
 
   @Delete('files/:fileName')
-  async deleteFile(
-    @Param('fileName') fileName: string,
-    @Req() req: any,
-  ) {
+  async deleteFile(@Param('fileName') fileName: string, @Req() req: any) {
     await this.storageService.deleteFile(fileName, req.user);
     return { success: true };
   }

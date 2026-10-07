@@ -1,4 +1,4 @@
-import "multer";
+import 'multer';
 
 import {
   Controller,
@@ -23,7 +23,6 @@ export class UploadsController {
     return this.uploadsService.testUploadConnection();
   }
 
-
   @Post('image')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
@@ -31,10 +30,10 @@ export class UploadsController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /(jpg|jpeg|png|webp)$/,
+          fileType: /^image\/(jpeg|png|webp)$/,
         })
         .addMaxSizeValidator({
-          maxSize: 5 * 1024 * 1024, // 5 MB
+          maxSize: 10 * 1024 * 1024,
         })
         .build({
           errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,

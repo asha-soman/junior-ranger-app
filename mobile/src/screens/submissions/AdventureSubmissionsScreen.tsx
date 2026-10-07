@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
+  Image,
 } from 'react-native';
 
 import {
@@ -27,6 +28,8 @@ import {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 
+import * as FileSystem from 'expo-file-system/legacy';
+
 import {
   AuthStackParamList,
 } from '../../navigation/AuthNavigator';
@@ -41,6 +44,12 @@ import {
   adventureStyles as styles,
 } from '../../styles/AdventureStyles';
 
+import {
+  getToken,
+} from '@/src/utils/secureStore';
+
+import apiClient from '../../services/api/client';
+
 type Props =
   NativeStackScreenProps<
     AuthStackParamList,
@@ -52,25 +61,54 @@ export default function AdventureSubmissionsScreen({
 }: Props) {
   const { adventureId } = route.params;
 
-  const [submissions, setSubmissions] = useState<
+  const [
+    submissions,
+    setSubmissions,
+  ] = useState<
     AdventureTaskCompletion[]
   >([]);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(1);
 
-  const [loading, setLoading] = useState(false);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  const [error, setError] = useState('');
+  const [
+    error,
+    setError,
+  ] = useState('');
 
   const [
     feedbackById,
     setFeedbackById,
-  ] = useState<Record<string, string>>({});
+  ] = useState<
+    Record<string, string>
+  >({});
 
   const [
     reviewingId,
     setReviewingId,
-  ] = useState<string | null>(null);
+  ] = useState<
+    string | null
+  >(null);
+
+  /*
+   * Stores the local cached URI for each
+   * protected submission image.
+   *
+   * completion id -> local file URI
+   */
+  const [
+    submissionImages,
+    setSubmissionImages,
+  ] = useState<
+    Record<string, string>
+  >({});
 
   const SUBMISSIONS_PER_PAGE = 6;
 
@@ -101,38 +139,214 @@ export default function AdventureSubmissionsScreen({
       currentPage,
     ]);
 
-  const fetchSubmissions = async () => {
-    try {
-      setLoading(true);
-      setError('');
+  /*
+   * =========================================
+   * LOAD PROTECTED SUBMISSION IMAGES
+   * =========================================
+   *
+   * The backend image endpoint is protected
+   * by JwtAuthGuard.
+   *
+   * Instead of asking React Native <Image>
+   * to authenticate directly, the image is
+   * downloaded through Expo FileSystem with
+   * the Ranger's JWT.
+   *
+   * The resulting local file is then shown
+   * using the normal React Native Image
+   * component.
+   */
 
-      const data =
-        await getTaskCompletionsForAdventure(
-          adventureId,
+  const loadSubmissionImages =
+    async (
+      items:
+        AdventureTaskCompletion[],
+    ) => {
+      try {
+        const token =
+          await getToken();
+
+        if (!token) {
+          console.log(
+            'No authentication token available for submission images.',
+          );
+
+          return;
+        }
+
+        const baseURL =
+          apiClient.defaults
+            .baseURL ?? '';
+
+        const imageItems =
+          items.filter(
+            (item) =>
+              !!item.image_url,
+          );
+
+        const loadedImages: Record<
+          string,
+          string
+        > = {};
+
+        for (
+          const item of imageItems
+        ) {
+          if (!item.image_url) {
+            continue;
+          }
+
+          try {
+            const absoluteUrl =
+              item.image_url.startsWith(
+                'http://',
+              ) ||
+              item.image_url.startsWith(
+                'https://',
+              )
+                ? item.image_url
+                : `${baseURL}${item.image_url}`;
+
+            const extension =
+              item.image_url
+                .split('.')
+                .pop()
+                ?.split('?')[0] ||
+              'jpg';
+
+            const cacheDirectory =
+              FileSystem.cacheDirectory;
+
+            if (!cacheDirectory) {
+              console.log(
+                'Expo FileSystem cache directory is unavailable.',
+              );
+
+              continue;
+            }
+
+            const localUri =
+              `${cacheDirectory}submission-${item.id}.${extension}`;
+
+            console.log(
+              'Downloading protected submission image:',
+              absoluteUrl,
+            );
+
+            const result =
+              await FileSystem.downloadAsync(
+                absoluteUrl,
+                localUri,
+                {
+                  headers: {
+                    Authorization:
+                      `Bearer ${token}`,
+                  },
+                },
+              );
+
+            console.log(
+              'Submission image download status:',
+              item.id,
+              result.status,
+            );
+
+            if (
+              result.status >= 200 &&
+              result.status < 300
+            ) {
+              loadedImages[
+                item.id
+              ] = result.uri;
+            } else {
+              console.log(
+                'Submission image download failed:',
+                item.id,
+                result.status,
+              );
+            }
+          } catch (
+            imageError
+          ) {
+            console.log(
+              'Unable to download submission image:',
+              item.id,
+              imageError,
+            );
+          }
+        }
+
+        setSubmissionImages(
+          loadedImages,
+        );
+      } catch (err) {
+        console.log(
+          'Unable to load submission images:',
+          err,
+        );
+      }
+    };
+
+  /*
+   * =========================================
+   * FETCH SUBMISSIONS
+   * =========================================
+   */
+
+  const fetchSubmissions =
+    async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const data =
+          await getTaskCompletionsForAdventure(
+            adventureId,
+          );
+
+        setSubmissions(data);
+
+        setCurrentPage(1);
+
+        /*
+         * Download any protected images
+         * after the submissions have loaded.
+         */
+        await loadSubmissionImages(
+          data,
+        );
+      } catch (err: any) {
+        console.log(
+          'Fetch task submissions error:',
+          err,
         );
 
-      setSubmissions(data);
-      setCurrentPage(1);
-    } catch (err: any) {
-      console.log(
-        'Fetch task submissions error:',
-        err,
-      );
+        setError(
+          err?.response?.data
+            ?.message ||
+            'Unable to load task submissions.',
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setError(
-        err?.response?.data?.message ||
-          'Unable to load task submissions.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  /*
+   * Refresh whenever Ranger opens or
+   * returns to this screen.
+   */
 
   useFocusEffect(
     useCallback(() => {
       fetchSubmissions();
     }, [adventureId]),
   );
+
+  /*
+   * =========================================
+   * REVIEW TASK
+   * =========================================
+   */
 
   const handleReview = async (
     completionId: string,
@@ -145,6 +359,10 @@ export default function AdventureSubmissionsScreen({
         completionId
       ]?.trim() || '';
 
+    /*
+     * Feedback is mandatory when
+     * rejecting a submission.
+     */
     if (
       status === 'rejected' &&
       !feedback
@@ -167,14 +385,23 @@ export default function AdventureSubmissionsScreen({
           completionId,
           {
             status,
+
             feedback:
-              feedback || undefined,
+              feedback ||
+              undefined,
           },
         );
 
-      if (status === 'approved') {
+      /*
+       * APPROVED
+       */
+
+      if (
+        status === 'approved'
+      ) {
         const xpAwarded =
-          result.xp_awarded ?? 0;
+          result.xp_awarded ??
+          0;
 
         let message =
           'Task approved successfully.';
@@ -184,7 +411,9 @@ export default function AdventureSubmissionsScreen({
             ` ${xpAwarded} XP was awarded.`;
         }
 
-        if (result.level_changed) {
+        if (
+          result.level_changed
+        ) {
           message +=
             ` Junior Ranger reached Level ${result.current_level}!`;
         }
@@ -193,19 +422,35 @@ export default function AdventureSubmissionsScreen({
           'Task Approved',
           message,
         );
-      } else {
+      }
+
+      /*
+       * REJECTED
+       */
+      else {
         Alert.alert(
           'Task Rejected',
           'The Junior Ranger can review your feedback and make changes.',
         );
       }
 
+      /*
+       * Clear feedback field for this
+       * submission.
+       */
+
       setFeedbackById(
         (current) => ({
           ...current,
-          [completionId]: '',
+
+          [completionId]:
+            '',
         }),
       );
+
+      /*
+       * Refresh submissions after review.
+       */
 
       await fetchSubmissions();
     } catch (err: any) {
@@ -215,19 +460,33 @@ export default function AdventureSubmissionsScreen({
       );
 
       const message =
-        err?.response?.data?.message ||
+        err?.response?.data
+          ?.message ||
         'Unable to review this task.';
 
       Alert.alert(
         'Review Failed',
-        Array.isArray(message)
-          ? message.join('\n')
+
+        Array.isArray(
+          message,
+        )
+          ? message.join(
+              '\n',
+            )
           : message,
       );
     } finally {
-      setReviewingId(null);
+      setReviewingId(
+        null,
+      );
     }
   };
+
+  /*
+   * =========================================
+   * RENDER SUBMISSION
+   * =========================================
+   */
 
   const renderSubmission = ({
     item,
@@ -235,10 +494,17 @@ export default function AdventureSubmissionsScreen({
     item: AdventureTaskCompletion;
   }) => {
     const isReviewing =
-      reviewingId === item.id;
+      reviewingId ===
+      item.id;
 
     const isPending =
-      item.status === 'submitted';
+      item.status ===
+      'submitted';
+
+    const localImageUri =
+      submissionImages[
+        item.id
+      ];
 
     return (
       <Card
@@ -248,6 +514,11 @@ export default function AdventureSubmissionsScreen({
         mode="elevated"
       >
         <Card.Content>
+
+          {/*
+           * JUNIOR RANGER
+           */}
+
           <Text
             style={
               styles.submissionUser
@@ -256,6 +527,10 @@ export default function AdventureSubmissionsScreen({
             {item.junior_ranger_name ||
               'Junior Ranger'}
           </Text>
+
+          {/*
+           * TASK
+           */}
 
           <Text
             style={
@@ -278,8 +553,13 @@ export default function AdventureSubmissionsScreen({
               styles.taskXp
             }
           >
-            {item.xp_reward} XP
+            {item.xp_reward}{' '}
+            XP
           </Text>
+
+          {/*
+           * WRITTEN SUBMISSION
+           */}
 
           <Text
             style={
@@ -298,30 +578,165 @@ export default function AdventureSubmissionsScreen({
               'No written response provided.'}
           </Text>
 
+          {/*
+           * =====================================
+           * SUBMITTED IMAGE
+           * =====================================
+           */}
+
           {item.image_url ? (
-            <>
+            <View
+              style={{
+                marginTop: 14,
+                marginBottom: 14,
+              }}
+            >
               <Text
-                style={
-                  styles.detailsLabel
-                }
+                style={[
+                  styles.detailsLabel,
+                  {
+                    marginBottom:
+                      8,
+                  },
+                ]}
               >
-                Image
+                Submitted Image
               </Text>
 
-              <Text
-                style={
-                  styles.imageUrlText
-                }
+              <View
+                style={{
+                  width: '100%',
+
+                  borderWidth: 1,
+
+                  borderColor:
+                    '#D5E5E1',
+
+                  borderRadius:
+                    14,
+
+                  overflow:
+                    'hidden',
+
+                  backgroundColor:
+                    '#F2F7F5',
+                }}
               >
-                {item.image_url}
-              </Text>
-            </>
+                {localImageUri ? (
+                  <Image
+                    source={{
+                      uri:
+                        localImageUri,
+                    }}
+                    resizeMode="cover"
+                    style={{
+                      width:
+                        '100%',
+
+                      height:
+                        230,
+
+                      backgroundColor:
+                        '#E8F1EE',
+                    }}
+                    onError={(
+                      event,
+                    ) => {
+                      console.log(
+                        'Local submission image display error:',
+                        event
+                          .nativeEvent
+                          .error,
+                      );
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width:
+                        '100%',
+
+                      height:
+                        230,
+
+                      backgroundColor:
+                        '#E8F1EE',
+
+                      alignItems:
+                        'center',
+
+                      justifyContent:
+                        'center',
+                    }}
+                  >
+                    <ActivityIndicator
+                      size="small"
+                    />
+
+                    <Text
+                      style={{
+                        marginTop:
+                          8,
+
+                        color:
+                          '#687773',
+                      }}
+                    >
+                      Loading
+                      image...
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View
+                style={{
+                  flexDirection:
+                    'row',
+
+                  alignItems:
+                    'center',
+
+                  marginTop: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+
+                    marginRight:
+                      6,
+                  }}
+                >
+                  📷
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 12,
+
+                    color:
+                      '#687773',
+                  }}
+                >
+                  Photo submitted
+                  by the Junior
+                  Ranger
+                </Text>
+              </View>
+            </View>
           ) : null}
+
+          {/*
+           * STATUS
+           */}
 
           <View
             style={{
               marginTop: 8,
+
               marginBottom: 10,
+
               alignItems:
                 'flex-start',
             }}
@@ -337,6 +752,10 @@ export default function AdventureSubmissionsScreen({
               {item.status}
             </Chip>
           </View>
+
+          {/*
+           * APPROVED
+           */}
 
           {item.status ===
             'approved' && (
@@ -358,6 +777,10 @@ export default function AdventureSubmissionsScreen({
             </View>
           )}
 
+          {/*
+           * REJECTED
+           */}
+
           {item.status ===
             'rejected' && (
             <View
@@ -378,7 +801,8 @@ export default function AdventureSubmissionsScreen({
                   style={[
                     styles.detailsText,
                     {
-                      marginTop: 6,
+                      marginTop:
+                        6,
                     },
                   ]}
                 >
@@ -388,6 +812,12 @@ export default function AdventureSubmissionsScreen({
               ) : null}
             </View>
           )}
+
+          {/*
+           * =====================================
+           * PENDING REVIEW
+           * =====================================
+           */}
 
           {isPending && (
             <>
@@ -412,8 +842,11 @@ export default function AdventureSubmissionsScreen({
                   value,
                 ) =>
                   setFeedbackById(
-                    (current) => ({
+                    (
+                      current,
+                    ) => ({
                       ...current,
+
                       [item.id]:
                         value,
                     }),
@@ -430,6 +863,10 @@ export default function AdventureSubmissionsScreen({
                   styles.statusButtonRow
                 }
               >
+                {/*
+                 * APPROVE
+                 */}
+
                 <Button
                   mode="contained"
                   disabled={
@@ -450,6 +887,10 @@ export default function AdventureSubmissionsScreen({
                 >
                   Approve
                 </Button>
+
+                {/*
+                 * REJECT
+                 */}
 
                 <Button
                   mode="contained"
@@ -476,12 +917,26 @@ export default function AdventureSubmissionsScreen({
     );
   };
 
+  /*
+   * =========================================
+   * SCREEN
+   * =========================================
+   */
+
   return (
     <View
-      style={styles.container}
+      style={
+        styles.container
+      }
     >
+      {/*
+       * HEADER
+       */}
+
       <View
-        style={styles.header}
+        style={
+          styles.header
+        }
       >
         <Text
           style={
@@ -492,76 +947,112 @@ export default function AdventureSubmissionsScreen({
         </Text>
       </View>
 
+      {/*
+       * INITIAL LOADING
+       */}
+
       {loading &&
       submissions.length ===
         0 ? (
         <ActivityIndicator
           size="large"
-          style={styles.loader}
+          style={
+            styles.loader
+          }
         />
       ) : null}
 
+      {/*
+       * ERROR
+       */}
+
       {!!error && (
         <Text
-          style={styles.errorText}
+          style={
+            styles.errorText
+          }
         >
           {error}
         </Text>
       )}
+
+      {/*
+       * EMPTY STATE
+       */}
 
       {!loading &&
         submissions.length ===
           0 &&
         !error && (
           <Text
-            style={styles.emptyText}
+            style={
+              styles.emptyText
+            }
           >
-            No task submissions yet.
+            No task submissions
+            yet.
           </Text>
         )}
+
+      {/*
+       * SUBMISSION LIST
+       */}
 
       <FlatList
         data={
           paginatedSubmissions
         }
-        keyExtractor={(item) =>
-          item.id
-        }
+        keyExtractor={(
+          item,
+        ) => item.id}
         renderItem={
           renderSubmission
         }
         contentContainerStyle={{
           padding: 14,
+
           paddingBottom: 40,
         }}
-        refreshing={loading}
+        refreshing={
+          loading
+        }
         onRefresh={
           fetchSubmissions
         }
         ListFooterComponent={
-          totalSubmissions > 0 ? (
+          totalSubmissions >
+          0 ? (
             <View
               style={{
-                paddingVertical: 20,
+                paddingVertical:
+                  20,
+
                 alignItems:
                   'center',
               }}
             >
               <Text
                 style={{
-                  marginBottom: 10,
+                  marginBottom:
+                    10,
                 }}
               >
                 {totalSubmissions}{' '}
                 submissions found
               </Text>
 
+              {/*
+               * PAGINATION
+               */}
+
               <View
                 style={{
                   flexDirection:
                     'row',
+
                   alignItems:
                     'center',
+
                   gap: 10,
                 }}
               >
@@ -577,7 +1068,9 @@ export default function AdventureSubmissionsScreen({
                       (page) =>
                         Math.max(
                           1,
-                          page - 1,
+
+                          page -
+                            1,
                         ),
                     )
                   }
@@ -586,7 +1079,8 @@ export default function AdventureSubmissionsScreen({
                 </Button>
 
                 <Text>
-                  {currentPage} /{' '}
+                  {currentPage}{' '}
+                  /{' '}
                   {totalPages}
                 </Text>
 
@@ -602,7 +1096,9 @@ export default function AdventureSubmissionsScreen({
                       (page) =>
                         Math.min(
                           totalPages,
-                          page + 1,
+
+                          page +
+                            1,
                         ),
                     )
                   }

@@ -3,6 +3,9 @@ import React, {
   useState,
 } from 'react';
 
+import { Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "../../services/submissions/submissionService";
 import {
   View,
   Text,
@@ -112,6 +115,7 @@ export default function CreateAdventureScreen({
     dueDate,
     setDueDate,
   ] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   const [
     tasks,
@@ -239,6 +243,25 @@ export default function CreateAdventureScreen({
     );
   };
 
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Sorry, we need camera roll permissions to make this work!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
   const validate = () => {
     if (
       !selectedCohortId.trim()
@@ -332,22 +355,27 @@ export default function CreateAdventureScreen({
       try {
         setLoading(true);
 
+
+        let uploadedImageUrl = undefined;
+        if (imageUri) {
+          uploadedImageUrl = await uploadImage(imageUri);
+        }
+
         const adventure =
           await createAdventure(
             selectedCohortId.trim(),
             {
               title: title.trim(),
-
               description:
                 description.trim(),
-
+              image_url: uploadedImageUrl,
               task_instructions:
                 taskInstructions.trim(),
-
               due_date:
                 dueDate.trim(),
             },
           );
+
 
         for (
           let index = 0;
@@ -532,6 +560,18 @@ export default function CreateAdventureScreen({
             )}
           </>
         )}
+
+
+        <Text style={{ marginTop: 10, marginBottom: 5, color: '#333' }}>Adventure Image (Optional)</Text>
+        <TouchableOpacity onPress={pickImage} style={{ alignItems: "center", marginBottom: 15 }}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={{ width: '100%', height: 150, borderRadius: 10 }} />
+          ) : (
+            <View style={{ width: '100%', height: 150, borderRadius: 10, backgroundColor: "#e1e1e1", justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ color: "#666" }}>Add Adventure Image</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <TextInput
           label="Adventure Title"

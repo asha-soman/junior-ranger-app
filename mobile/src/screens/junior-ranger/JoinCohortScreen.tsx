@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Keyboard,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -37,6 +38,7 @@ export default function JoinCohortScreen() {
     id: string;
     name: string;
     description: string | null;
+    image_url?: string | null;
   } | null>(null);
 
   const handleValidate = async () => {
@@ -218,6 +220,15 @@ export default function JoinCohortScreen() {
             <Text style={[styles.detailLabel, { fontSize: 14 }]}>
               COHORT FOUND
             </Text>
+
+            {cohort.image_url && (
+              <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                <Image
+                  source={{ uri: cohort.image_url }}
+                  style={{ width: 80, height: 80, borderRadius: 40 }}
+                />
+              </View>
+            )}
 
             <Text style={[styles.detailTitle, { marginBottom: 8 }]}>
               {cohort.name}

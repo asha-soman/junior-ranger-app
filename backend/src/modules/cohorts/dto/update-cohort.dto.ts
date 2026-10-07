@@ -18,4 +18,8 @@ export class UpdateCohortDto {
   @IsBoolean()
   @IsOptional()
   is_deleted?: boolean;
+
+  @IsString()
+  @IsOptional()
+  image_url?: string;
 }

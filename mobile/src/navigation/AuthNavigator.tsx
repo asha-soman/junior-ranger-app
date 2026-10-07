@@ -266,7 +266,9 @@ export type AuthStackParamList = {
     | 'junior_ranger';
   };
 
-  SocialFeed: undefined;
+  FeedManagement: {
+    userRole: "admin" | "ranger";
+  };
 
   AttendanceManagement: {
     eventId: string;
@@ -608,6 +610,24 @@ export default function AuthNavigator() {
       />
 
       <Stack.Screen
+        name="AnnouncementManagement"
+        component={AnnouncementManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Announcements",
+        }}
+      />
+
+      <Stack.Screen
+        name="AnnouncementForm"
+        component={AnnouncementFormScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Announcement",
+        }}
+      />
+
+      <Stack.Screen
         name="ClubActivityManagement"
         component={ClubActivityManagementScreen}
         options={{
@@ -647,6 +667,15 @@ export default function AuthNavigator() {
         options={{
           ...authHeaderOptions,
           title: 'Feed',
+        }}
+      />
+
+      <Stack.Screen
+        name="FeedManagement"
+        component={FeedManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Feed Management",
         }}
       />
 

@@ -64,9 +64,19 @@ export class UploadsService implements OnModuleInit {
       await blob.delete();
 
       return { success: true, message: 'Test upload and delete succeeded.' };
-    } catch (error) {
-      this.logger.error(`Test upload failed: ${error.message}`);
-      return { success: false, message: `Test upload failed: ${error.message}` };
+    }
+    catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      this.logger.error(`Test upload failed: ${message}`);
+
+      return {
+        success: false,
+        message: `Test upload failed: ${message}`,
+      };
     }
   }
 

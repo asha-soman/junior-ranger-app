@@ -1,11 +1,11 @@
 import {
-    IsDateString,
-    IsNotEmpty,
-    IsOptional,
     IsString,
-    IsUrl,
-    IsUUID,
+    IsNotEmpty,
     MaxLength,
+    IsOptional,
+    IsUUID,
+    IsDateString,
+    Matches,
 } from 'class-validator';
 
 export class CreateClubActivityDto {
@@ -22,8 +22,9 @@ export class CreateClubActivityDto {
     cohort_id!: string;
 
     @IsOptional()
-    @IsUrl({
-        require_protocol: true,
+    @IsString()
+    @Matches(/^\/storage\/files\/[a-zA-Z0-9._-]+$/, {
+        message: 'image_url must be a valid storage file path',
     })
     image_url?: string;
 

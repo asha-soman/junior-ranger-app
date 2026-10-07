@@ -3,7 +3,6 @@ import React from "react";
 import {
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -15,47 +14,74 @@ import {
 
 import ReactionBar from "./ReactionBar";
 
+import AuthenticatedImage from "../common/AuthenticatedImage";
+
+
 type Props = {
     item: FeedItem;
     reactionsReadOnly?: boolean;
 };
 
+
 export default function ClubActivityCard({
     item,
     reactionsReadOnly = false,
 }: Props) {
-    const activityDate = item.activity_date
-        ? new Date(item.activity_date)
-        : null;
 
-    const formattedActivityDate = activityDate
-        ? activityDate.toLocaleDateString(
-            undefined,
-            {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-            },
-        )
-        : null;
+    const activityDate =
+        item.activity_date
+            ? new Date(item.activity_date)
+            : null;
+
+
+    const formattedActivityDate =
+        activityDate
+            ? activityDate.toLocaleDateString(
+                undefined,
+                {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                },
+            )
+            : null;
+
 
     return (
         <View style={styles.card}>
+
             {/* HEADER */}
+
             <View style={styles.header}>
-                <View style={styles.iconContainer}>
+
+                <View
+                    style={
+                        styles.iconContainer
+                    }
+                >
                     <Text style={styles.icon}>
                         ⭐
                     </Text>
                 </View>
 
-                <View style={styles.headerText}>
+
+                <View
+                    style={
+                        styles.headerText
+                    }
+                >
+
                     <Text style={styles.title}>
                         {item.title ??
                             "Club Activity"}
                     </Text>
 
-                    <Text style={styles.metaText}>
+
+                    <Text
+                        style={
+                            styles.metaText
+                        }
+                    >
                         {item.cohort_name ??
                             "Junior Rangers"}
 
@@ -63,75 +89,92 @@ export default function ClubActivityCard({
                             ? ` • ${formattedActivityDate}`
                             : ""}
                     </Text>
+
                 </View>
+
             </View>
 
+
             {/* CONTENT */}
+
             <View style={styles.content}>
+
                 {item.content && (
-                    <Text style={styles.description}>
+
+                    <Text
+                        style={
+                            styles.description
+                        }
+                    >
                         {item.content}
                     </Text>
+
                 )}
 
+
                 {formattedActivityDate && (
-                    <View style={styles.dateRow}>
+
+                    <View
+                        style={
+                            styles.dateRow
+                        }
+                    >
+
                         <Ionicons
                             name="calendar-outline"
                             size={15}
                             color="#8A6A00"
                         />
 
-                        <Text style={styles.dateText}>
+
+                        <Text
+                            style={
+                                styles.dateText
+                            }
+                        >
                             {formattedActivityDate}
                         </Text>
+
                     </View>
+
                 )}
 
-                {/*
-          IMAGE AREA
 
-          We'll connect this to item.image_url
-          after cloud image upload is ready.
-        */}
+                {/* ACTIVITY IMAGE */}
 
-                <View style={styles.imageGrid}>
-                    <View style={styles.imagePlaceholder}>
-                        <Ionicons
-                            name="image-outline"
-                            size={24}
-                            color="#9C955E"
-                        />
-                    </View>
+                {item.image_url && (
 
-                    <View style={styles.imagePlaceholder}>
-                        <Ionicons
-                            name="image-outline"
-                            size={24}
-                            color="#9C955E"
-                        />
-                    </View>
+                    <AuthenticatedImage
+                        imageUrl={
+                            item.image_url
+                        }
+                        style={
+                            styles.activityImage
+                        }
+                        resizeMode="cover"
+                    />
 
-                    <View style={styles.imagePlaceholder}>
-                        <Ionicons
-                            name="image-outline"
-                            size={24}
-                            color="#9C955E"
-                        />
-                    </View>
-                </View>
+                )}
+
             </View>
 
+
             {/* REACTIONS */}
+
             <ReactionBar
                 item={item}
-                readOnly={reactionsReadOnly}
+                readOnly={
+                    reactionsReadOnly
+                }
             />
+
         </View>
     );
 }
 
+
 const styles = StyleSheet.create({
+
     card: {
         backgroundColor: "#FFF3BF",
 
@@ -145,6 +188,7 @@ const styles = StyleSheet.create({
         borderColor: "#E9D987",
     },
 
+
     header: {
         flexDirection: "row",
         alignItems: "center",
@@ -154,6 +198,7 @@ const styles = StyleSheet.create({
 
         backgroundColor: "#F5E49B",
     },
+
 
     iconContainer: {
         width: 34,
@@ -169,13 +214,16 @@ const styles = StyleSheet.create({
         marginRight: 9,
     },
 
+
     icon: {
         fontSize: 20,
     },
 
+
     headerText: {
         flex: 1,
     },
+
 
     title: {
         fontSize: 14,
@@ -183,6 +231,7 @@ const styles = StyleSheet.create({
 
         color: "#1C1C1C",
     },
+
 
     metaText: {
         marginTop: 2,
@@ -192,15 +241,13 @@ const styles = StyleSheet.create({
         color: "#625B36",
     },
 
-    menuButton: {
-        padding: 5,
-    },
 
     content: {
         paddingHorizontal: 14,
         paddingTop: 12,
         paddingBottom: 5,
     },
+
 
     description: {
         fontSize: 13,
@@ -212,6 +259,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
 
+
     dateRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -219,6 +267,7 @@ const styles = StyleSheet.create({
         marginTop: 3,
         marginBottom: 10,
     },
+
 
     dateText: {
         marginLeft: 5,
@@ -229,24 +278,16 @@ const styles = StyleSheet.create({
         color: "#6C5B1D",
     },
 
-    imageGrid: {
-        flexDirection: "row",
 
-        gap: 8,
+    activityImage: {
+        width: "100%",
+        height: 190,
+
+        borderRadius: 10,
 
         marginTop: 5,
-    },
-
-    imagePlaceholder: {
-        flex: 1,
-
-        height: 80,
 
         backgroundColor: "#DEDDBD",
-
-        borderRadius: 7,
-
-        justifyContent: "center",
-        alignItems: "center",
     },
+
 });

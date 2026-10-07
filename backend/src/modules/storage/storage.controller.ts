@@ -23,7 +23,7 @@ import type { Response } from 'express';
 @Controller('storage')
 @UseGuards(JwtAuthGuard)
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(private readonly storageService: StorageService) { }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -31,7 +31,7 @@ export class StorageController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /^image\/(jpeg|png|webp)$/,
+          fileType: /(jpg|jpeg|png|webp)$/,
         })
         .addMaxSizeValidator({
           maxSize: 10 * 1024 * 1024,

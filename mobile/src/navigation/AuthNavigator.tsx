@@ -53,6 +53,8 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import AnnouncementManagementScreen from '../screens/announcements/AnnouncementManagementScreen';
 import AnnouncementFormScreen from '../screens/announcements/AnnouncementFormScreen';
+import ClubActivityManagementScreen from "../screens/club-activities/ClubActivityManagementScreen";
+import ClubActivityFormScreen from "../screens/club-activities/ClubActivityFormScreen";
 import FeedManagementScreen from '../screens/feed/FeedManagementScreen';
 
 export type AuthStackParamList = {
@@ -64,8 +66,8 @@ export type AuthStackParamList = {
 
   RangerSignup: {
     role?:
-      | 'ranger'
-      | 'junior_ranger';
+    | 'ranger'
+    | 'junior_ranger';
   };
 
   ForgotPassword: undefined;
@@ -85,65 +87,65 @@ export type AuthStackParamList = {
   AdminMenu: undefined;
 
   UserProfile:
-    | {
-        userRole:
-          | 'admin'
-          | 'ranger'
-          | 'junior_ranger';
-      }
-    | undefined;
+  | {
+    userRole:
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
+  }
+  | undefined;
 
   PendingRangerRequests:
-    | {
-        refresh?: boolean;
-      }
-    | undefined;
+  | {
+    refresh?: boolean;
+  }
+  | undefined;
 
   RangerRequestDetails: {
     rangerId: string;
   };
 
   ManageUsers:
-    | {
-        initialUsers?: AdminUser[];
-      }
-    | undefined;
+  | {
+    initialUsers?: AdminUser[];
+  }
+  | undefined;
 
   AdminCohorts:
-    | {
-        userRole?:
-          | 'admin'
-          | 'ranger'
-          | 'junior_ranger';
-      }
-    | undefined;
+  | {
+    userRole?:
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
+  }
+  | undefined;
 
   AdminCohortDetails: {
     cohortId: string;
     userRole?:
-      | 'admin'
-      | 'ranger'
-      | 'junior_ranger';
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
   };
 
   CreateCohort: {
     userRole?:
-      | 'admin'
-      | 'ranger';
+    | 'admin'
+    | 'ranger';
   };
 
   EditCohort: {
     cohortId: string;
     userRole?:
-      | 'admin'
-      | 'ranger';
+    | 'admin'
+    | 'ranger';
   };
 
   AssignRanger: {
     cohortId: string;
     assignedRangerId?:
-      | string
-      | null;
+    | string
+    | null;
   };
 
   GenerateInviteCode: {
@@ -155,24 +157,24 @@ export type AuthStackParamList = {
   JuniorMenu: undefined;
 
   AdventureList:
-    | {
-        cohortId?: string;
-        userRole?:
-          | 'ranger'
-          | 'admin'
-          | 'junior_ranger';
-      }
-    | undefined;
+  | {
+    cohortId?: string;
+    userRole?:
+    | 'ranger'
+    | 'admin'
+    | 'junior_ranger';
+  }
+  | undefined;
 
   AdventureDetails: {
     adventureId: string;
   };
 
   CreateAdventure:
-    | {
-        cohortId?: string;
-      }
-    | undefined;
+  | {
+    cohortId?: string;
+  }
+  | undefined;
 
   EditAdventure: {
     adventureId: string;
@@ -208,22 +210,22 @@ export type AuthStackParamList = {
   };
 
   EventsHub:
-    | {
-        userRole:
-          | 'admin'
-          | 'ranger'
-          | 'junior_ranger';
-      }
-    | undefined;
+  | {
+    userRole:
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
+  }
+  | undefined;
 
   CreateEvent:
-    | {
-        cohortId?: string;
-        userRole?:
-          | 'admin'
-          | 'ranger';
-      }
-    | undefined;
+  | {
+    cohortId?: string;
+    userRole?:
+    | 'admin'
+    | 'ranger';
+  }
+  | undefined;
 
   EditEvent: {
     eventId: string;
@@ -232,13 +234,41 @@ export type AuthStackParamList = {
 
   EventDetails: {
     eventId: string;
-    userRole:
-      | 'admin'
-      | 'ranger'
-      | 'junior_ranger';
+    userRole: 'admin' | 'ranger' | 'junior_ranger';
+  };
+  AnnouncementManagement: {
+    userRole: "admin" | "ranger";
   };
 
-  SocialFeed: undefined;
+  AnnouncementForm:
+  | {
+    userRole: "admin" | "ranger";
+    announcementId?: string;
+    cohortId?: string;
+  }
+  | undefined;
+
+  ClubActivityManagement: {
+    userRole: "admin" | "ranger";
+  };
+
+  ClubActivityForm:
+  | {
+    userRole: "admin" | "ranger";
+    activityId?: string;
+    cohortId?: string;
+  }
+  | undefined;
+  SocialFeed: {
+    userRole:
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
+  };
+
+  FeedManagement: {
+    userRole: "admin" | "ranger";
+  };
 
   AttendanceManagement: {
     eventId: string;
@@ -246,18 +276,18 @@ export type AuthStackParamList = {
   };
 
   ActivityPostForm:
-    | {
-        postId?: string;
-      }
-    | undefined;
+  | {
+    postId?: string;
+  }
+  | undefined;
 
   Settings: undefined;
 
   Notifications: {
     userRole:
-      | 'admin'
-      | 'ranger'
-      | 'junior_ranger';
+    | 'admin'
+    | 'ranger'
+    | 'junior_ranger';
   };
 };
 
@@ -580,6 +610,42 @@ export default function AuthNavigator() {
       />
 
       <Stack.Screen
+        name="AnnouncementManagement"
+        component={AnnouncementManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Announcements",
+        }}
+      />
+
+      <Stack.Screen
+        name="AnnouncementForm"
+        component={AnnouncementFormScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Announcement",
+        }}
+      />
+
+      <Stack.Screen
+        name="ClubActivityManagement"
+        component={ClubActivityManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Club Activities",
+        }}
+      />
+
+      <Stack.Screen
+        name="ClubActivityForm"
+        component={ClubActivityFormScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Club Activity",
+        }}
+      />
+
+      <Stack.Screen
         name="RangerMenu"
         component={RangerMenuScreen}
         options={{
@@ -601,6 +667,15 @@ export default function AuthNavigator() {
         options={{
           ...authHeaderOptions,
           title: 'Feed',
+        }}
+      />
+
+      <Stack.Screen
+        name="FeedManagement"
+        component={FeedManagementScreen}
+        options={{
+          ...authHeaderOptions,
+          title: "Feed Management",
         }}
       />
 

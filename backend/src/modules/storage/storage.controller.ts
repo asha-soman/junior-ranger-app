@@ -31,7 +31,7 @@ export class StorageController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
-          fileType: /^image\/(jpeg|png)$/,
+          fileType: /^image\/(jpeg|png|webp)$/,
         })
         .addMaxSizeValidator({
           maxSize: 10 * 1024 * 1024,
@@ -57,10 +57,7 @@ export class StorageController {
   }
 
   @Delete('files/:fileName')
-  async deleteFile(
-    @Param('fileName') fileName: string,
-    @Req() req: any,
-  ) {
+  async deleteFile(@Param('fileName') fileName: string, @Req() req: any) {
     await this.storageService.deleteFile(fileName, req.user);
     return { success: true };
   }

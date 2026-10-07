@@ -49,72 +49,138 @@ import CreateEventScreen from '../screens/events/CreateEventScreen';
 import EditEventScreen from '../screens/events/EditEventScreen';
 import EventDetailsScreen from '../screens/events/EventDetailsScreen';
 import AttendanceManagementScreen from '../screens/events/AttendanceManagementScreen';
-import SettingsScreen from "../screens/settings/SettingsScreen";
-import NotificationsScreen from "../screens/notifications/NotificationsScreen";
-import AnnouncementManagementScreen from "../screens/announcements/AnnouncementManagementScreen";
-import AnnouncementFormScreen from "../screens/announcements/AnnouncementFormScreen";
-import FeedManagementScreen from "../screens/feed/FeedManagementScreen";
+import SettingsScreen from '../screens/settings/SettingsScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import AnnouncementManagementScreen from '../screens/announcements/AnnouncementManagementScreen';
+import AnnouncementFormScreen from '../screens/announcements/AnnouncementFormScreen';
+import FeedManagementScreen from '../screens/feed/FeedManagementScreen';
 
 export type AuthStackParamList = {
   Splash: undefined;
+
   Welcome: undefined;
+
   Login: undefined;
+
   RangerSignup: {
-    role?: "ranger" | "junior_ranger";
+    role?:
+      | 'ranger'
+      | 'junior_ranger';
   };
+
   ForgotPassword: undefined;
   ResetCode: { email: string };
   ResetPassword: { resetToken: string };
   Verification: {
     email: string;
-    mode?: "email" | "2fa";
+    mode?: 'email' | '2fa';
   };
+
   JoinCohort: undefined;
+
   JoinWithInvite: undefined;
+
   Home: undefined;
+
   AdminMenu: undefined;
-  UserProfile: {
-    userRole: 'admin' | 'ranger' | 'junior_ranger';
-  }
-  | undefined;
-  PendingRangerRequests: { refresh?: boolean } | undefined;
-  RangerRequestDetails: { rangerId: string };
-  ManageUsers: { initialUsers?: AdminUser[] } | undefined;
+
+  UserProfile:
+    | {
+        userRole:
+          | 'admin'
+          | 'ranger'
+          | 'junior_ranger';
+      }
+    | undefined;
+
+  PendingRangerRequests:
+    | {
+        refresh?: boolean;
+      }
+    | undefined;
+
+  RangerRequestDetails: {
+    rangerId: string;
+  };
+
+  ManageUsers:
+    | {
+        initialUsers?: AdminUser[];
+      }
+    | undefined;
+
   AdminCohorts:
-  | {
-    userRole?: "admin" | "ranger" | "junior_ranger";
-  }
-  | undefined;
+    | {
+        userRole?:
+          | 'admin'
+          | 'ranger'
+          | 'junior_ranger';
+      }
+    | undefined;
+
   AdminCohortDetails: {
     cohortId: string;
-    userRole?: "admin" | "ranger" | "junior_ranger";
+    userRole?:
+      | 'admin'
+      | 'ranger'
+      | 'junior_ranger';
   };
+
   CreateCohort: {
-    userRole?: "admin" | "ranger";
+    userRole?:
+      | 'admin'
+      | 'ranger';
   };
+
   EditCohort: {
     cohortId: string;
-    userRole?: "admin" | "ranger";
+    userRole?:
+      | 'admin'
+      | 'ranger';
   };
+
   AssignRanger: {
     cohortId: string;
-    assignedRangerId?: string | null;
+    assignedRangerId?:
+      | string
+      | null;
   };
+
   GenerateInviteCode: {
     cohortId: string;
   };
+
   RangerMenu: undefined;
+
   JuniorMenu: undefined;
+
   AdventureList:
-  | {
-    cohortId?: string;
-    userRole?: "ranger" | "admin" | "junior_ranger";
-  }
-  | undefined;
-  AdventureDetails: { adventureId: string };
-  CreateAdventure: { cohortId?: string } | undefined;
-  EditAdventure: { adventureId: string };
-  SubmitAdventure: { adventureId: string };
+    | {
+        cohortId?: string;
+        userRole?:
+          | 'ranger'
+          | 'admin'
+          | 'junior_ranger';
+      }
+    | undefined;
+
+  AdventureDetails: {
+    adventureId: string;
+  };
+
+  CreateAdventure:
+    | {
+        cohortId?: string;
+      }
+    | undefined;
+
+  EditAdventure: {
+    adventureId: string;
+  };
+
+  SubmitAdventure: {
+    adventureId: string;
+  };
 
   SubmitAdventureTask: {
     taskId: string;
@@ -122,63 +188,76 @@ export type AuthStackParamList = {
     taskDescription: string;
     xpReward: number;
     adventureId: string;
+    previousSubmission?: string;
+
+    // Existing image from a rejected task submission.
+    // This allows the Junior Ranger to keep or replace
+    // the previous image when resubmitting.
+    previousImageUrl?: string | null;
+
+    rangerFeedback?: string;
+    isResubmission?: boolean;
   };
 
-  AdventureSubmissions: { adventureId: string };
-  ReviewSubmission: { submissionId: string };
+  AdventureSubmissions: {
+    adventureId: string;
+  };
+
+  ReviewSubmission: {
+    submissionId: string;
+  };
+
   EventsHub:
-  | {
-    userRole: 'admin' | 'ranger' | 'junior_ranger';
-  }
-  | undefined;
+    | {
+        userRole:
+          | 'admin'
+          | 'ranger'
+          | 'junior_ranger';
+      }
+    | undefined;
+
   CreateEvent:
-  | {
-    cohortId?: string;
-    userRole?: 'admin' | 'ranger';
-  }
-  | undefined;
-  EditEvent:
-  | {
+    | {
+        cohortId?: string;
+        userRole?:
+          | 'admin'
+          | 'ranger';
+      }
+    | undefined;
+
+  EditEvent: {
     eventId: string;
     userRole: 'admin' | 'ranger';
   };
-  EventDetails:
-  | {
+
+  EventDetails: {
     eventId: string;
-    userRole: 'admin' | 'ranger' | 'junior_ranger';
-  };
-  AnnouncementManagement: {
-    userRole: "admin" | "ranger";
+    userRole:
+      | 'admin'
+      | 'ranger'
+      | 'junior_ranger';
   };
 
-  AnnouncementForm:
-  | {
-    userRole: "admin" | "ranger";
-    announcementId?: string;
-    cohortId?: string;
-  }
-  | undefined;
-  SocialFeed: {
-    userRole:
-    | "admin"
-    | "ranger"
-    | "junior_ranger";
-  };
-  FeedManagement: {
-    userRole: "admin" | "ranger";
-  };
+  SocialFeed: undefined;
+
   AttendanceManagement: {
     eventId: string;
     userRole: 'admin' | 'ranger';
   };
+
   ActivityPostForm:
-  | {
-    postId?: string;
-  }
-  | undefined;
+    | {
+        postId?: string;
+      }
+    | undefined;
+
   Settings: undefined;
+
   Notifications: {
-    userRole: "admin" | "ranger" | "junior_ranger";
+    userRole:
+      | 'admin'
+      | 'ranger'
+      | 'junior_ranger';
   };
 };
 
@@ -293,7 +372,7 @@ export default function AuthNavigator() {
         }
         options={{
           ...authHeaderOptions,
-          title: "Signup Requests ",
+          title: 'Signup Requests',
         }}
       />
 
@@ -443,10 +522,13 @@ export default function AuthNavigator() {
 
       <Stack.Screen
         name="GenerateInviteCode"
-        component={GenerateInviteCodeScreen}
+        component={
+          GenerateInviteCodeScreen
+        }
         options={{
           ...authHeaderOptions,
-          title: "Generate Invite Code",
+          title:
+            'Generate Invite Code',
         }}
       />
 
@@ -488,28 +570,12 @@ export default function AuthNavigator() {
 
       <Stack.Screen
         name="AttendanceManagement"
-        component={AttendanceManagementScreen}
+        component={
+          AttendanceManagementScreen
+        }
         options={{
           ...authHeaderOptions,
           title: 'Attendance',
-        }}
-      />
-
-      <Stack.Screen
-        name="AnnouncementManagement"
-        component={AnnouncementManagementScreen}
-        options={{
-          ...authHeaderOptions,
-          title: "Announcements",
-        }}
-      />
-
-      <Stack.Screen
-        name="AnnouncementForm"
-        component={AnnouncementFormScreen}
-        options={{
-          ...authHeaderOptions,
-          title: "Announcement",
         }}
       />
 
@@ -534,25 +600,18 @@ export default function AuthNavigator() {
         component={SocialFeedScreen}
         options={{
           ...authHeaderOptions,
-          title: "Feed",
-        }}
-      />
-
-      <Stack.Screen
-        name="FeedManagement"
-        component={FeedManagementScreen}
-        options={{
-          ...authHeaderOptions,
-          title: "Feed Management",
+          title: 'Feed',
         }}
       />
 
       <Stack.Screen
         name="ActivityPostForm"
-        component={ActivityPostFormScreen}
+        component={
+          ActivityPostFormScreen
+        }
         options={{
           ...authHeaderOptions,
-          title: "Share an Activity",
+          title: 'Share an Activity',
         }}
       />
 
@@ -561,7 +620,7 @@ export default function AuthNavigator() {
         component={SettingsScreen}
         options={{
           ...authHeaderOptions,
-          title: "Settings",
+          title: 'Settings',
         }}
       />
 
@@ -570,7 +629,7 @@ export default function AuthNavigator() {
         component={NotificationsScreen}
         options={{
           ...authHeaderOptions,
-          title: "Notifications",
+          title: 'Notifications',
         }}
       />
     </Stack.Navigator>

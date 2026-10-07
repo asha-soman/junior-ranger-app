@@ -31,7 +31,26 @@ export type NotificationType =
   | 'event_registration_cancelled'
   | 'event_update'
   | 'event_cancelled'
-  | 'event_reminder';
+  | 'event_reminder'
+  | 'ranger_approval_pending'
+  | 'ranger_approved'
+  | 'ranger_rejected'
+  | 'mission_submitted'
+  | 'task_approved'
+  | 'task_rejected'
+  | 'junior_ranger_joined_cohort'
+  | 'event_participant_registered'
+  | 'event_participant_cancelled'
+  | 'activity_post_created'
+  | 'event_created'
+  | 'event_updated'
+  | 'cohort_event_created'
+  | 'cohort_event_updated'
+  | 'cohort_event_removed'
+  | 'cohort_event_assigned'
+  | 'event_deleted'
+  | 'cohort_event_deleted';
+  
 export type NotificationDeliveryChannel = 'email';
 export type NotificationDeliveryStatus =
   | 'sent'
@@ -139,6 +158,7 @@ export interface AuthChallengesTable {
   id: string;
   email: string;
   code: string;
+  purpose: 'email_verification' | 'password_reset';
   expires_at: Date;
   created_at: Date;
 }

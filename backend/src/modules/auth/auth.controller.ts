@@ -2,6 +2,9 @@ import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/comm
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -65,6 +68,36 @@ export class AuthController {
     return this.authService.verifyTwoFactorCode(
       body.email,
       body.code,
+    );
+  }
+
+  @Post('forgot-password')
+  forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ) {
+    return this.authService.forgotPassword(
+      dto.email,
+    );
+  }
+
+  @Post('verify-reset-code')
+  verifyResetCode(
+    @Body() dto: VerifyResetCodeDto,
+  ) {
+    return this.authService.verifyResetCode(
+      dto.email,
+      dto.code,
+    );
+  }
+
+  @Post('reset-password')
+  resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.authService.resetPassword(
+      dto.resetToken,
+      dto.newPassword,
+      dto.confirmPassword,
     );
   }
 }

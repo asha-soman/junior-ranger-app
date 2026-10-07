@@ -1,9 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getPendingRangers(name?: string) {
     let query = this.db
@@ -53,13 +57,16 @@ export class AdminService {
   }
 
   async approveRanger(id: string) {
-    const ranger = await this.getRangerRequestById(id);
+    const ranger =
+      await this.getRangerRequestById(id);
 
     if (ranger.approval_status !== 'pending') {
-      throw new BadRequestException('Only pending ranger requests can be approved');
+      throw new BadRequestException(
+        'Only pending ranger requests can be approved',
+      );
     }
 
-    return this.db
+    const updatedRanger = await this.db
       .updateTable('users')
       .set({
         is_active: true,
@@ -77,16 +84,37 @@ export class AdminService {
         'created_at',
       ])
       .executeTakeFirst();
+
+    if (!updatedRanger) {
+      throw new NotFoundException(
+        'Ranger request not found',
+      );
+    }
+
+    await this.notificationsService
+      .notifyRangerAccountStatus({
+        rangerId: updatedRanger.id,
+        rangerName:
+          updatedRanger.name ??
+          updatedRanger.email,
+        rangerEmail: updatedRanger.email,
+        status: 'approved',
+      });
+
+    return updatedRanger;
   }
 
   async rejectRanger(id: string) {
-    const ranger = await this.getRangerRequestById(id);
+    const ranger =
+      await this.getRangerRequestById(id);
 
     if (ranger.approval_status !== 'pending') {
-      throw new BadRequestException('Only pending ranger requests can be rejected');
+      throw new BadRequestException(
+        'Only pending ranger requests can be rejected',
+      );
     }
 
-    return this.db
+    const updatedRanger = await this.db
       .updateTable('users')
       .set({
         is_active: false,
@@ -104,6 +132,24 @@ export class AdminService {
         'created_at',
       ])
       .executeTakeFirst();
+
+    if (!updatedRanger) {
+      throw new NotFoundException(
+        'Ranger request not found',
+      );
+    }
+
+    await this.notificationsService
+      .notifyRangerAccountStatus({
+        rangerId: updatedRanger.id,
+        rangerName:
+          updatedRanger.name ??
+          updatedRanger.email,
+        rangerEmail: updatedRanger.email,
+        status: 'rejected',
+      });
+
+    return updatedRanger;
   }
 
 async getAllUsers(

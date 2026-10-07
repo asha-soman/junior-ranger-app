@@ -219,3 +219,68 @@ export const verificationStyles = StyleSheet.create({
     paddingVertical: 8,
   },
 });
+
+export const resetPasswordStyles = StyleSheet.create({
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    paddingBottom: 80,
+  },
+
+  formCard: {
+    width: "100%",
+    borderRadius: 34,
+    paddingVertical: 30,
+    paddingHorizontal: 24,
+    backgroundColor: "#6b8a82",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+
+  description: {
+    fontSize: 17,
+    color: "#2e2e2e",
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 22,
+  },
+
+  input: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    height: 50,
+    fontSize: 16,
+  },
+
+  helper: {
+    minHeight: 20,
+  },
+
+  resetButton: {
+    marginTop: 5,
+    borderRadius: 12,
+    backgroundColor: "#4f7a8f",
+  },
+
+  buttonContent: {
+    paddingVertical: 8,
+  },
+
+  resetButtonLabel: {
+    fontSize: 18,
+    color: "#ffffff",
+  },
+});

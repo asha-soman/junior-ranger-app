@@ -1,19 +1,18 @@
-import {
-  Injectable,
-  ForbiddenException,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { CreateCohortDto } from './dto/create-cohort.dto';
 import { randomUUID, randomBytes } from 'crypto';
 import { UpdateCohortDto } from './dto/update-cohort.dto';
 import { AssignRangerDto } from './dto/assign-ranger.dto';
 import { CreateInviteCodeDto } from './dto/create-invite-code.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CohortsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private async ensureUserNotInAnotherCohort(userId: string) {
     const existingMembership = await this.db
@@ -702,7 +701,43 @@ async findAllCohorts(
     // 2. Ensure user is not already in a cohort
     await this.ensureUserNotInAnotherCohort(userId);
 
-    // 3. Add user to cohort_members
+    // 3. Get cohort details for the notification
+    const cohort = await this.db
+      .selectFrom('cohorts')
+      .select([
+        'id',
+        'name',
+        'assigned_ranger_id',
+        'created_by_ranger_id',
+      ])
+      .where('id', '=', cohortId)
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!cohort) {
+      throw new NotFoundException('Cohort not found');
+    }
+
+    // 4. Get Junior Ranger details
+    const juniorRanger = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'name',
+        'email',
+      ])
+      .where('id', '=', userId)
+      .where('role', '=', 'junior_ranger')
+      .where('is_deleted', '=', false)
+      .executeTakeFirst();
+
+    if (!juniorRanger) {
+      throw new NotFoundException(
+        'Junior Ranger not found',
+      );
+    }
+
+    // 5. Add Junior Ranger to cohort_members
     await this.db
       .insertInto('cohort_members')
       .values({
@@ -714,7 +749,7 @@ async findAllCohorts(
       })
       .execute();
 
-    // 4. Increment used_count
+    // 6. Increment invite code used_count
     await this.db
       .updateTable('invite_codes')
       .set((eb) => ({
@@ -722,6 +757,40 @@ async findAllCohorts(
       }))
       .where('code', '=', code.toUpperCase())
       .execute();
+
+    // 7. Determine which Ranger should be notified
+    const rangerId =
+      cohort.assigned_ranger_id ??
+      cohort.created_by_ranger_id;
+
+    // 8. Get Ranger details
+    const ranger = rangerId
+      ? await this.db
+          .selectFrom('users')
+          .select([
+            'id',
+            'email',
+            'name',
+          ])
+          .where('id', '=', rangerId)
+          .where('role', '=', 'ranger')
+          .where('is_deleted', '=', false)
+          .executeTakeFirst()
+      : undefined;
+
+    // 9. Notify Ranger
+    if (ranger) {
+      await this.notificationsService
+        .notifyRangerOfJuniorRangerJoining({
+          rangerId: ranger.id,
+          rangerEmail: ranger.email,
+          juniorRangerName:
+            juniorRanger.name ??
+            juniorRanger.email ??
+            'A Junior Ranger',
+          cohortName: cohort.name,
+        });
+    }
 
     return {
       message: 'Successfully joined the cohort',

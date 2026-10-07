@@ -286,6 +286,52 @@ export class ReactionsService {
         };
     }
 
+    // Bulk fetch reactions for feed items to prevent N+1 query problem
+    async getReactionsForTargets(
+        targetIds: string[],
+        user: AuthUser,
+    ) {
+        if (targetIds.length === 0) return {};
+
+        const reactions = await this.db
+            .selectFrom('reactions')
+            .select([
+                'target_id',
+                'reaction_type',
+                'user_id',
+            ])
+            .where('target_id', 'in', targetIds)
+            .execute();
+
+        const results: Record<string, {
+            reactions: Record<ReactionType, number>,
+            user_reaction: ReactionType | null,
+            total: number,
+        }> = {};
+
+        // Initialize defaults
+        for (const id of targetIds) {
+            results[id] = {
+                reactions: { clap: 0, thumbs_up: 0, star: 0, smile: 0, wow: 0, okay: 0 },
+                user_reaction: null,
+                total: 0,
+            };
+        }
+
+        for (const reaction of reactions) {
+            const target = results[reaction.target_id];
+            if (target) {
+                target.reactions[reaction.reaction_type]++;
+                target.total++;
+                if (reaction.user_id === user.userId) {
+                    target.user_reaction = reaction.reaction_type;
+                }
+            }
+        }
+
+        return results;
+    }
+
     // Remove user's reaction
     async removeReaction(
         targetType: ReactionTargetType,

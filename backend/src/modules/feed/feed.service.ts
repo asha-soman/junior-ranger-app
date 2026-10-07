@@ -133,28 +133,25 @@ export class FeedService {
             ...activityItems,
         ];
 
-        const feedWithReactions = await Promise.all(
-            feedItems.map(async (item) => {
-                const reactionData =
-                    await this.reactionsService.getReactions(
-                        item.type as ReactionTargetType,
-                        item.id,
-                        user,
-                    );
+        // Fetch reactions for all feed items in bulk to prevent N+1 query problem
+        const targetIds = feedItems.map(item => item.id);
+        const reactionsMap = await this.reactionsService.getReactionsForTargets(targetIds, user);
 
-                return {
-                    ...item,
+        const feedWithReactions = feedItems.map((item) => {
+            const reactionData = reactionsMap[item.id];
 
-                    reaction_counts: reactionData.reactions,
+            return {
+                ...item,
 
-                    user_reaction:
-                        reactionData.user_reaction,
+                reaction_counts: reactionData?.reactions,
 
-                    total_reactions:
-                        reactionData.total,
-                };
-            }),
-        );
+                user_reaction:
+                    reactionData?.user_reaction,
+
+                total_reactions:
+                    reactionData?.total || 0,
+            };
+        });
 
         return feedWithReactions.sort((a, b) => {
             const dateA = a.created_at

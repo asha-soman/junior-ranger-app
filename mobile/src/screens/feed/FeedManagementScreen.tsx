@@ -61,9 +61,13 @@ export default function FeedManagementScreen() {
             description:
                 "Share and manage club activities for your cohorts.",
             icon: "people-outline" as const,
-            onPress: () => {
-                // We'll connect this next.
-            },
+            onPress: () =>
+                navigation.navigate(
+                    "ClubActivityManagement",
+                    {
+                        userRole,
+                    },
+                ),
         },
 
         {

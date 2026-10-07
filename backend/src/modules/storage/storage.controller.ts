@@ -23,7 +23,7 @@ import type { Response } from 'express';
 @Controller('storage')
 @UseGuards(JwtAuthGuard)
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(private readonly storageService: StorageService) { }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -57,10 +57,7 @@ export class StorageController {
   }
 
   @Delete('files/:fileName')
-  async deleteFile(
-    @Param('fileName') fileName: string,
-    @Req() req: any,
-  ) {
+  async deleteFile(@Param('fileName') fileName: string, @Req() req: any) {
     await this.storageService.deleteFile(fileName, req.user);
     return { success: true };
   }

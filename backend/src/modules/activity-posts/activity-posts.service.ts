@@ -1,12 +1,9 @@
-import {
-    ForbiddenException,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { CreateActivityPostDto } from './dto/create-activity-post.dto';
 import { UpdateActivityPostDto } from './dto/update-activity-post.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type AuthUser = {
     userId: string;
@@ -16,7 +13,10 @@ type AuthUser = {
 
 @Injectable()
 export class ActivityPostsService {
-    constructor(private readonly db: DatabaseService) { }
+    constructor(
+        private readonly db: DatabaseService,
+        private readonly notificationsService: NotificationsService,
+    ) {}
 
     // Check whether the user belongs to / manages the cohort
     private async validateCohortAccess(
@@ -77,40 +77,77 @@ export class ActivityPostsService {
     async createActivityPost(
         dto: CreateActivityPostDto,
         user: AuthUser,
-    ) {
+        ) {
         if (user.role !== 'junior_ranger') {
             throw new ForbiddenException(
-                'Only Junior Rangers can create activity posts',
+            'Only Junior Rangers can create activity posts',
             );
         }
 
-        await this.validateCohortAccess(
+        const cohort =
+            await this.validateCohortAccess(
             dto.cohort_id,
             user,
-        );
+            );
 
         const post = await this.db
             .insertInto('activity_posts')
             .values({
-                id: randomUUID(),
-                content: dto.content.trim(),
-                image_url: dto.image_url ?? null,
+            id: randomUUID(),
+            content: dto.content.trim(),
+            image_url: dto.image_url ?? null,
 
-                cohort_id: dto.cohort_id,
-                created_by_user_id: user.userId,
+            cohort_id: dto.cohort_id,
+            created_by_user_id: user.userId,
 
-                is_deleted: false,
-                created_at: new Date(),
-                updated_at: null,
+            is_deleted: false,
+            created_at: new Date(),
+            updated_at: null,
             })
             .returningAll()
             .executeTakeFirstOrThrow();
+
+        // Get Junior Ranger details
+        const juniorRanger = await this.db
+            .selectFrom('users')
+            .select([
+            'id',
+            'name',
+            'email',
+            ])
+            .where('id', '=', user.userId)
+            .where('is_deleted', '=', false)
+            .executeTakeFirst();
+
+        // Determine the Ranger responsible for the cohort
+        const rangerId =
+            cohort.assigned_ranger_id ??
+            cohort.created_by_ranger_id;
+
+        // Notify Ranger after the post has been created
+        if (rangerId) {
+            try {
+            await this.notificationsService
+                .notifyRangerOfActivityPost({
+                rangerId,
+                juniorRangerName:
+                    juniorRanger?.name ??
+                    juniorRanger?.email ??
+                    'A Junior Ranger',
+                });
+            } catch (error) {
+            console.error(
+                'Activity post created but Ranger notification failed:',
+                error,
+            );
+            }
+        }
 
         return {
             message: 'Activity post created successfully',
             post,
         };
-    }
+        }
 
     // List posts according to user access
     async getActivityPosts(user: AuthUser) {

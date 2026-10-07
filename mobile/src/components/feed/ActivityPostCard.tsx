@@ -16,6 +16,7 @@ import {
 } from "../../services/feed/feedService";
 
 import ReactionBar from "./ReactionBar";
+import AuthenticatedImage from "../common/AuthenticatedImage";
 
 type Props = {
     item: FeedItem;
@@ -260,27 +261,13 @@ export default function ActivityPostCard({
             be connected later.
         ========================== */}
 
-                {item.image_url ? (
-                    <View
-                        style={
-                            styles.imagePlaceholder
-                        }
-                    >
-                        <Ionicons
-                            name="image-outline"
-                            size={34}
-                            color="#6C8BA5"
-                        />
-
-                        <Text
-                            style={
-                                styles.imagePlaceholderText
-                            }
-                        >
-                            Activity Photo
-                        </Text>
-                    </View>
-                ) : null}
+                {item.image_url && (
+                    <AuthenticatedImage
+                        imageUrl={item.image_url}
+                        style={styles.activityImage}
+                        resizeMode="cover"
+                    />
+                )}
             </View>
 
             {/* =========================
@@ -512,34 +499,16 @@ const styles =
             marginBottom: 10,
         },
 
-        /* =========================
-           IMAGE PLACEHOLDER
-        ========================== */
-
-        imagePlaceholder: {
+        activityImage: {
             width: "100%",
-
-            height: 135,
+            height: 190,
 
             borderRadius: 10,
 
-            backgroundColor:
-                "#D0DEE8",
-
-            justifyContent: "center",
-
-            alignItems: "center",
-
             marginTop: 4,
+
+            backgroundColor: "#D0DEE8",
         },
 
-        imagePlaceholderText: {
-            marginTop: 5,
 
-            fontSize: 10,
-
-            fontWeight: "600",
-
-            color: "#617789",
-        },
     });

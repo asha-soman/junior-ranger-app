@@ -2,9 +2,9 @@ import {
     IsNotEmpty,
     IsOptional,
     IsString,
-    IsUrl,
     IsUUID,
     MaxLength,
+    Matches,
 } from 'class-validator';
 
 export class CreateActivityPostDto {
@@ -18,8 +18,8 @@ export class CreateActivityPostDto {
 
     @IsOptional()
     @IsString()
-    @IsUrl({
-        require_protocol: true,
+    @Matches(/^\/storage\/files\/[a-zA-Z0-9._-]+$/, {
+        message: 'image_url must be a valid storage file path',
     })
     image_url?: string;
 }

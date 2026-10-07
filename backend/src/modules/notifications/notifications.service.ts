@@ -4,6 +4,7 @@ import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../email/email.service';
 import type { NotificationType } from '../../database/database.types';
 
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -444,6 +445,602 @@ export class NotificationsService {
             logError,
         );
      }
+    }
+  }
+
+  async notifyAdminsOfPendingRanger(params: {
+    rangerId: string;
+    rangerName: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select([
+        'id',
+        'email',
+      ])
+      .where('role', '=', 'admin')
+      .where('is_active', '=', true)
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      const notification =
+        await this.createNotification({
+          userId: admin.id,
+          type: 'ranger_approval_pending',
+          title:
+            'Pending Ranger Account Approval',
+          message:
+            `${params.rangerName} has requested a Ranger account and is awaiting approval.`,
+        });
+
+      try {
+        const providerMessageId =
+          await this.emailService
+            .sendPendingRangerApproval(
+              admin.email,
+              params.rangerName,
+            );
+
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: admin.id,
+          recipientEmail: admin.email,
+          status: 'sent',
+          providerMessageId,
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Unknown email delivery error';
+
+        this.logger.error(
+          `Failed to send pending Ranger approval notification to admin ${admin.id}: ${errorMessage}`,
+        );
+
+        try {
+          await this.logDelivery({
+            notificationId: notification.id,
+            userId: admin.id,
+            recipientEmail: admin.email,
+            status: 'failed',
+            errorMessage,
+          });
+        } catch (logError) {
+          this.logger.error(
+            'Failed to record pending Ranger approval delivery failure',
+            logError,
+          );
+        }
+      }
+    }
+  }
+
+  async notifyRangerAccountStatus(params: {
+    rangerId: string;
+    rangerName: string;
+    rangerEmail: string;
+    status: 'approved' | 'rejected';
+  }): Promise<void> {
+    const isApproved =
+      params.status === 'approved';
+
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: isApproved
+          ? 'ranger_approved'
+          : 'ranger_rejected',
+        title: isApproved
+          ? 'Ranger Account Approved'
+          : 'Ranger Account Rejected',
+        message: isApproved
+          ? 'Your Ranger account has been approved. You can now sign in.'
+          : 'Your Ranger account request has been rejected.',
+      });
+
+    try {
+      const providerMessageId =
+        isApproved
+          ? await this.emailService
+              .sendRangerAccountApproved(
+                params.rangerEmail,
+                params.rangerName,
+              )
+          : await this.emailService
+              .sendRangerAccountRejected(
+                params.rangerEmail,
+                params.rangerName,
+              );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send Ranger account ${params.status} email to ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record Ranger account status delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfMissionSubmission(params: {
+    rangerId: string;
+    rangerEmail: string;
+    juniorRangerName: string;
+    taskTitle: string;
+  }): Promise<void> {
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'mission_submitted',
+        title: 'New Adventure Task Submission',
+        message:
+          `${params.juniorRangerName} submitted "${params.taskTitle}" for review.`,
+      });
+
+    try {
+      const providerMessageId =
+        await this.emailService
+          .sendMissionSubmitted(
+            params.rangerEmail,
+            params.juniorRangerName,
+            params.taskTitle,
+          );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send mission submission email to Ranger ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record mission submission delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
+  async notifyJuniorRangerOfTaskReview(params: {
+    juniorRangerId: string;
+    juniorRangerEmail: string;
+    juniorRangerName: string;
+    taskTitle: string;
+    status: 'approved' | 'rejected';
+    feedback?: string | null;
+  }): Promise<void> {
+    const isApproved =
+      params.status === 'approved';
+
+    const notification =
+      await this.createNotification({
+        userId: params.juniorRangerId,
+        type: isApproved
+          ? 'task_approved'
+          : 'task_rejected',
+        title: isApproved
+          ? 'Adventure Task Approved'
+          : 'Adventure Task Needs Changes',
+        message: isApproved
+          ? `Your submission for "${params.taskTitle}" has been approved.`
+          : `Your submission for "${params.taskTitle}" needs changes. Please review the Ranger's feedback.`,
+      });
+
+    try {
+      const providerMessageId =
+        isApproved
+          ? await this.emailService
+              .sendTaskApproved(
+                params.juniorRangerEmail,
+                params.juniorRangerName,
+                params.taskTitle,
+              )
+          : await this.emailService
+              .sendTaskRejected(
+                params.juniorRangerEmail,
+                params.juniorRangerName,
+                params.taskTitle,
+                params.feedback,
+              );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.juniorRangerId,
+        recipientEmail:
+          params.juniorRangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send task ${params.status} email to Junior Ranger ${params.juniorRangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.juniorRangerId,
+          recipientEmail:
+            params.juniorRangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record task review delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfJuniorRangerJoining(params: {
+    rangerId: string;
+    rangerEmail: string;
+    juniorRangerName: string;
+    cohortName: string;
+  }): Promise<void> {
+    const notification =
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'junior_ranger_joined_cohort',
+        title: 'New Junior Ranger Joined Your Cohort',
+        message:
+          `${params.juniorRangerName} joined your cohort "${params.cohortName}".`,
+      });
+
+    try {
+      const providerMessageId =
+        await this.emailService
+          .sendJuniorRangerJoinedCohort(
+            params.rangerEmail,
+            params.juniorRangerName,
+            params.cohortName,
+          );
+
+      await this.logDelivery({
+        notificationId: notification.id,
+        userId: params.rangerId,
+        recipientEmail: params.rangerEmail,
+        status: 'sent',
+        providerMessageId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown email delivery error';
+
+      this.logger.error(
+        `Failed to send cohort join email to Ranger ${params.rangerId}: ${errorMessage}`,
+      );
+
+      try {
+        await this.logDelivery({
+          notificationId: notification.id,
+          userId: params.rangerId,
+          recipientEmail: params.rangerEmail,
+          status: 'failed',
+          errorMessage,
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Failed to record cohort join delivery failure',
+          logError,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfEventRegistrationChange(params: {
+    rangerId: string;
+    juniorRangerName: string;
+    eventId: string;
+    eventTitle: string;
+    action: 'registered' | 'cancelled';
+  }): Promise<void> {
+    const isRegistration =
+      params.action === 'registered';
+
+    await this.createNotification({
+      userId: params.rangerId,
+      type: isRegistration
+        ? 'event_participant_registered'
+        : 'event_participant_cancelled',
+      title: isRegistration
+        ? 'New Event Registration'
+        : 'Event Registration Cancelled',
+      message: isRegistration
+        ? `${params.juniorRangerName} registered for "${params.eventTitle}".`
+        : `${params.juniorRangerName} cancelled their registration for "${params.eventTitle}".`,
+      eventId: params.eventId,
+    });
+  }
+
+  async notifyRangerOfActivityPost(params: {
+    rangerId: string;
+    juniorRangerName: string;
+  }): Promise<void> {
+    await this.createNotification({
+      userId: params.rangerId,
+      type: 'activity_post_created',
+      title: 'New Activity Post',
+      message:
+        `${params.juniorRangerName} created a new activity post.`,
+    });
+  }
+
+  async notifyAdminsOfEventCreation(params: {
+    creatorId: string;
+    creatorName: string;
+    creatorRole: 'admin' | 'ranger';
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who created the event
+      if (admin.id === params.creatorId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_created',
+          title: 'New Event Created',
+          message:
+            `${params.creatorName} created the event "${params.eventTitle}".`,
+          eventId: params.eventId,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyAdminsOfEventUpdate(params: {
+    updaterId: string;
+    updaterName: string;
+    updaterRole: 'admin' | 'ranger';
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who updated the event
+      if (admin.id === params.updaterId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_updated',
+          title: 'Event Updated',
+          message:
+            `${params.updaterName} updated the event "${params.eventTitle}".`,
+          eventId: params.eventId,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event update notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfAdminEventCreation(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_created',
+        title: 'New Cohort Event',
+        message:
+          `${params.adminName} created the event "${params.eventTitle}" for your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event notification for Ranger ${params.rangerId}`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfAdminEventUpdate(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_updated',
+        title: 'Cohort Event Updated',
+        message:
+          `${params.adminName} updated the event "${params.eventTitle}" for your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event update notification for Ranger ${params.rangerId}`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfEventRemovedFromCohort(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_removed',
+        title: 'Event Moved From Your Cohort',
+        message:
+          `${params.adminName} moved the event "${params.eventTitle}" from your cohort.`,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify Ranger ${params.rangerId} that an event was moved from their cohort`,
+        error,
+      );
+    }
+  }
+
+  async notifyRangerOfEventAssignedToCohort(params: {
+    rangerId: string;
+    adminName: string;
+    eventId: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_assigned',
+        title: 'Event Assigned to Your Cohort',
+        message:
+          `${params.adminName} assigned the event "${params.eventTitle}" to your cohort.`,
+        eventId: params.eventId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify Ranger ${params.rangerId} that an event was assigned to their cohort`,
+        error,
+      );
+    }
+  }
+
+  async notifyAdminsOfEventDeletion(params: {
+    deleterId: string;
+    deleterName: string;
+    deleterRole: 'admin' | 'ranger';
+    eventTitle: string;
+  }): Promise<void> {
+    const admins = await this.db
+      .selectFrom('users')
+      .select(['id'])
+      .where('role', '=', 'admin')
+      .where('is_deleted', '=', false)
+      .execute();
+
+    for (const admin of admins) {
+      // Do not notify the Admin who deleted the event
+      if (admin.id === params.deleterId) {
+        continue;
+      }
+
+      try {
+        await this.createNotification({
+          userId: admin.id,
+          type: 'event_deleted',
+          title: 'Event Deleted',
+          message:
+            `${params.deleterName} deleted the event "${params.eventTitle}".`,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create event deletion notification for Admin ${admin.id}`,
+          error,
+        );
+      }
+    }
+  }
+
+  async notifyRangerOfAdminEventDeletion(params: {
+    rangerId: string;
+    adminName: string;
+    eventTitle: string;
+  }): Promise<void> {
+    try {
+      await this.createNotification({
+        userId: params.rangerId,
+        type: 'cohort_event_deleted',
+        title: 'Cohort Event Deleted',
+        message:
+          `${params.adminName} deleted the event "${params.eventTitle}" from your cohort.`,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create event deletion notification for Ranger ${params.rangerId}`,
+        error,
+      );
     }
   }
 

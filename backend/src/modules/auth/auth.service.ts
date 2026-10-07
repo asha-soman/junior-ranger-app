@@ -6,6 +6,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { randomInt, randomUUID } from 'crypto';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
@@ -57,6 +58,7 @@ export class AuthService {
     private readonly db: DatabaseService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ============================================================
@@ -129,6 +131,18 @@ export class AuthService {
       .execute();
 
     await this.emailService.sendVerificationCode(email, code);
+
+    if (
+      isRanger &&
+      newUser?.id
+    ) {
+      await this.notificationsService
+        .notifyAdminsOfPendingRanger({
+          rangerId: newUser.id,
+          rangerName:
+            newUser.name ?? newUser.email,
+        });
+    }
 
     return {
       message: isRanger

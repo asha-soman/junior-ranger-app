@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateAdventureDto {
     @IsString()
@@ -15,4 +15,8 @@ export class CreateAdventureDto {
 
     @IsDateString()
     due_date!: string;
+
+    @IsOptional()
+    @IsString()
+    image_url?: string;
 }

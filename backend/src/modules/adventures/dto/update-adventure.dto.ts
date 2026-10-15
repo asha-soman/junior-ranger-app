@@ -20,4 +20,8 @@ export class UpdateAdventureDto {
     @IsOptional()
     @IsIn(['draft', 'published', 'archived'])
     status?: 'draft' | 'published' | 'archived';
+
+    @IsOptional()
+    @IsString()
+    image_url?: string;
 }

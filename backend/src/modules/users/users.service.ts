@@ -52,6 +52,7 @@ export class UsersService {
       .select([
         'cohorts.id as cohort_id',
         'cohorts.name as cohort_name',
+        'cohorts.image_url as cohort_image_url',
         'cohorts.location as cohort_location',
       ])
       .where(
@@ -78,6 +79,7 @@ export class UsersService {
         ? {
             id: membership.cohort_id,
             name: membership.cohort_name,
+            image_url: membership.cohort_image_url,
             location:
               membership.cohort_location,
           }

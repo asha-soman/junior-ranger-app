@@ -86,8 +86,8 @@ export class AdventuresService {
         id: randomUUID(),
         cohort_id: cohortId,
         title: dto.title,
-        description:
-          dto.description,
+        description: dto.description,
+        image_url: dto.image_url ?? null,
         task_instructions:
           dto.task_instructions,
         due_date: new Date(
@@ -465,6 +465,7 @@ export class AdventuresService {
       .select([
         'adventures.id',
         'adventures.title',
+        'adventures.image_url',
         'adventures.description',
         'adventures.task_instructions',
         'adventures.cohort_id',
@@ -690,12 +691,11 @@ export class AdventuresService {
               }
             : {}),
 
-          ...(dto.description !==
-          undefined
-            ? {
-                description:
-                  dto.description,
-              }
+          ...(dto.description !== undefined
+            ? { description: dto.description }
+            : {}),
+          ...(dto.image_url !== undefined
+            ? { image_url: dto.image_url }
             : {}),
 
           ...(dto.task_instructions !==
@@ -946,15 +946,10 @@ export class AdventuresService {
               }
             : {}),
 
-          ...(dto.description !==
-          undefined
-            ? {
-                description:
-                  dto.description,
-              }
+          ...(dto.description !== undefined
+            ? { description: dto.description }
             : {}),
-
-          ...(dto.xp_reward !==
+...(dto.xp_reward !==
           undefined
             ? {
                 xp_reward:

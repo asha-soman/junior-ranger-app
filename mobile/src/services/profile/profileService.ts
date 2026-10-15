@@ -15,6 +15,7 @@ export interface UserProfile {
   cohort: {
     id: string;
     name: string;
+    image_url?: string | null;
     location: string | null;
   } | null;
 }

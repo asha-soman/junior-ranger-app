@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import {
+import { Image,
   View,
   Text,
   ScrollView,
@@ -178,19 +178,31 @@ export default function AdminCohortsScreen() {
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <View
-                  style={{
-                    width: 74,
-                    height: 74,
-                    borderRadius: 37,
-                    backgroundColor: "#DFF0EA",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 16,
-                  }}
-                >
-                  <Ionicons name="leaf" size={34} color="#2F6F61" />
-                </View>
+                {cohort.image_url ? (
+                  <Image
+                    source={{ uri: cohort.image_url }}
+                    style={{
+                      width: 74,
+                      height: 74,
+                      borderRadius: 37,
+                      marginRight: 16,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 74,
+                      height: 74,
+                      borderRadius: 37,
+                      backgroundColor: "#DFF0EA",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 16,
+                    }}
+                  >
+                    <Ionicons name="leaf" size={34} color="#2F6F61" />
+                  </View>
+                )}
 
                 <View style={{ flex: 1 }}>
                   <View

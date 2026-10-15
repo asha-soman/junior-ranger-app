@@ -9,6 +9,7 @@ export interface Adventure {
   id: string;
   title: string;
   description: string;
+  image_url?: string | null;
   task_instructions: string;
   cohort_id: string;
   due_date: string;
@@ -22,6 +23,7 @@ export interface Adventure {
 export interface CreateAdventurePayload {
   title: string;
   description: string;
+  image_url?: string | null;
   task_instructions: string;
   due_date: string;
 }
@@ -29,6 +31,7 @@ export interface CreateAdventurePayload {
 export interface UpdateAdventurePayload {
   title?: string;
   description?: string;
+  image_url?: string;
   task_instructions?: string;
   due_date?: string;
   status?: AdventureStatus;

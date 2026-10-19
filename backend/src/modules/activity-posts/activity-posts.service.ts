@@ -1,9 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+
+import {
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
+
 import { DatabaseService } from '../../database/database.service';
 import { CreateActivityPostDto } from './dto/create-activity-post.dto';
 import { UpdateActivityPostDto } from './dto/update-activity-post.dto';
-import { NotificationsService } from '../notifications/notifications.service';
 
 type AuthUser = {
     userId: string;
@@ -15,10 +20,9 @@ type AuthUser = {
 export class ActivityPostsService {
     constructor(
         private readonly db: DatabaseService,
-        private readonly notificationsService: NotificationsService,
-    ) {}
+    ) { }
 
-    // Check whether the user belongs to / manages the cohort
+    // Verify that the user belongs to or manages a cohort
     private async validateCohortAccess(
         cohortId: string,
         user: AuthUser,
@@ -73,83 +77,44 @@ export class ActivityPostsService {
         return cohort;
     }
 
-    // Junior Ranger creates an activity post
+    // RANGER: CREATE POST
     async createActivityPost(
         dto: CreateActivityPostDto,
         user: AuthUser,
-        ) {
-        if (user.role !== 'junior_ranger') {
+    ) {
+        if (user.role !== 'ranger') {
             throw new ForbiddenException(
-            'Only Junior Rangers can create activity posts',
+                'Only Rangers can create Community Hub posts',
             );
         }
 
-        const cohort =
-            await this.validateCohortAccess(
+        await this.validateCohortAccess(
             dto.cohort_id,
             user,
-            );
+        );
 
         const post = await this.db
             .insertInto('activity_posts')
             .values({
-            id: randomUUID(),
-            content: dto.content.trim(),
-            image_url: dto.image_url ?? null,
-
-            cohort_id: dto.cohort_id,
-            created_by_user_id: user.userId,
-
-            is_deleted: false,
-            created_at: new Date(),
-            updated_at: null,
+                id: randomUUID(),
+                content: dto.content.trim(),
+                image_url: dto.image_url ?? null,
+                cohort_id: dto.cohort_id,
+                created_by_user_id: user.userId,
+                is_deleted: false,
+                created_at: new Date(),
+                updated_at: null,
             })
             .returningAll()
             .executeTakeFirstOrThrow();
 
-        // Get Junior Ranger details
-        const juniorRanger = await this.db
-            .selectFrom('users')
-            .select([
-            'id',
-            'name',
-            'email',
-            ])
-            .where('id', '=', user.userId)
-            .where('is_deleted', '=', false)
-            .executeTakeFirst();
-
-        // Determine the Ranger responsible for the cohort
-        const rangerId =
-            cohort.assigned_ranger_id ??
-            cohort.created_by_ranger_id;
-
-        // Notify Ranger after the post has been created
-        if (rangerId) {
-            try {
-            await this.notificationsService
-                .notifyRangerOfActivityPost({
-                rangerId,
-                juniorRangerName:
-                    juniorRanger?.name ??
-                    juniorRanger?.email ??
-                    'A Junior Ranger',
-                });
-            } catch (error) {
-            console.error(
-                'Activity post created but Ranger notification failed:',
-                error,
-            );
-            }
-        }
-
         return {
-            message: 'Activity post created successfully',
+            message: 'Community Hub post created successfully',
             post,
         };
-        }
+    }
 
-    // List posts according to user access
+    // VIEW POSTS ACCORDING TO USER ACCESS
     async getActivityPosts(user: AuthUser) {
         if (user.role === 'admin') {
             return this.db
@@ -172,7 +137,6 @@ export class ActivityPostsService {
                     'activity_posts.created_by_user_id',
                     'activity_posts.created_at',
                     'activity_posts.updated_at',
-
                     'author.name as author_name',
                     'author.avatar_url as author_avatar_url',
                     'cohorts.name as cohort_name',
@@ -207,7 +171,6 @@ export class ActivityPostsService {
                 'activity_posts.created_by_user_id',
                 'activity_posts.created_at',
                 'activity_posts.updated_at',
-
                 'author.name as author_name',
                 'author.avatar_url as author_avatar_url',
                 'cohorts.name as cohort_name',
@@ -220,7 +183,7 @@ export class ActivityPostsService {
             .execute();
     }
 
-    // Get one post
+    // VIEW INDIVIDUAL POST
     async getActivityPostDetails(
         postId: string,
         user: AuthUser,
@@ -245,7 +208,6 @@ export class ActivityPostsService {
                 'activity_posts.created_by_user_id',
                 'activity_posts.created_at',
                 'activity_posts.updated_at',
-
                 'author.name as author_name',
                 'author.avatar_url as author_avatar_url',
                 'cohorts.name as cohort_name',
@@ -268,12 +230,18 @@ export class ActivityPostsService {
         return post;
     }
 
-    // Junior Ranger edits only their own post
+    // RANGER: EDIT OWN POST
     async updateActivityPost(
         postId: string,
         dto: UpdateActivityPostDto,
         user: AuthUser,
     ) {
+        if (user.role !== 'ranger') {
+            throw new ForbiddenException(
+                'Only Rangers can edit Community Hub posts',
+            );
+        }
+
         const post = await this.db
             .selectFrom('activity_posts')
             .selectAll()
@@ -287,15 +255,14 @@ export class ActivityPostsService {
             );
         }
 
-        if (user.role !== 'junior_ranger') {
-            throw new ForbiddenException(
-                'Only Junior Rangers can edit activity posts',
-            );
-        }
+        await this.validateCohortAccess(
+            post.cohort_id,
+            user,
+        );
 
         if (post.created_by_user_id !== user.userId) {
             throw new ForbiddenException(
-                'You can only edit your own activity posts',
+                'You can only edit your own posts',
             );
         }
 
@@ -305,11 +272,9 @@ export class ActivityPostsService {
                 ...(dto.content !== undefined
                     ? { content: dto.content.trim() }
                     : {}),
-
                 ...(dto.image_url !== undefined
                     ? { image_url: dto.image_url }
                     : {}),
-
                 updated_at: new Date(),
             })
             .where('id', '=', postId)
@@ -317,17 +282,26 @@ export class ActivityPostsService {
             .executeTakeFirstOrThrow();
 
         return {
-            message: 'Activity post updated successfully',
+            message: 'Community Hub post updated successfully',
             post: updatedPost,
         };
     }
 
-    // Junior Ranger deletes own post
-    // Admin can also remove posts for moderation
+    // RANGER: DELETE OWN POST
+    // ADMIN: DELETE FOR MODERATION
     async deleteActivityPost(
         postId: string,
         user: AuthUser,
     ) {
+        if (
+            user.role !== 'admin' &&
+            user.role !== 'ranger'
+        ) {
+            throw new ForbiddenException(
+                'You do not have permission to delete posts',
+            );
+        }
+
         const post = await this.db
             .selectFrom('activity_posts')
             .selectAll()
@@ -341,20 +315,17 @@ export class ActivityPostsService {
             );
         }
 
-        if (
-            user.role === 'junior_ranger' &&
-            post.created_by_user_id !== user.userId
-        ) {
-            throw new ForbiddenException(
-                'You can only delete your own activity posts',
-            );
-        }
-
         if (user.role === 'ranger') {
             await this.validateCohortAccess(
                 post.cohort_id,
                 user,
             );
+
+            if (post.created_by_user_id !== user.userId) {
+                throw new ForbiddenException(
+                    'You can only delete your own posts',
+                );
+            }
         }
 
         await this.db
@@ -367,7 +338,7 @@ export class ActivityPostsService {
             .execute();
 
         return {
-            message: 'Activity post deleted successfully',
+            message: 'Community Hub post deleted successfully',
         };
     }
 }

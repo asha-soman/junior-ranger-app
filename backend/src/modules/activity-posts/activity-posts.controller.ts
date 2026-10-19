@@ -1,3 +1,4 @@
+
 import {
     Body,
     Controller,
@@ -37,13 +38,12 @@ export class ActivityPostsController {
     getActivityPosts(
         @Req() req: Request & { user: AuthUser },
     ) {
-        return this.activityPostsService.getActivityPosts(
-            req.user,
-        );
+        return this.activityPostsService.getActivityPosts(req.user);
     }
 
+    // Only Rangers can create posts
     @Post()
-    @Roles('junior_ranger')
+    @Roles('ranger')
     createActivityPost(
         @Body() dto: CreateActivityPostDto,
         @Req() req: Request & { user: AuthUser },
@@ -66,8 +66,9 @@ export class ActivityPostsController {
         );
     }
 
+    // Only Rangers can edit posts
     @Patch(':id')
-    @Roles('junior_ranger')
+    @Roles('ranger')
     updateActivityPost(
         @Param('id') id: string,
         @Body() dto: UpdateActivityPostDto,
@@ -80,8 +81,10 @@ export class ActivityPostsController {
         );
     }
 
+    // Rangers delete their own posts;
+    // Administrators can delete for moderation
     @Delete(':id')
-    @Roles('admin', 'ranger', 'junior_ranger')
+    @Roles('admin', 'ranger')
     deleteActivityPost(
         @Param('id') id: string,
         @Req() req: Request & { user: AuthUser },

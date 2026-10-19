@@ -85,6 +85,9 @@ export default function ActivityPostFormScreen() {
 
     const isEditMode = !!postId;
 
+    // UI guard only. The backend must verify the authenticated role.
+    const isRanger = route.params?.userRole === "ranger";
+
     /* ======================================================
        STATE
     ====================================================== */
@@ -94,6 +97,9 @@ export default function ActivityPostFormScreen() {
 
     const [cohort, setCohort] =
         useState<Cohort | null>(null);
+
+    const [availableCohorts, setAvailableCohorts] =
+        useState<Cohort[]>([]);
 
     const [
         loadingCohort,
@@ -134,7 +140,12 @@ export default function ActivityPostFormScreen() {
     useEffect(() => {
         const initialiseScreen =
             async () => {
-                await loadJuniorRangerCohort();
+                if (!isRanger) {
+                    setLoadingCohort(false);
+                    setLoadingPost(false);
+                    return;
+                }
+                await loadRangerCohorts();
 
                 if (
                     isEditMode &&
@@ -147,13 +158,13 @@ export default function ActivityPostFormScreen() {
             };
 
         initialiseScreen();
-    }, [postId]);
+    }, [postId, isRanger]);
 
     /* ======================================================
        LOAD COHORT
     ====================================================== */
 
-    const loadJuniorRangerCohort =
+    const loadRangerCohorts =
         async () => {
             try {
                 setLoadingCohort(true);
@@ -166,13 +177,14 @@ export default function ActivityPostFormScreen() {
                 ) {
                     Alert.alert(
                         "No Club Found",
-                        "You need to join a club before sharing an activity.",
+                        "No clubs are available for your Ranger account.",
                     );
 
                     return;
                 }
 
-                setCohort(cohorts[0]);
+                setAvailableCohorts(cohorts);
+                setCohort((current) => current ?? cohorts[0]);
             } catch (error: any) {
                 console.error(
                     "Unable to load cohort:",
@@ -349,6 +361,17 @@ export default function ActivityPostFormScreen() {
     };
     const handleSubmit =
         async () => {
+            console.log("🟢 SHARE POST BUTTON CLICKED");
+
+            console.log("Post content:", content);
+            console.log("Selected cohort:", cohort);
+            console.log("Image URI:", imageUri);
+            console.log("Has new image:", hasNewImage);
+
+            if (!isRanger) {
+                Alert.alert("Access Denied", "Only Rangers can create or edit posts.");
+                return;
+            }
 
             const trimmedContent =
                 content.trim();
@@ -361,7 +384,7 @@ export default function ActivityPostFormScreen() {
             if (!trimmedContent) {
 
                 Alert.alert(
-                    "Tell us about your activity",
+                    "Add some content",
                     "Please write something before sharing your post.",
                 );
 
@@ -394,7 +417,7 @@ export default function ActivityPostFormScreen() {
                  * IMAGE UPLOAD
                  * =================================
                  *
-                 * Only upload when the Junior Ranger
+                 * Only upload when the Ranger
                  * has actually selected a NEW image.
                  *
                  * Existing /storage/files/... paths
@@ -519,6 +542,18 @@ export default function ActivityPostFormScreen() {
        LOADING
     ====================================================== */
 
+    if (!isRanger) {
+        return (
+            <View style={styles.errorGuard}>
+                <Text style={styles.heading}>Access Denied</Text>
+                <Text>Only Rangers can create or edit Community Hub posts.</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Text style={styles.guardBack}>Go Back</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     if (
         loadingCohort ||
         loadingPost
@@ -567,8 +602,8 @@ export default function ActivityPostFormScreen() {
                 style={styles.heading}
             >
                 {isEditMode
-                    ? "Edit Activity"
-                    : "Share an Activity"}
+                    ? "Edit Post"
+                    : "Create Post"}
             </Text>
 
             <Text
@@ -576,7 +611,7 @@ export default function ActivityPostFormScreen() {
             >
                 {isEditMode
                     ? "Update what you shared with your club."
-                    : "Show your club what you've been up to!"}
+                    : "Share an update with your club."}
             </Text>
 
             {/* =========================
@@ -631,9 +666,29 @@ export default function ActivityPostFormScreen() {
                 What did you do today?
             </Text>
 
+            {!isEditMode && availableCohorts.length > 1 && (
+                <View style={{ marginBottom: 18 }}>
+                    <Text style={styles.label}>Choose a club</Text>
+                    {availableCohorts.map((option) => (
+                        <TouchableOpacity key={option.id}
+                            onPress={() => setCohort(option)}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: cohort?.id === option.id }}
+                            style={{
+                                padding: 12, marginBottom: 6, borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: cohort?.id === option.id ? "#376E62" : "#D8D8D8",
+                                backgroundColor: cohort?.id === option.id ? "#E0EFEA" : "#FFFFFF"
+                            }}>
+                            <Text>{option.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
             <TextInput
                 style={styles.textArea}
-                placeholder="Tell us about your activity..."
+                placeholder="Write an update for your club..."
                 placeholderTextColor="#777"
                 value={content}
                 onChangeText={setContent}
@@ -747,7 +802,11 @@ export default function ActivityPostFormScreen() {
                     styles.disabledButton,
                 ]}
                 disabled={submitting}
-                onPress={handleSubmit}
+                // onPress={handleSubmit}
+                onPress={() => {
+                    console.log("🔵 Share Post onPress triggered");
+                    handleSubmit();
+                }}
                 activeOpacity={0.85}
             >
                 {submitting ? (
@@ -788,6 +847,14 @@ export default function ActivityPostFormScreen() {
 
 const styles =
     StyleSheet.create({
+        errorGuard: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            gap: 14,
+        },
+        guardBack: { color: "#376E62", fontWeight: "700" },
         container: {
             flex: 1,
 

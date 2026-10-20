@@ -120,6 +120,9 @@ export default function SocialFeedScreen() {
     const isJuniorRanger =
         userRole === "junior_ranger";
 
+    const isRanger =
+        userRole === "ranger";
+
     const canManageFeed =
         userRole === "admin" ||
         userRole === "ranger";
@@ -284,11 +287,9 @@ export default function SocialFeedScreen() {
             postId: string,
         ) => {
             /*
-             * Activity post management
-             * from Social Feed belongs
-             * only to Junior Rangers.
+             * Only Rangers can manage their own activity posts.
              */
-            if (!isJuniorRanger) {
+            if (!isRanger) {
                 return;
             }
 
@@ -495,18 +496,15 @@ export default function SocialFeedScreen() {
                 );
 
             /* -------------------------
-               JUNIOR RANGER POST
+               ACTIVITY POST
             ------------------------- */
 
             case "activity_post": {
                 /*
-                 * Admin/Ranger must NOT
-                 * become owners of JR posts,
-                 * even if there is ever some
-                 * unexpected ID condition.
+                 * Only Rangers can edit/delete posts they created.
                  */
                 const isOwner =
-                    isJuniorRanger &&
+                    isRanger &&
                     !!currentUserId &&
                     item.created_by_user_id ===
                     currentUserId;
@@ -526,6 +524,7 @@ export default function SocialFeedScreen() {
                                         {
                                             postId:
                                                 item.id,
+                                            userRole: "ranger",
                                         },
                                     )
                                 : undefined
@@ -568,7 +567,7 @@ export default function SocialFeedScreen() {
                         styles.loadingText
                     }
                 >
-                    Loading your feed...
+                    Loading Community Hub...
                 </Text>
             </View>
         );
@@ -599,7 +598,7 @@ export default function SocialFeedScreen() {
                         styles.errorTitle
                     }
                 >
-                    Unable to Load Feed
+                    Unable to Load Community Hub
                 </Text>
 
                 <Text
@@ -689,7 +688,7 @@ export default function SocialFeedScreen() {
                                     styles.title
                                 }
                             >
-                                Social Feed
+                                Community Hub
                             </Text>
 
                             <Text
@@ -724,7 +723,7 @@ export default function SocialFeedScreen() {
                                 style={
                                     styles.searchInput
                                 }
-                                placeholder="Search the feed..."
+                                placeholder="Search Community Hub..."
                                 placeholderTextColor="#8B9692"
                                 value={
                                     searchText
@@ -815,10 +814,10 @@ export default function SocialFeedScreen() {
 
                         {/* -------------------------
                             SHARE POST
-                            JUNIOR RANGER ONLY
+                            RANGER ONLY
                         ------------------------- */}
 
-                        {isJuniorRanger && (
+                        {isRanger && (
                             <TouchableOpacity
                                 style={
                                     styles.sharePostCard
@@ -826,6 +825,7 @@ export default function SocialFeedScreen() {
                                 onPress={() =>
                                     navigation.navigate(
                                         "ActivityPostForm",
+                                        { userRole: "ranger" },
                                     )
                                 }
                                 activeOpacity={
@@ -854,7 +854,7 @@ export default function SocialFeedScreen() {
                                             styles.sharePostTitle
                                         }
                                     >
-                                        Share A Post
+                                        Create Post
                                     </Text>
 
                                     <Text
@@ -862,8 +862,7 @@ export default function SocialFeedScreen() {
                                             styles.sharePostSubtitle
                                         }
                                     >
-                                        Tell your club about an
-                                        activity you've done.
+                                        Share an update with your club.
                                     </Text>
                                 </View>
 

@@ -71,9 +71,9 @@ export default function FeedManagementScreen() {
         },
 
         {
-            title: "View Social Feed",
+            title: "View Community Hub",
             description:
-                "Preview the combined social feed.",
+                "Preview the combined community Hub.",
             icon: "newspaper-outline" as const,
             onPress: () =>
                 navigation.navigate(
@@ -93,7 +93,7 @@ export default function FeedManagementScreen() {
             }
         >
             <Text style={styles.heading}>
-                Feed Management
+                Community Hub Management
             </Text>
 
             <Text style={styles.subtitle}>

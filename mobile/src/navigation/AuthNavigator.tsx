@@ -275,11 +275,10 @@ export type AuthStackParamList = {
     userRole: 'admin' | 'ranger';
   };
 
-  ActivityPostForm:
-  | {
+  ActivityPostForm: {
     postId?: string;
-  }
-  | undefined;
+    userRole: "ranger";
+  };
 
   Settings: undefined;
 
@@ -666,7 +665,7 @@ export default function AuthNavigator() {
         component={SocialFeedScreen}
         options={{
           ...authHeaderOptions,
-          title: 'Feed',
+          title: 'Community Hub',
         }}
       />
 
@@ -675,7 +674,7 @@ export default function AuthNavigator() {
         component={FeedManagementScreen}
         options={{
           ...authHeaderOptions,
-          title: "Feed Management",
+          title: "Community Hub Management",
         }}
       />
 
@@ -686,7 +685,7 @@ export default function AuthNavigator() {
         }
         options={{
           ...authHeaderOptions,
-          title: 'Share an Activity',
+          title: 'Create Post',
         }}
       />
 

@@ -92,10 +92,6 @@ export default function FeedManagementScreen() {
                 styles.content
             }
         >
-            <Text style={styles.heading}>
-                Community Hub Management
-            </Text>
-
             <Text style={styles.subtitle}>
                 Manage the content shared
                 with Junior Rangers.

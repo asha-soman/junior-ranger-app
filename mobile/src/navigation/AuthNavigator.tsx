@@ -467,6 +467,7 @@ export default function AuthNavigator() {
         name="AdventureList"
         component={AdventureListScreen}
         options={{
+          ...authHeaderOptions,
           title: 'Adventures',
         }}
       />
@@ -477,6 +478,7 @@ export default function AuthNavigator() {
           CreateAdventureScreen
         }
         options={{
+          ...authHeaderOptions,
           title: 'Create Adventure',
         }}
       />
@@ -487,6 +489,7 @@ export default function AuthNavigator() {
           AdventureDetailsScreen
         }
         options={{
+          ...authHeaderOptions,
           title: 'Adventure Details',
         }}
       />
@@ -495,6 +498,7 @@ export default function AuthNavigator() {
         name="EditAdventure"
         component={EditAdventureScreen}
         options={{
+          ...authHeaderOptions,
           title: 'Edit Adventure',
         }}
       />
@@ -505,6 +509,7 @@ export default function AuthNavigator() {
           SubmitAdventureScreen
         }
         options={{
+          ...authHeaderOptions,
           title: 'Submit Adventure',
         }}
       />
@@ -515,6 +520,7 @@ export default function AuthNavigator() {
           SubmitAdventureTaskScreen
         }
         options={{
+          ...authHeaderOptions,
           title: 'Submit Task',
         }}
       />
@@ -525,8 +531,8 @@ export default function AuthNavigator() {
           AdventureSubmissionsScreen
         }
         options={{
-          title:
-            'Adventure Submissions',
+          ...authHeaderOptions,
+          title: 'Adventure Submissions',
         }}
       />
 

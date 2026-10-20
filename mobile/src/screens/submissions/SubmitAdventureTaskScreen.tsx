@@ -305,11 +305,6 @@ export default function SubmitAdventureTaskScreen({
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {isResubmission ? "Task Resubmitted" : "Task Submitted"}
-            </Text>
-          </View>
           <View
             style={{
               flex: 1,
@@ -439,11 +434,6 @@ export default function SubmitAdventureTaskScreen({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isResubmission ? "Resubmit Task" : "Submit Task"}
-        </Text>
-      </View>
       <View style={styles.submissionCard}>
         <Text style={styles.taskSubmitTitle}>{taskTitle}</Text>
         {taskDescription ? (

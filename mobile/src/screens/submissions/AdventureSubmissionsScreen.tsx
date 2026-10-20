@@ -930,24 +930,6 @@ export default function AdventureSubmissionsScreen({
       }
     >
       {/*
-       * HEADER
-       */}
-
-      <View
-        style={
-          styles.header
-        }
-      >
-        <Text
-          style={
-            styles.headerTitle
-          }
-        >
-          Task Submissions
-        </Text>
-      </View>
-
-      {/*
        * INITIAL LOADING
        */}
 

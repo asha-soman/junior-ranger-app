@@ -756,14 +756,6 @@ export default function AdventureDetailsScreen({
         false
       }
     >
-      <View style={styles.header}>
-        <Text
-          style={styles.headerTitle}
-        >
-          Adventure Details
-        </Text>
-      </View>
-
       <View
         style={
           userRole === 'junior_ranger'

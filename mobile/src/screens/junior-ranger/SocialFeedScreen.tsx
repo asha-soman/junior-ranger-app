@@ -685,14 +685,6 @@ export default function SocialFeedScreen() {
                         >
                             <Text
                                 style={
-                                    styles.title
-                                }
-                            >
-                                Community Hub
-                            </Text>
-
-                            <Text
-                                style={
                                     styles.subtitle
                                 }
                             >

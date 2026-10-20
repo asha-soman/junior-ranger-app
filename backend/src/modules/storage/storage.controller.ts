@@ -23,7 +23,7 @@ import type { Response } from 'express';
 @Controller('storage')
 @UseGuards(JwtAuthGuard)
 export class StorageController {
-  constructor(private readonly storageService: StorageService) { }
+  constructor(private readonly storageService: StorageService) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -43,6 +43,13 @@ export class StorageController {
     file: Express.Multer.File,
     @Req() req: any,
   ) {
+    console.log('STORAGE UPLOAD RECEIVED:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      hasBuffer: !!file.buffer,
+    });
+
     const url = await this.storageService.uploadFile(file, req.user);
     return { imageUrl: url };
   }

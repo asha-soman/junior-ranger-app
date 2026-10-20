@@ -1,4 +1,6 @@
 import apiClient from '../api/client';
+import { Platform } from 'react-native';
+import { getToken } from '@/src/utils/secureStore';
 
 export type SubmissionStatus =
   | 'submitted'
@@ -172,26 +174,120 @@ export const updateMySubmission = async (
   return response.data.submission;
 };
 
+
 export const uploadImage = async (imageUri: string): Promise<string> => {
-    const formData = new FormData();
-    const filename = imageUri.split('/').pop() || 'upload.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    formData.append('file', {
+  const formData = new FormData();
+
+  if (Platform.OS === 'web') {
+    // Web requires an actual File or Blob.
+    const fileResponse = await fetch(imageUri);
+
+    if (!fileResponse.ok) {
+      throw new Error(
+        `Failed to read selected image: ${fileResponse.status}`,
+      );
+    }
+
+    const blob = await fileResponse.blob();
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) {
+      throw new Error(
+        `Unsupported image type: ${blob.type || 'unknown'}`,
+      );
+    }
+
+    if (blob.size > 10 * 1024 * 1024) {
+      throw new Error('Image must be smaller than 10 MB');
+    }
+
+    const extension =
+      blob.type === 'image/png'
+        ? 'png'
+        : blob.type === 'image/webp'
+          ? 'webp'
+          : 'jpg';
+
+    const file = new File(
+      [blob],
+      `task-image-${Date.now()}.${extension}`,
+      { type: blob.type },
+    );
+
+    formData.append('file', file);
+  } else {
+    // React Native Android/iOS file descriptor.
+    const filename =
+      imageUri.split('?')[0].split('/').pop() ||
+      `task-image-${Date.now()}.jpg`;
+
+    const extension = filename.split('.').pop()?.toLowerCase();
+
+    const type =
+      extension === 'png'
+        ? 'image/png'
+        : extension === 'webp'
+          ? 'image/webp'
+          : 'image/jpeg';
+
+    formData.append(
+      'file',
+      {
         uri: imageUri,
         name: filename,
         type,
-    } as any);
+      } as any,
+    );
+  }
 
-    const response = await apiClient.post('/storage/upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+  const baseUrl =
+    Platform.OS === 'web'
+      ? process.env.EXPO_PUBLIC_WEB_API_URL
+      : process.env.EXPO_PUBLIC_MOBILE_API_URL;
 
-    return response.data.imageUrl;
+  if (!baseUrl) {
+    throw new Error('Backend API URL is not configured');
+  }
+
+  const token = await getToken();
+
+  if (!token) {
+    throw new Error('Authentication token is missing. Please log in again.');
+  }
+
+  const uploadUrl = `${baseUrl.replace(/\/$/, '')}/storage/upload`;
+
+  console.log('Uploading image:', {
+    platform: Platform.OS,
+    uploadUrl,
+  });
+
+  // Do not set Content-Type manually.
+  // fetch generates the correct multipart boundary.
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    throw new Error(
+      `Image upload failed (${response.status}): ${errorText}`,
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.imageUrl) {
+    throw new Error('Image upload succeeded without an image URL');
+  }
+
+  return data.imageUrl;
 };
+
 
 /*
  * ==========================================

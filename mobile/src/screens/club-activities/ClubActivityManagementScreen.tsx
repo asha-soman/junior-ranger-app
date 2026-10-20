@@ -545,14 +545,6 @@ export default function ClubActivityManagementScreen() {
                             >
                                 <Text
                                     style={
-                                        styles.heading
-                                    }
-                                >
-                                    Club Activities
-                                </Text>
-
-                                <Text
-                                    style={
                                         styles.subtitle
                                     }
                                 >

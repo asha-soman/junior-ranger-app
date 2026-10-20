@@ -467,16 +467,16 @@ export default function AuthNavigator() {
         name="AdventureList"
         component={AdventureListScreen}
         options={{
+          ...authHeaderOptions,
           title: 'Adventures',
         }}
       />
 
       <Stack.Screen
         name="CreateAdventure"
-        component={
-          CreateAdventureScreen
-        }
+        component={CreateAdventureScreen}
         options={{
+          ...authHeaderOptions,
           title: 'Create Adventure',
         }}
       />

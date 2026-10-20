@@ -172,7 +172,7 @@ useFocusEffect(
         }),
     },
     {
-      title: "Feed",
+      title: "Community Hub",
       image: require("../../../assets/images/feed.png"),
       onPress: () =>
         navigation.navigate(

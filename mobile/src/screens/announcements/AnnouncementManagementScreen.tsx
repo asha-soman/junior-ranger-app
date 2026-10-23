@@ -657,10 +657,6 @@ export default function AnnouncementManagementScreen() {
                     <View>
                         <View style={styles.headerSection}>
                             <View style={styles.headerText}>
-                                <Text style={styles.heading}>
-                                    Announcements
-                                </Text>
-
                                 <Text style={styles.subtitle}>
                                     Create and manage announcements for your cohorts.
                                 </Text>

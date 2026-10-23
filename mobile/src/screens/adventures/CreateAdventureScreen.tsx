@@ -450,14 +450,6 @@ export default function CreateAdventureScreen({
         false
       }
     >
-      <View style={styles.header}>
-        <Text
-          style={styles.headerTitle}
-        >
-          Create Adventure
-        </Text>
-      </View>
-
       <View
         style={styles.formCard}
       >

@@ -499,14 +499,6 @@ export default function EditAdventureScreen({
         false
       }
     >
-      <View style={styles.header}>
-        <Text
-          style={styles.headerTitle}
-        >
-          Edit Adventure
-        </Text>
-      </View>
-
       {fetching ? (
         <ActivityIndicator
           size="large"

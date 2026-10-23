@@ -1,0 +1,488 @@
+import React, {
+  useCallback,
+  useState,
+} from "react";
+import { View, Text, TouchableOpacity, ScrollView, Image, Modal, Pressable, Alert, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; import {
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { adminStyles as styles } from "../../styles/AdminManagementStyles";
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
+import { removeToken } from "../../utils/secureStore";
+
+import {
+  getMyProfile,
+} from "../../services/profile/profileService";
+import apiClient from "../../services/api/client";
+
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "RangerMenu"
+>;
+
+export default function RangerMenuScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const [accountMenuVisible, setAccountMenuVisible] = useState(false);
+
+  const [avatarSource, setAvatarSource] =
+    useState<string | null>(null);
+
+  const loadAvatar = async (
+    avatarUrl: string | null,
+  ) => {
+    if (!avatarUrl) {
+      setAvatarSource(null);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get(
+        avatarUrl,
+        {
+          responseType: "arraybuffer",
+        },
+      );
+
+      const bytes = new Uint8Array(
+        response.data,
+      );
+
+      let binary = "";
+
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(
+          bytes[i],
+        );
+      }
+
+      const base64 = btoa(binary);
+
+      setAvatarSource(
+        `data:image/jpeg;base64,${base64}`,
+      );
+    } catch (error) {
+      console.log(
+        "Failed to load ranger avatar:",
+        error,
+      );
+
+      setAvatarSource(null);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const refreshAvatar = async () => {
+        try {
+          const profile =
+            await getMyProfile();
+
+          await loadAvatar(
+            profile.avatar_url,
+          );
+        } catch (error) {
+          console.log(
+            "Failed to refresh ranger avatar:",
+            error,
+          );
+        }
+      };
+
+      refreshAvatar();
+    }, []),
+  );
+
+  const confirmLogout = async () => {
+    await removeToken();
+
+    navigation.replace("Welcome");
+  };
+
+  const handleLogout = () => {
+    setAccountMenuVisible(false);
+
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to logout?");
+      if (confirmed) {
+        confirmLogout();
+      }
+      return;
+    }
+
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: confirmLogout,
+      },
+    ]);
+  };
+
+  const showComingSoon = () => {
+    setAccountMenuVisible(false);
+    Alert.alert("Coming Soon", "Profile feature will be available soon.");
+  };
+
+  const handleSettings = () => {
+    setAccountMenuVisible(false);
+    navigation.navigate("Settings");
+  };
+
+  return (
+    <View style={styles.menuContainer}>
+      <Modal
+        visible={accountMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAccountMenuVisible(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.25)",
+          }}
+          onPress={() => setAccountMenuVisible(false)}
+        >
+          <Pressable
+            style={{
+              width: 260,
+              height: "100%",
+              backgroundColor: "#FFFFFF",
+              paddingTop: 52,
+              paddingHorizontal: 20,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 28,
+              }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
+                  backgroundColor: "#376e62",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                  overflow: "hidden",
+                }}
+              >
+                {avatarSource ? (
+                  <Image
+                    source={{ uri: avatarSource }}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: 23,
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons
+                    name="people-circle"
+                    size={32}
+                    color="#FFFFFF"
+                  />
+                )}
+              </View>
+
+              <View>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    color: "#111",
+                  }}
+                >
+                  Ranger
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: "#667085",
+                    marginTop: 2,
+                  }}
+                >
+                  Account Menu
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "#EEF2F1",
+              }}
+              onPress={() => {
+                setAccountMenuVisible(false);
+
+                navigation.navigate(
+                  "UserProfile",
+                  {
+                    userRole: "ranger",
+                  },
+                );
+              }}
+            >
+              <Ionicons name="person-outline" size={22} color="#2F6F61" />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: "#111",
+                  marginLeft: 12,
+                }}
+              >
+                Profile
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "#EEF2F1",
+              }}
+              onPress={handleSettings}
+            >
+              <Ionicons name="settings-outline" size={22} color="#2F6F61" />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: "#111",
+                  marginLeft: 12,
+                }}
+              >
+                Settings
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 14,
+                marginTop: 8,
+              }}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={22} color="#C0392B" />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#C0392B",
+                  marginLeft: 12,
+                }}
+              >
+                Logout
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <View style={styles.menuHeader}>
+        <TouchableOpacity
+          style={[
+            styles.menuHeaderIcon,
+            {
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            },
+          ]}
+          onPress={() => setAccountMenuVisible(true)}
+          activeOpacity={0.8}
+        >
+          {avatarSource ? (
+            <Image
+              source={{ uri: avatarSource }}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+              }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Ionicons
+              name="people-circle"
+              size={48}
+              color="#FFFFFF"
+            />
+          )}
+        </TouchableOpacity>
+
+        <Text style={styles.menuTitle}>Ranger Dashboard</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.menuContent, { paddingBottom: 100 }]}
+      >
+        <TouchableOpacity
+          style={[styles.menuOption, { justifyContent: "space-between" }]}
+          onPress={() =>
+            navigation.navigate("AdminCohorts", { userRole: "ranger" })
+          }
+        >
+          <Image
+            source={require("../../../assets/images/cohorts.png")}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#111" }}>
+              My Cohorts
+            </Text>
+
+            <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuOption, { justifyContent: "space-between" }]}
+          onPress={() =>
+            navigation.navigate("AdventureList", {
+              userRole: "ranger",
+            })
+          }
+        >
+          <Image
+            source={require("../../../assets/images/adventure.png")}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#111" }}>
+              Adventures
+            </Text>
+
+            <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuOption,
+            {
+              justifyContent: "space-between",
+            },
+          ]}
+          onPress={() =>
+            navigation.navigate(
+              "FeedManagement",
+              {
+                userRole: "ranger",
+              },
+            )
+          }
+        >
+          <Image
+            source={require(
+              "../../../assets/images/feed.png"
+            )}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "700",
+                color: "#111",
+              }}
+            >
+              Community Hub
+            </Text>
+
+            <Ionicons
+              name="chevron-forward"
+              size={28}
+              color="#2F6F61"
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuOption, { justifyContent: "space-between" }]}
+          onPress={() =>
+            navigation.navigate("EventsHub", {
+              userRole: "ranger",
+            })
+          }
+        >
+          <Image
+            source={require("../../../assets/images/announcements.png")}
+            style={styles.menuImage}
+          />
+
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#111" }}>
+              Notices & Events
+            </Text>
+
+            <Ionicons name="chevron-forward" size={28} color="#2F6F61" />
+          </View>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <AppBottomTabBar role="ranger" activeTab="home" />
+    </View>
+  );
+}

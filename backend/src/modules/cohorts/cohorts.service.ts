@@ -1,4 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { CreateCohortDto } from './dto/create-cohort.dto';
 import { randomUUID, randomBytes } from 'crypto';
@@ -83,158 +88,161 @@ export class CohortsService {
     };
   }
 
-async findAllCohorts(
-  user: { userId: string; email: string; role: string },
-  page = 1,
-  limit = 20,
-  searchName = '',
-) {
-  const safePage =
-    Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  async findAllCohorts(
+    user: { userId: string; email: string; role: string },
+    page = 1,
+    limit = 20,
+    searchName = '',
+  ) {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 
-  const safeLimit =
-    Number.isFinite(limit) && limit > 0
-      ? Math.min(Math.floor(limit), 100)
-      : 20;
+    const safeLimit =
+      Number.isFinite(limit) && limit > 0
+        ? Math.min(Math.floor(limit), 100)
+        : 20;
 
-  const offset = (safePage - 1) * safeLimit;
+    const offset = (safePage - 1) * safeLimit;
 
-  let query;
+    let query;
 
-  if (user.role === 'admin') {
-    query = this.db
-      .selectFrom('cohorts')
-      .leftJoin(
-        'users as assigned_ranger',
-        'assigned_ranger.id',
-        'cohorts.assigned_ranger_id',
-      )
-      .select([
-        'cohorts.id',
-        'cohorts.name',
-        'cohorts.description',
-        'cohorts.location',
-        'cohorts.image_url',
-        'cohorts.created_by_ranger_id',
-        'cohorts.assigned_ranger_id',
-        'assigned_ranger.name as assigned_ranger_name',
-        'assigned_ranger.email as assigned_ranger_email',
-        'cohorts.created_at',
-        'cohorts.updated_at',
-      ])
-      .where('cohorts.is_deleted', '=', false);
-  } else if (user.role === 'ranger') {
-    query = this.db
-      .selectFrom('cohort_members')
-      .innerJoin(
-        'cohorts',
-        'cohorts.id',
-        'cohort_members.cohort_id',
-      )
-      .leftJoin(
-        'users as assigned_ranger',
-        'assigned_ranger.id',
-        'cohorts.assigned_ranger_id',
-      )
-      .select([
-        'cohorts.id',
-        'cohorts.name',
-        'cohorts.description',
-        'cohorts.location',
-        'cohorts.image_url',
-        'cohorts.created_by_ranger_id',
-        'cohorts.assigned_ranger_id',
-        'assigned_ranger.name as assigned_ranger_name',
-        'assigned_ranger.email as assigned_ranger_email',
-        'cohorts.created_at',
-        'cohorts.updated_at',
-      ])
-      .where('cohort_members.user_id', '=', user.userId)
-      .where('cohort_members.role', '=', 'ranger')
-      .where('cohort_members.is_deleted', '=', false)
-      .where('cohorts.is_deleted', '=', false);
-  } else {
-    query = this.db
-      .selectFrom('cohort_members')
-      .innerJoin(
-        'cohorts',
-        'cohorts.id',
-        'cohort_members.cohort_id',
-      )
-      .leftJoin(
-        'users as assigned_ranger',
-        'assigned_ranger.id',
-        'cohorts.assigned_ranger_id',
-      )
-      .select([
-        'cohorts.id',
-        'cohorts.name',
-        'cohorts.description',
-        'cohorts.location',
-        'cohorts.image_url',
-        'cohorts.created_by_ranger_id',
-        'cohorts.assigned_ranger_id',
-        'assigned_ranger.name as assigned_ranger_name',
-        'assigned_ranger.email as assigned_ranger_email',
-        'cohorts.created_at',
-        'cohorts.updated_at',
-      ])
-      .where('cohort_members.user_id', '=', user.userId)
-      .where('cohort_members.role', '=', 'junior_ranger')
-      .where('cohort_members.is_deleted', '=', false)
-      .where('cohorts.is_deleted', '=', false);
-  }
+    if (user.role === 'admin') {
+      query = this.db
+        .selectFrom('cohorts')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.image_url',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohorts.is_deleted', '=', false);
+    } else if (user.role === 'ranger') {
+      query = this.db
+        .selectFrom('cohort_members')
+        .innerJoin('cohorts', 'cohorts.id', 'cohort_members.cohort_id')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.image_url',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohort_members.user_id', '=', user.userId)
+        .where('cohort_members.role', '=', 'ranger')
+        .where('cohort_members.is_deleted', '=', false)
+        .where('cohorts.is_deleted', '=', false);
+    } else {
+      query = this.db
+        .selectFrom('cohort_members')
+        .innerJoin('cohorts', 'cohorts.id', 'cohort_members.cohort_id')
+        .leftJoin(
+          'users as assigned_ranger',
+          'assigned_ranger.id',
+          'cohorts.assigned_ranger_id',
+        )
+        .select([
+          'cohorts.id',
+          'cohorts.name',
+          'cohorts.description',
+          'cohorts.location',
+          'cohorts.image_url',
+          'cohorts.created_by_ranger_id',
+          'cohorts.assigned_ranger_id',
+          'assigned_ranger.name as assigned_ranger_name',
+          'assigned_ranger.email as assigned_ranger_email',
+          'cohorts.created_at',
+          'cohorts.updated_at',
+        ])
+        .where('cohort_members.user_id', '=', user.userId)
+        .where('cohort_members.role', '=', 'junior_ranger')
+        .where('cohort_members.is_deleted', '=', false)
+        .where('cohorts.is_deleted', '=', false);
+    }
 
     const normalizedSearchName = searchName.trim();
 
-  if (normalizedSearchName) {
-    query = query.where(
-      'cohorts.name',
-      'ilike',
-      `%${normalizedSearchName}%`,
-    );
-  }
+    if (normalizedSearchName) {
+      query = query.where('cohorts.name', 'ilike', `%${normalizedSearchName}%`);
+    }
 
-  const totalResult = await query
-    .clearSelect()
-    .select((eb) => eb.fn.countAll().as('total'))
-    .executeTakeFirst();
+    const totalResult = await query
+      .clearSelect()
+      .select((eb) => eb.fn.countAll().as('total'))
+      .executeTakeFirst();
 
-  const total = Number(totalResult?.total ?? 0);
+    const total = Number(totalResult?.total ?? 0);
 
-  const cohorts = await query
-    .orderBy('cohorts.created_at', 'desc')
-    .limit(safeLimit)
-    .offset(offset)
-    .execute();
+    const cohorts = await query
+      .orderBy('cohorts.created_at', 'desc')
+      .limit(safeLimit)
+      .offset(offset)
+      .execute();
 
-  const cohortsWithMemberCount = await Promise.all(
-    cohorts.map(async (cohort) => {
-      const memberCountResult = await this.db
-        .selectFrom('cohort_members')
-        .select((eb) => eb.fn.countAll().as('count'))
-        .where('cohort_id', '=', cohort.id)
-        .where('is_deleted', '=', false)
-        .executeTakeFirst();
-
+    if (cohorts.length === 0) {
       return {
-        ...cohort,
-        member_count: Number(memberCountResult?.count ?? 0),
+        message: 'Cohorts fetched successfully',
+        cohorts: [],
+        pagination: {
+          page: safePage,
+          limit: safeLimit,
+          total,
+          totalPages: Math.ceil(total / safeLimit),
+        },
       };
-    }),
-  );
+    }
 
-  return {
-    message: 'Cohorts fetched successfully',
-    cohorts: cohortsWithMemberCount,
-    pagination: {
-      page: safePage,
-      limit: safeLimit,
-      total,
-      totalPages: Math.ceil(total / safeLimit),
-    },
-  };
-}
+    const cohortIds = cohorts.map((cohort) => cohort.id);
+
+    const memberCounts = await this.db
+      .selectFrom('cohort_members')
+      .select(['cohort_id', (eb) => eb.fn.countAll<number>().as('count')])
+      .where('cohort_id', 'in', cohortIds)
+      .where('is_deleted', '=', false)
+      .groupBy('cohort_id')
+      .execute();
+
+    const countMap = new Map(
+      memberCounts.map((row) => [row.cohort_id, Number(row.count ?? 0)]),
+    );
+
+    const cohortsWithMemberCount = cohorts.map((cohort) => ({
+      ...cohort,
+      member_count: countMap.get(cohort.id) ?? 0,
+    }));
+
+    return {
+      message: 'Cohorts fetched successfully',
+      cohorts: cohortsWithMemberCount,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
+  }
 
   // Find cohort by id
   async findCohortById(
@@ -685,7 +693,9 @@ async findAllCohorts(
     }
 
     if (inviteCode.used_count >= inviteCode.max_usage) {
-      throw new BadRequestException('This invite code has reached its maximum usage limit');
+      throw new BadRequestException(
+        'This invite code has reached its maximum usage limit',
+      );
     }
 
     return {
@@ -711,12 +721,7 @@ async findAllCohorts(
     // 3. Get cohort details for the notification
     const cohort = await this.db
       .selectFrom('cohorts')
-      .select([
-        'id',
-        'name',
-        'assigned_ranger_id',
-        'created_by_ranger_id',
-      ])
+      .select(['id', 'name', 'assigned_ranger_id', 'created_by_ranger_id'])
       .where('id', '=', cohortId)
       .where('is_deleted', '=', false)
       .executeTakeFirst();
@@ -728,20 +733,14 @@ async findAllCohorts(
     // 4. Get Junior Ranger details
     const juniorRanger = await this.db
       .selectFrom('users')
-      .select([
-        'id',
-        'name',
-        'email',
-      ])
+      .select(['id', 'name', 'email'])
       .where('id', '=', userId)
       .where('role', '=', 'junior_ranger')
       .where('is_deleted', '=', false)
       .executeTakeFirst();
 
     if (!juniorRanger) {
-      throw new NotFoundException(
-        'Junior Ranger not found',
-      );
+      throw new NotFoundException('Junior Ranger not found');
     }
 
     // 5. Add Junior Ranger to cohort_members
@@ -766,19 +765,13 @@ async findAllCohorts(
       .execute();
 
     // 7. Determine which Ranger should be notified
-    const rangerId =
-      cohort.assigned_ranger_id ??
-      cohort.created_by_ranger_id;
+    const rangerId = cohort.assigned_ranger_id ?? cohort.created_by_ranger_id;
 
     // 8. Get Ranger details
     const ranger = rangerId
       ? await this.db
           .selectFrom('users')
-          .select([
-            'id',
-            'email',
-            'name',
-          ])
+          .select(['id', 'email', 'name'])
           .where('id', '=', rangerId)
           .where('role', '=', 'ranger')
           .where('is_deleted', '=', false)
@@ -787,16 +780,13 @@ async findAllCohorts(
 
     // 9. Notify Ranger
     if (ranger) {
-      await this.notificationsService
-        .notifyRangerOfJuniorRangerJoining({
-          rangerId: ranger.id,
-          rangerEmail: ranger.email,
-          juniorRangerName:
-            juniorRanger.name ??
-            juniorRanger.email ??
-            'A Junior Ranger',
-          cohortName: cohort.name,
-        });
+      await this.notificationsService.notifyRangerOfJuniorRangerJoining({
+        rangerId: ranger.id,
+        rangerEmail: ranger.email,
+        juniorRangerName:
+          juniorRanger.name ?? juniorRanger.email ?? 'A Junior Ranger',
+        cohortName: cohort.name,
+      });
     }
 
     return {

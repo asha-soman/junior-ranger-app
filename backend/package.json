@@ -17,7 +17,13 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json"
+    "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json",
+    "migrate:latest": "ts-node src/database/migrator.ts latest",
+    "migrate:rollback": "ts-node src/database/migrator.ts down",
+    "migrate:status": "ts-node src/database/migrator.ts status",
+    "db:seed": "ts-node src/database/seeder.ts",
+    "db:reset": "ts-node src/database/reset.ts",
+    "db:status": "ts-node src/database/migrator.ts status"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.1.0",

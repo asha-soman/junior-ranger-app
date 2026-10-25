@@ -12,10 +12,9 @@ import { Button, TextInput } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
-import {
-  createTaskCompletion,
-  uploadImage,
-} from "../../services/submissions/submissionService";
+import { createTaskCompletion } from "../../services/submissions/submissionService";
+import { useImageUpload } from "../../hooks/useImageUpload";
+import ImageUploadFeedback from "../../components/common/ImageUploadFeedback";
 import { adventureStyles as styles } from "../../styles/AdventureStyles";
 type Props = NativeStackScreenProps<AuthStackParamList, "SubmitAdventureTask">;
 /*
@@ -186,6 +185,18 @@ export default function SubmitAdventureTaskScreen({
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const {
+    status: uploadStatus,
+    progress: uploadProgress,
+    error: uploadError,
+    uploadedUrl,
+    upload: executeUpload,
+    retry: retryUpload,
+    reset: resetUpload,
+    isUploading,
+  } = useImageUpload();
+
   /*
    * =========================================
    * IMAGE PICKER
@@ -208,7 +219,9 @@ export default function SubmitAdventureTaskScreen({
         quality: 0.8,
       });
       if (!result.canceled && result.assets.length > 0) {
-        setImageUri(result.assets[0].uri);
+        const selectedUri = result.assets[0].uri;
+        setImageUri(selectedUri);
+        executeUpload(selectedUri).catch(() => {});
       }
     } catch (error) {
       console.log("Image picker error:", error);
@@ -220,6 +233,7 @@ export default function SubmitAdventureTaskScreen({
   };
   const removeNewImage = () => {
     setImageUri(null);
+    resetUpload();
   };
   /*
    * =========================================
@@ -234,38 +248,43 @@ export default function SubmitAdventureTaskScreen({
       );
       return;
     }
+
+    if (isUploading) {
+      Alert.alert(
+        "Image uploading",
+        "Please wait for your image to finish uploading before submitting the task.",
+      );
+      return;
+    }
+
+    if (imageUri && uploadStatus === "error") {
+      Alert.alert(
+        "Upload failed",
+        uploadError ||
+          "Your image upload failed. Please tap 'Retry Upload' or remove the image.",
+      );
+      return;
+    }
+
     try {
       setLoading(true);
-      /*
-       * If a NEW image was selected,
-       * upload it to GCS first.
-       *
-       * uploadImage() returns:
-       *
-       * /storage/files/{filename}
-       *
-       * If this is a resubmission and
-       * no new image was selected,
-       * keep the previous image URL.
-       */
+
       let finalImageUrl: string | undefined;
       if (imageUri) {
-        finalImageUrl = await uploadImage(imageUri);
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        } else {
+          finalImageUrl = await executeUpload(imageUri);
+        }
       } else if (isResubmission && previousImageUrl) {
         finalImageUrl = previousImageUrl;
       }
+
       await createTaskCompletion(taskId, {
         submission_text: submissionText.trim(),
         image_url: finalImageUrl,
       });
-      /*
-       * Once backend confirms success,
-       * display our own success screen.
-       *
-       * The FallingConfetti component
-       * will mount automatically and
-       * start its animation.
-       */
+
       setSubmitted(true);
     } catch (error: any) {
       console.log("Task submission error:", error);
@@ -621,11 +640,18 @@ export default function SubmitAdventureTaskScreen({
                   backgroundColor: "#E8F1EE",
                 }}
               />
+              <ImageUploadFeedback
+                status={uploadStatus}
+                progress={uploadProgress}
+                error={uploadError}
+                onRetry={retryUpload}
+                onCancel={removeNewImage}
+              />
               <Text
                 style={{
                   fontSize: 12,
                   color: "#4E6B64",
-                  marginTop: 10,
+                  marginTop: 4,
                   marginBottom: 10,
                   textAlign: "center",
                 }}
@@ -644,7 +670,7 @@ export default function SubmitAdventureTaskScreen({
                   mode="outlined"
                   icon="image-edit-outline"
                   onPress={pickImage}
-                  disabled={loading}
+                  disabled={loading || isUploading}
                 >
                   Change Image
                 </Button>
@@ -652,7 +678,7 @@ export default function SubmitAdventureTaskScreen({
                   mode="text"
                   icon="delete-outline"
                   onPress={removeNewImage}
-                  disabled={loading}
+                  disabled={loading || isUploading}
                   textColor="#A14F3D"
                 >
                   Remove
@@ -782,8 +808,8 @@ export default function SubmitAdventureTaskScreen({
         </View>
         <Button
           mode="contained"
-          loading={loading}
-          disabled={loading}
+          loading={loading || isUploading}
+          disabled={loading || isUploading}
           onPress={handleSubmit}
           style={styles.submitButton}
         >

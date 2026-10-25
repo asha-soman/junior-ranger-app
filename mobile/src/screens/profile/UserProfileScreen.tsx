@@ -1,5 +1,5 @@
-import apiClient from '../../services/api/client';
-import React, { useCallback, useState } from 'react';
+import apiClient from "../../services/api/client";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -8,155 +8,120 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
-import * as ImagePicker from 'expo-image-picker';
-import { Button } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from "expo-image-picker";
+import { Button } from "react-native-paper";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 import {
   getMyProfile,
   updateMyProfile,
   UserProfile,
-} from '../../services/profile/profileService';
+} from "../../services/profile/profileService";
 
-import {
-  uploadImage,
-} from '../../services/submissions/submissionService';
+import { useImageUpload } from "../../hooks/useImageUpload";
+import ImageUploadFeedback from "../../components/common/ImageUploadFeedback";
 
 import {
   EarnedBadge,
   GamificationProgress,
   getMyBadges,
   getMyGamificationProgress,
-} from '../../services/gamification/gamificationService';
+} from "../../services/gamification/gamificationService";
 
-import {
-  userProfileStyles as styles,
-} from '../../styles/UserProfileStyles';
+import { userProfileStyles as styles } from "../../styles/UserProfileStyles";
 
-import AppBottomTabBar from '../../components/navigation/AppBottomTabBar';
+import AppBottomTabBar from "../../components/navigation/AppBottomTabBar";
 
+type Props = NativeStackScreenProps<AuthStackParamList, "UserProfile">;
 
-type Props = NativeStackScreenProps<
-  AuthStackParamList,
-  'UserProfile'
->;
+export default function UserProfileScreen({ route }: Props) {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
-export default function UserProfileScreen({
-  route,
-}: Props) {
-  const [profile, setProfile] =
-    useState<UserProfile | null>(null);
+  const [progress, setProgress] = useState<GamificationProgress | null>(null);
 
-  const [progress, setProgress] =
-    useState<GamificationProgress | null>(null);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
 
-  const [badges, setBadges] =
-    useState<EarnedBadge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [error, setError] = useState("");
 
-  const [error, setError] =
-    useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
-  const [isEditing, setIsEditing] =
-    useState(false);
+  const [editedName, setEditedName] = useState("");
 
-  const [editedName, setEditedName] =
-    useState('');
+  const [saving, setSaving] = useState(false);
 
-  const [saving, setSaving] =
-  useState(false);
+  const {
+    status: uploadStatus,
+    progress: uploadProgress,
+    error: uploadError,
+    isUploading,
+    upload: executeUpload,
+    retry: retryUpload,
+    reset: resetUpload,
+    selectedUri,
+  } = useImageUpload();
 
-const [uploadingPhoto, setUploadingPhoto] =
-  useState(false);
+  const [avatarSource, setAvatarSource] = useState<string | null>(null);
 
-  const [avatarSource, setAvatarSource] =
-  useState<string | null>(null);
+  const [validationError, setValidationError] = useState("");
 
-const [validationError, setValidationError] =
-  useState('');
+  const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
-  const [achievementsExpanded, setAchievementsExpanded] =
-    useState(false);
+  const [personalDetailsExpanded, setPersonalDetailsExpanded] = useState(false);
 
-  const [personalDetailsExpanded, setPersonalDetailsExpanded] =
-    useState(false);
+  const [cohortExpanded, setCohortExpanded] = useState(false);
 
-  const [cohortExpanded, setCohortExpanded] =
-    useState(false);
-
-const loadAvatar = async (
-  avatarUrl: string | null,
-) => {
-  if (!avatarUrl) {
-    setAvatarSource(null);
-    return;
-  }
-
-  try {
-
-    const response = await apiClient.get(
-      avatarUrl,
-      {
-        responseType: 'arraybuffer',
-      },
-    );
-
-    const bytes = new Uint8Array(
-      response.data,
-    );
-
-    let binary = '';
-
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(
-        bytes[i],
-      );
+  const loadAvatar = async (avatarUrl: string | null) => {
+    if (!avatarUrl) {
+      setAvatarSource(null);
+      return;
     }
 
-    const base64 = btoa(binary);
+    try {
+      const response = await apiClient.get(avatarUrl, {
+        responseType: "arraybuffer",
+      });
 
-    setAvatarSource(
-      `data:image/jpeg;base64,${base64}`,
-    );
-  } catch (error: any) {
-    console.log(
-      'Failed to load avatar:',
-      error?.response?.status ||
-        error?.message ||
-        error,
-    );
+      const bytes = new Uint8Array(response.data);
 
-    setAvatarSource(null);
-  }
-};
+      let binary = "";
 
-const loadProfile = async () => {
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+
+      const base64 = btoa(binary);
+
+      setAvatarSource(`data:image/jpeg;base64,${base64}`);
+    } catch (error: any) {
+      console.log(
+        "Failed to load avatar:",
+        error?.response?.status || error?.message || error,
+      );
+
+      setAvatarSource(null);
+    }
+  };
+
+  const loadProfile = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
-      const profileData =
-        await getMyProfile();
+      const profileData = await getMyProfile();
 
       setProfile(profileData);
       await loadAvatar(profileData.avatar_url);
 
-      if (
-        profileData.role ===
-        'junior_ranger'
-      ) {
-        const [
-          progressData,
-          badgeData,
-        ] = await Promise.all([
+      if (profileData.role === "junior_ranger") {
+        const [progressData, badgeData] = await Promise.all([
           getMyGamificationProgress(),
           getMyBadges(),
         ]);
@@ -168,14 +133,10 @@ const loadProfile = async () => {
         setBadges([]);
       }
     } catch (error: any) {
-      console.log(
-        'Profile loading error:',
-        error,
-      );
+      console.log("Profile loading error:", error);
 
       setError(
-        error?.response?.data?.message ||
-          'Unable to load your profile.',
+        error?.response?.data?.message || "Unable to load your profile.",
       );
     } finally {
       setLoading(false);
@@ -183,27 +144,25 @@ const loadProfile = async () => {
   };
 
   useFocusEffect(
-  useCallback(() => {
-    const loadScreenData = async () => {
-      await loadProfile();
-    };
+    useCallback(() => {
+      const loadScreenData = async () => {
+        await loadProfile();
+      };
 
-    loadScreenData();
-  }, []),
-);
+      loadScreenData();
+    }, []),
+  );
 
-  const formatRole = (
-    role: UserProfile['role'],
-  ) => {
+  const formatRole = (role: UserProfile["role"]) => {
     switch (role) {
-      case 'admin':
-        return 'Administrator';
+      case "admin":
+        return "Administrator";
 
-      case 'ranger':
-        return 'Ranger';
+      case "ranger":
+        return "Ranger";
 
-      case 'junior_ranger':
-        return 'Junior Ranger';
+      case "junior_ranger":
+        return "Junior Ranger";
 
       default:
         return role;
@@ -211,97 +170,93 @@ const loadProfile = async () => {
   };
 
   const handleEditProfile = () => {
-    setEditedName(profile?.name || '');
-    setValidationError('');
+    setEditedName(profile?.name || "");
+    setValidationError("");
     setPersonalDetailsExpanded(true);
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
-    setEditedName(profile?.name || '');
-    setValidationError('');
+    setEditedName(profile?.name || "");
+    setValidationError("");
     setIsEditing(false);
   };
 
   const handleProfilePictureUpload = async () => {
-  try {
-    setUploadingPhoto(true);
-    setValidationError('');
+    try {
+      setValidationError("");
 
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      setValidationError(
-        'Permission to access photos is required.',
-      );
-      return;
-    }
+      if (!permissionResult.granted) {
+        setValidationError("Permission to access photos is required.");
+        return;
+      }
 
-    const result =
-      await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-    if (result.canceled) {
-      return;
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const imageUri = result.assets[0].uri;
+      const imageUrl = await executeUpload(imageUri);
+
+      const updatedProfile = await updateMyProfile({
+        avatar_url: imageUrl,
+      });
+
+      console.log("Updated profile:", updatedProfile);
+
+      setProfile(updatedProfile);
+
+      await loadAvatar(updatedProfile.avatar_url);
+    } catch (error: any) {
+      console.log("Profile picture upload error:", error);
     }
+  };
 
-    const imageUri = result.assets[0].uri;
+  const handleRetryAvatarUpload = async () => {
+    if (!selectedUri) return;
+    try {
+      setValidationError("");
+      const imageUrl = await retryUpload();
+      if (!imageUrl) return;
 
-    const imageUrl =
-      await uploadImage(imageUri);
+      const updatedProfile = await updateMyProfile({
+        avatar_url: imageUrl,
+      });
 
-const updatedProfile =
-  await updateMyProfile({
-    avatar_url: imageUrl,
-  });
+      console.log("Updated profile after retry:", updatedProfile);
 
-console.log(
-  'Updated profile:',
-  updatedProfile,
-);
+      setProfile(updatedProfile);
 
-setProfile(updatedProfile);
-
-await loadAvatar(
-  updatedProfile.avatar_url,
-);
-
-} catch (error: any) {
-  console.log(
-    'Profile picture upload error:',
-    error,
-  );
-
-  setValidationError(
-    error?.response?.data?.message ||
-      error?.message ||
-      'Unable to upload profile picture.',
-  );
-} finally {
-  setUploadingPhoto(false);
-}
-};
+      await loadAvatar(updatedProfile.avatar_url);
+    } catch (error: any) {
+      console.log("Profile picture retry error:", error);
+    }
+  };
 
   const handleSaveProfile = async () => {
     const trimmedName = editedName.trim();
 
     if (!trimmedName) {
-      setValidationError('Name is required.');
+      setValidationError("Name is required.");
       return;
     }
 
     try {
       setSaving(true);
-      setValidationError('');
+      setValidationError("");
 
-      const updatedProfile =
-        await updateMyProfile({
-         name: trimmedName,
+      const updatedProfile = await updateMyProfile({
+        name: trimmedName,
       });
 
       setProfile(updatedProfile);
@@ -310,76 +265,60 @@ await loadAvatar(
       setValidationError(
         error?.response?.data?.message ||
           error?.message ||
-          'Unable to update your profile.',
+          "Unable to update your profile.",
       );
     } finally {
       setSaving(false);
     }
   };
 
-  const getLevelTitle = (
-    level: number,
-  ) => {
+  const getLevelTitle = (level: number) => {
     if (level >= 5) {
-      return 'Nature Champion';
+      return "Nature Champion";
     }
 
     if (level === 4) {
-      return 'Wildlife Guardian';
+      return "Wildlife Guardian";
     }
 
     if (level === 3) {
-      return 'Adventure Explorer';
+      return "Adventure Explorer";
     }
 
     if (level === 2) {
-      return 'Rising Ranger';
+      return "Rising Ranger";
     }
 
-    return 'Junior Explorer';
+    return "Junior Explorer";
   };
 
   const getBadgeIcon = (
     criteriaType: string | null,
-  ):
-    | 'ribbon'
-    | 'star'
-    | 'checkmark-circle'
-    | 'trophy' => {
+  ): "ribbon" | "star" | "checkmark-circle" | "trophy" => {
     switch (criteriaType) {
-      case 'xp':
-        return 'star';
+      case "xp":
+        return "star";
 
-      case 'task_count':
-        return 'checkmark-circle';
+      case "task_count":
+        return "checkmark-circle";
 
-      case 'level':
-        return 'trophy';
+      case "level":
+        return "trophy";
 
       default:
-        return 'ribbon';
+        return "ribbon";
     }
   };
 
   if (loading) {
-
     return (
       <View style={styles.container}>
-        <View
-          style={
-            styles.loaderContainer
-          }
-        >
-          <ActivityIndicator
-            size="large"
-          />
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" />
         </View>
 
         <AppBottomTabBar
-          role={
-            route.params?.userRole ??
-            'junior_ranger'
-          }
+          role={route.params?.userRole ?? "junior_ranger"}
           activeTab="menu"
         />
       </View>
@@ -389,747 +328,446 @@ await loadAvatar(
   if (error || !profile) {
     return (
       <View style={styles.container}>
-        <View
-          style={
-            styles.errorContainer
-          }
-        >
-          <Ionicons
-            name="alert-circle-outline"
-            size={50}
-            color="#A33A3A"
-          />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={50} color="#A33A3A" />
 
-          <Text
-            style={styles.errorText}
-          >
-            {error ||
-              'Unable to load your profile.'}
+          <Text style={styles.errorText}>
+            {error || "Unable to load your profile."}
           </Text>
 
           <Button
             mode="contained"
             onPress={loadProfile}
-            style={
-              styles.retryButton
-            }
+            style={styles.retryButton}
           >
             Try Again
           </Button>
         </View>
 
         <AppBottomTabBar
-          role={
-            route.params?.userRole ??
-            'junior_ranger'
-          }
+          role={route.params?.userRole ?? "junior_ranger"}
           activeTab="menu"
         />
       </View>
     );
   }
 
-  const isJuniorRanger =
-    profile.role ===
-    'junior_ranger';
+  const isJuniorRanger = profile.role === "junior_ranger";
 
   return (
     <View style={styles.container}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={
-          styles.content
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
         <View
           style={[
             styles.profileCard,
-            isJuniorRanger &&
-              styles.juniorProfileCard,
+            isJuniorRanger && styles.juniorProfileCard,
           ]}
         >
-          <View
-            style={
-              styles.avatarContainer
-            }
-          >
-           <TouchableOpacity
-  onPress={handleProfilePictureUpload}
-  disabled={uploadingPhoto}
-  style={
-    isJuniorRanger
-      ? styles.juniorAvatarRing
-      : undefined
-  }
->
-  {uploadingPhoto ? (
-  <View style={styles.avatarPlaceholder}>
-    <ActivityIndicator
-      size="large"
-      color="#376E62"
-    />
-  </View>
-) : avatarSource ? (
-  <Image
-    source={{
-      uri: avatarSource,
-    }}
-    style={styles.avatar}
-  />
-) : (
-  <View style={styles.avatarPlaceholder}>
-    <Ionicons
-      name={
-        isJuniorRanger
-          ? 'leaf'
-          : 'person'
-      }
-      size={
-        isJuniorRanger
-          ? 52
-          : 65
-      }
-      color="#376E62"
-    />
-  </View>
-)}
-</TouchableOpacity>
+          <View style={styles.avatarContainer}>
+            <TouchableOpacity
+              onPress={handleProfilePictureUpload}
+              disabled={isUploading}
+              style={isJuniorRanger ? styles.juniorAvatarRing : undefined}
+            >
+              {isUploading ? (
+                <View style={styles.avatarPlaceholder}>
+                  <ActivityIndicator size="large" color="#376E62" />
+                </View>
+              ) : avatarSource ? (
+                <Image
+                  source={{
+                    uri: avatarSource,
+                  }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons
+                    name={isJuniorRanger ? "leaf" : "person"}
+                    size={isJuniorRanger ? 52 : 65}
+                    color="#376E62"
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <ImageUploadFeedback
+              status={uploadStatus}
+              progress={uploadProgress}
+              error={uploadError}
+              onRetry={handleRetryAvatarUpload}
+              onCancel={resetUpload}
+              style={{ width: "100%", marginTop: 8 }}
+            />
 
             {isJuniorRanger && (
-              <View
-                style={
-                  styles.juniorRolePill
-                }
-              >
-                <Ionicons
-                  name="compass"
-                  size={14}
-                  color="#FFFFFF"
-                />
+              <View style={styles.juniorRolePill}>
+                <Ionicons name="compass" size={14} color="#FFFFFF" />
 
-                <Text
-                  style={
-                    styles.juniorRolePillText
-                  }
-                >
-                  JUNIOR RANGER
-                </Text>
+                <Text style={styles.juniorRolePillText}>JUNIOR RANGER</Text>
               </View>
             )}
 
-            <Text
-              style={styles.name}
-            >
-              {profile.name || 'User'}
-            </Text>
+            <Text style={styles.name}>{profile.name || "User"}</Text>
 
             {!isJuniorRanger && (
-              <Text
-                style={styles.role}
-              >
-                {formatRole(
-                  profile.role,
-                )}
-              </Text>
+              <Text style={styles.role}>{formatRole(profile.role)}</Text>
             )}
 
-            {isJuniorRanger &&
-              progress && (
-                <Text
-                  style={
-                    styles.levelNickname
-                  }
-                >
-                  {getLevelTitle(
-                    progress.current_level,
-                  )}
-                </Text>
-              )}
+            {isJuniorRanger && progress && (
+              <Text style={styles.levelNickname}>
+                {getLevelTitle(progress.current_level)}
+              </Text>
+            )}
           </View>
 
-          {isJuniorRanger &&
-            progress && (
-              <>
-                <View
-                  style={
-                    styles.gamificationHeroCard
-                  }
-                >
-                  <View
-                    style={
-                      styles.levelBadgeCircle
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.levelBadgeSmall
-                      }
-                    >
-                      LEVEL
-                    </Text>
+          {isJuniorRanger && progress && (
+            <>
+              <View style={styles.gamificationHeroCard}>
+                <View style={styles.levelBadgeCircle}>
+                  <Text style={styles.levelBadgeSmall}>LEVEL</Text>
 
-                    <Text
-                      style={
-                        styles.levelBadgeNumber
-                      }
-                    >
-                      {
-                        progress.current_level
-                      }
-                    </Text>
-                  </View>
-
-                  <View
-                    style={
-                      styles.gamificationHeroContent
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.gamificationHeroEyebrow
-                      }
-                    >
-                      YOUR RANGER JOURNEY
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.gamificationHeroTitle
-                      }
-                    >
-                      {getLevelTitle(
-                        progress.current_level,
-                      )}
-                    </Text>
-
-                    <View
-                      style={
-                        styles.totalXpPill
-                      }
-                    >
-                      <Ionicons
-                        name="star"
-                        size={16}
-                        color="#D89B22"
-                      />
-
-                      <Text
-                        style={
-                          styles.totalXpPillText
-                        }
-                      >
-                        {
-                          progress.total_xp
-                        }{' '}
-                        Total XP
-                      </Text>
-                    </View>
-                  </View>
+                  <Text style={styles.levelBadgeNumber}>
+                    {progress.current_level}
+                  </Text>
                 </View>
 
-                {progress.next_level_xp !==
-                  null && (
-                  <View
-                    style={
-                      styles.progressCard
-                    }
-                  >
-                    <View
-                      style={
-                        styles.progressHeader
-                      }
-                    >
-                      <View>
-                        <Text
-                          style={
-                            styles.progressSectionEyebrow
-                          }
-                        >
-                          KEEP EXPLORING
-                        </Text>
+                <View style={styles.gamificationHeroContent}>
+                  <Text style={styles.gamificationHeroEyebrow}>
+                    YOUR RANGER JOURNEY
+                  </Text>
 
-                        <Text
-                          style={
-                            styles.progressText
-                          }
-                        >
-                          Progress to Level{' '}
-                          {progress.current_level +
-                            1}
-                        </Text>
-                      </View>
+                  <Text style={styles.gamificationHeroTitle}>
+                    {getLevelTitle(progress.current_level)}
+                  </Text>
 
-                      <View
-                        style={
-                          styles.progressPercentPill
-                        }
-                      >
-                        <Text
-                          style={
-                            styles.progressPercent
-                          }
-                        >
-                          {
-                            progress.progress_percentage
-                          }
-                          %
-                        </Text>
-                      </View>
+                  <View style={styles.totalXpPill}>
+                    <Ionicons name="star" size={16} color="#D89B22" />
+
+                    <Text style={styles.totalXpPillText}>
+                      {progress.total_xp} Total XP
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {progress.next_level_xp !== null && (
+                <View style={styles.progressCard}>
+                  <View style={styles.progressHeader}>
+                    <View>
+                      <Text style={styles.progressSectionEyebrow}>
+                        KEEP EXPLORING
+                      </Text>
+
+                      <Text style={styles.progressText}>
+                        Progress to Level {progress.current_level + 1}
+                      </Text>
                     </View>
 
-                    <View
-                      style={
-                        styles.progressBarBackground
-                      }
-                    >
-                      <View
-                        style={[
-                          styles.progressBarFill,
-                          {
-                            width: `${progress.progress_percentage}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-
-                    <View
-                      style={
-                        styles.progressBottomRow
-                      }
-                    >
-                      <View
-                        style={
-                          styles.progressMiniStat
-                        }
-                      >
-                        <Ionicons
-                          name="star-outline"
-                          size={18}
-                          color="#3D786B"
-                        />
-
-                        <View>
-                          <Text
-                            style={
-                              styles.progressMiniValue
-                            }
-                          >
-                            {
-                              progress.xp_into_level
-                            }{' '}
-                            XP
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.progressMiniLabel
-                            }
-                          >
-                            earned this level
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View
-                        style={
-                          styles.progressMiniDivider
-                        }
-                      />
-
-                      <View
-                        style={
-                          styles.progressMiniStat
-                        }
-                      >
-                        <Ionicons
-                          name="flag-outline"
-                          size={18}
-                          color="#D89B22"
-                        />
-
-                        <View>
-                          <Text
-                            style={
-                              styles.progressMiniValue
-                            }
-                          >
-                            {
-                              progress.xp_needed_for_next_level
-                            }{' '}
-                            XP
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.progressMiniLabel
-                            }
-                          >
-                            until next level
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View
-                      style={
-                        styles.progressEncouragement
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.progressEncouragementText
-                        }
-                      >
-                        Keep completing tasks to
-                        earn XP and level up!
+                    <View style={styles.progressPercentPill}>
+                      <Text style={styles.progressPercent}>
+                        {progress.progress_percentage}%
                       </Text>
                     </View>
                   </View>
-                )}
 
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() =>
-                    setAchievementsExpanded(
-                      !achievementsExpanded,
-                    )
-                  }
+                  <View style={styles.progressBarBackground}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: `${progress.progress_percentage}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.progressBottomRow}>
+                    <View style={styles.progressMiniStat}>
+                      <Ionicons name="star-outline" size={18} color="#3D786B" />
+
+                      <View>
+                        <Text style={styles.progressMiniValue}>
+                          {progress.xp_into_level} XP
+                        </Text>
+
+                        <Text style={styles.progressMiniLabel}>
+                          earned this level
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.progressMiniDivider} />
+
+                    <View style={styles.progressMiniStat}>
+                      <Ionicons name="flag-outline" size={18} color="#D89B22" />
+
+                      <View>
+                        <Text style={styles.progressMiniValue}>
+                          {progress.xp_needed_for_next_level} XP
+                        </Text>
+
+                        <Text style={styles.progressMiniLabel}>
+                          until next level
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.progressEncouragement}>
+                    <Text style={styles.progressEncouragementText}>
+                      Keep completing tasks to earn XP and level up!
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setAchievementsExpanded(!achievementsExpanded)}
+                style={{
+                  backgroundColor: "#FFF9E8",
+                  borderWidth: 1,
+                  borderColor: "#F0DFA5",
+                  borderRadius: 18,
+                  padding: 16,
+                  marginTop: 5,
+                  marginBottom: achievementsExpanded ? 12 : 16,
+                }}
+              >
+                <View
                   style={{
-                    backgroundColor: '#FFF9E8',
-                    borderWidth: 1,
-                    borderColor: '#F0DFA5',
-                    borderRadius: 18,
-                    padding: 16,
-                    marginTop: 5,
-                    marginBottom: achievementsExpanded ? 12 : 16,
+                    flexDirection: "row",
+                    alignItems: "center",
                   }}
                 >
                   <View
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
+                      width: 50,
+                      height: 50,
+                      borderRadius: 16,
+                      backgroundColor: "#3D786B",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
                     }}
                   >
-                    <View
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 16,
-                        backgroundColor: '#3D786B',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 12,
-                      }}
-                    >
-                      <Ionicons
-                        name="trophy"
-                        size={24}
-                        color="#FFFFFF"
-                      />
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '900',
-                          letterSpacing: 1,
-                          color: '#9A7A2D',
-                          marginBottom: 2,
-                        }}
-                      >
-                        REWARD COLLECTION
-                      </Text>
-
-                      <Text
-                        style={{
-                          fontSize: 18,
-                          fontWeight: '900',
-                          color: '#315F56',
-                        }}
-                      >
-                        My Achievements
-                      </Text>
-
-                      <Text
-                        style={{
-                          marginTop: 4,
-                          fontSize: 12,
-                          color: '#7A7156',
-                          fontWeight: '600',
-                        }}
-                      >
-                        {badges.length} badge{badges.length === 1 ? '' : 's'} earned
-                      </Text>
-                    </View>
-
-                    <View
-                      style={{
-                        minWidth: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        backgroundColor: '#FFF0B8',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 8,
-                        paddingHorizontal: 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: '#946B13',
-                          fontSize: 14,
-                          fontWeight: '900',
-                        }}
-                      >
-                        {badges.length}
-                      </Text>
-                    </View>
-
-                    <Ionicons
-                      name={
-                        achievementsExpanded
-                          ? 'chevron-up'
-                          : 'chevron-forward'
-                      }
-                      size={22}
-                      color="#7E6A31"
-                    />
+                    <Ionicons name="trophy" size={24} color="#FFFFFF" />
                   </View>
 
-                  {!achievementsExpanded &&
-                    badges.length > 0 && (
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "900",
+                        letterSpacing: 1,
+                        color: "#9A7A2D",
+                        marginBottom: 2,
+                      }}
+                    >
+                      REWARD COLLECTION
+                    </Text>
+
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "900",
+                        color: "#315F56",
+                      }}
+                    >
+                      My Achievements
+                    </Text>
+
+                    <Text
+                      style={{
+                        marginTop: 4,
+                        fontSize: 12,
+                        color: "#7A7156",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {badges.length} badge{badges.length === 1 ? "" : "s"}{" "}
+                      earned
+                    </Text>
+                  </View>
+
+                  <View
+                    style={{
+                      minWidth: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#FFF0B8",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 8,
+                      paddingHorizontal: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#946B13",
+                        fontSize: 14,
+                        fontWeight: "900",
+                      }}
+                    >
+                      {badges.length}
+                    </Text>
+                  </View>
+
+                  <Ionicons
+                    name={
+                      achievementsExpanded ? "chevron-up" : "chevron-forward"
+                    }
+                    size={22}
+                    color="#7E6A31"
+                  />
+                </View>
+
+                {!achievementsExpanded && badges.length > 0 && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginTop: 13,
+                    }}
+                  >
+                    {badges.slice(0, 3).map((badge, index) => (
+                      <View
+                        key={badge.id}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor:
+                            index % 2 === 0 ? "#DDF0EA" : "#E7F2EF",
+                          borderWidth: 2,
+                          borderColor: "#FFFFFF",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginLeft: index === 0 ? 0 : -7,
+                        }}
+                      >
+                        <Ionicons
+                          name={getBadgeIcon(badge.criteria_type)}
+                          size={18}
+                          color="#3D786B"
+                        />
+                      </View>
+                    ))}
+
+                    {badges.length > 3 && (
                       <View
                         style={{
-                          flexDirection: 'row',
-                          marginTop: 13,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#F2E7BE",
+                          borderWidth: 2,
+                          borderColor: "#FFFFFF",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginLeft: -7,
                         }}
                       >
-                        {badges
-                          .slice(0, 3)
-                          .map((badge, index) => (
-                            <View
-                              key={badge.id}
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 18,
-                                backgroundColor:
-                                  index % 2 === 0
-                                    ? '#DDF0EA'
-                                    : '#E7F2EF',
-                                borderWidth: 2,
-                                borderColor: '#FFFFFF',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginLeft: index === 0 ? 0 : -7,
-                              }}
-                            >
-                              <Ionicons
-                                name={getBadgeIcon(
-                                  badge.criteria_type,
-                                )}
-                                size={18}
-                                color="#3D786B"
-                              />
-                            </View>
-                          ))}
-
-                        {badges.length > 3 && (
-                          <View
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 18,
-                              backgroundColor: '#F2E7BE',
-                              borderWidth: 2,
-                              borderColor: '#FFFFFF',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginLeft: -7,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 11,
-                                fontWeight: '900',
-                                color: '#8C6C1E',
-                              }}
-                            >
-                              +{badges.length - 3}
-                            </Text>
-                          </View>
-                        )}
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "900",
+                            color: "#8C6C1E",
+                          }}
+                        >
+                          +{badges.length - 3}
+                        </Text>
                       </View>
                     )}
-                </TouchableOpacity>
-
-                {achievementsExpanded && (
-                  <>
-                {badges.length ===
-                0 ? (
-                  <View
-                    style={
-                      styles.emptyBadgeCard
-                    }
-                  >
-                    <View
-                      style={
-                        styles.emptyBadgeIcon
-                      }
-                    >
-                      <Ionicons
-                        name="ribbon-outline"
-                        size={36}
-                        color="#6F7775"
-                      />
-                    </View>
-
-                    <Text
-                      style={
-                        styles.emptyBadgeTitle
-                      }
-                    >
-                      Your badge collection
-                      starts here!
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.emptyBadgeText
-                      }
-                    >
-                      Complete tasks, earn XP,
-                      and level up to unlock
-                      achievements.
-                    </Text>
                   </View>
-                ) : (
-                  <View
-                    style={
-                      styles.badgeGrid
-                    }
-                  >
-                    {badges.map(
-                      (badge) => (
-                        <View
-                          key={badge.id}
-                          style={
-                            styles.badgeCard
-                          }
-                        >
-                          <View
-                            style={
-                              styles.badgeIcon
-                            }
-                          >
+                )}
+              </TouchableOpacity>
+
+              {achievementsExpanded && (
+                <>
+                  {badges.length === 0 ? (
+                    <View style={styles.emptyBadgeCard}>
+                      <View style={styles.emptyBadgeIcon}>
+                        <Ionicons
+                          name="ribbon-outline"
+                          size={36}
+                          color="#6F7775"
+                        />
+                      </View>
+
+                      <Text style={styles.emptyBadgeTitle}>
+                        Your badge collection starts here!
+                      </Text>
+
+                      <Text style={styles.emptyBadgeText}>
+                        Complete tasks, earn XP, and level up to unlock
+                        achievements.
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.badgeGrid}>
+                      {badges.map((badge) => (
+                        <View key={badge.id} style={styles.badgeCard}>
+                          <View style={styles.badgeIcon}>
                             <Ionicons
-                              name={getBadgeIcon(
-                                badge.criteria_type,
-                              )}
+                              name={getBadgeIcon(badge.criteria_type)}
                               size={30}
                               color="#FFFFFF"
                             />
                           </View>
 
-                          <Text
-                            style={
-                              styles.badgeName
-                            }
-                          >
-                            {badge.name}
-                          </Text>
+                          <Text style={styles.badgeName}>{badge.name}</Text>
 
                           {badge.description && (
-                            <Text
-                              style={
-                                styles.badgeDescription
-                              }
-                            >
-                              {
-                                badge.description
-                              }
+                            <Text style={styles.badgeDescription}>
+                              {badge.description}
                             </Text>
                           )}
 
-                          <View
-                            style={
-                              styles.earnedBadgePill
-                            }
-                          >
+                          <View style={styles.earnedBadgePill}>
                             <Ionicons
                               name="checkmark-circle"
                               size={13}
                               color="#2F725B"
                             />
 
-                            <Text
-                              style={
-                                styles.earnedBadgePillText
-                              }
-                            >
+                            <Text style={styles.earnedBadgePillText}>
                               EARNED
                             </Text>
                           </View>
                         </View>
-                      ),
-                    )}
+                      ))}
+                    </View>
+                  )}
+
+                  <View style={styles.nextGoalCard}>
+                    <Ionicons name="sparkles" size={23} color="#D89B22" />
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.nextGoalTitle}>Keep collecting!</Text>
+
+                      <Text style={styles.nextGoalText}>
+                        More tasks and adventures mean more XP, levels and
+                        badges.
+                      </Text>
+                    </View>
                   </View>
-                )}
-
-                <View
-                  style={
-                    styles.nextGoalCard
-                  }
-                >
-                  <Ionicons
-                    name="sparkles"
-                    size={23}
-                    color="#D89B22"
-                  />
-
-                  <View
-                    style={{ flex: 1 }}
-                  >
-                    <Text
-                      style={
-                        styles.nextGoalTitle
-                      }
-                    >
-                      Keep collecting!
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.nextGoalText
-                      }
-                    >
-                      More tasks and adventures
-                      mean more XP, levels and
-                      badges.
-                    </Text>
-                  </View>
-                </View>
-
-                  </>
-                )}
-              </>
-            )}
+                </>
+              )}
+            </>
+          )}
 
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              setPersonalDetailsExpanded(
-                !personalDetailsExpanded,
-              )
-            }
+            onPress={() => setPersonalDetailsExpanded(!personalDetailsExpanded)}
             style={{
-              backgroundColor: '#F8FCFA',
+              backgroundColor: "#F8FCFA",
               borderWidth: 1,
-              borderColor: '#D9E9E4',
+              borderColor: "#D9E9E4",
               borderRadius: 18,
               paddingHorizontal: 16,
               paddingVertical: 15,
@@ -1139,8 +777,8 @@ await loadAvatar(
           >
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection: "row",
+                alignItems: "center",
               }}
             >
               <View
@@ -1148,26 +786,22 @@ await loadAvatar(
                   width: 44,
                   height: 44,
                   borderRadius: 14,
-                  backgroundColor: '#E2F1ED',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: "#E2F1ED",
+                  alignItems: "center",
+                  justifyContent: "center",
                   marginRight: 12,
                 }}
               >
-                <Ionicons
-                  name="person-outline"
-                  size={22}
-                  color="#3D786B"
-                />
+                <Ionicons name="person-outline" size={22} color="#3D786B" />
               </View>
 
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 10,
-                    fontWeight: '800',
+                    fontWeight: "800",
                     letterSpacing: 0.9,
-                    color: '#84A39B',
+                    color: "#84A39B",
                     marginBottom: 2,
                   }}
                 >
@@ -1177,8 +811,8 @@ await loadAvatar(
                 <Text
                   style={{
                     fontSize: 17,
-                    fontWeight: '800',
-                    color: '#315F56',
+                    fontWeight: "800",
+                    color: "#315F56",
                   }}
                 >
                   Personal Details
@@ -1190,19 +824,17 @@ await loadAvatar(
                     style={{
                       marginTop: 4,
                       fontSize: 12,
-                      color: '#6E7C78',
+                      color: "#6E7C78",
                     }}
                   >
-                    {profile.name || 'User'} • {profile.email}
+                    {profile.name || "User"} • {profile.email}
                   </Text>
                 )}
               </View>
 
               <Ionicons
                 name={
-                  personalDetailsExpanded
-                    ? 'chevron-up'
-                    : 'chevron-forward'
+                  personalDetailsExpanded ? "chevron-up" : "chevron-forward"
                 }
                 size={22}
                 color="#3D786B"
@@ -1214,9 +846,9 @@ await loadAvatar(
             <View>
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                   marginBottom: 14,
                 }}
               >
@@ -1224,8 +856,8 @@ await loadAvatar(
                   <Text
                     style={{
                       fontSize: 12,
-                      color: '#78948D',
-                      fontWeight: '700',
+                      color: "#78948D",
+                      fontWeight: "700",
                       marginBottom: 2,
                     }}
                   >
@@ -1235,8 +867,8 @@ await loadAvatar(
                   <Text
                     style={{
                       fontSize: 16,
-                      color: '#315F56',
-                      fontWeight: '800',
+                      color: "#315F56",
+                      fontWeight: "800",
                     }}
                   >
                     Your personal information
@@ -1251,108 +883,85 @@ await loadAvatar(
                       width: 40,
                       height: 40,
                       borderRadius: 12,
-                      backgroundColor: '#3D786B',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      backgroundColor: "#3D786B",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Ionicons
-                      name="create-outline"
-                      size={19}
-                      color="#FFFFFF"
-                    />
+                    <Ionicons name="create-outline" size={19} color="#FFFFFF" />
                   </TouchableOpacity>
                 )}
               </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.infoLabel}>
-              Name
-            </Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.infoLabel}>Name</Text>
 
-            {isEditing ? (
-              <>
-                <TextInput
-                  style={{
-                    backgroundColor: '#F7FAF8',
-                    borderWidth: 1,
-                    borderColor: validationError
-                      ? '#A33A3A'
-                      : '#DDEBE5',
-                    borderRadius: 16,
-                    paddingHorizontal: 16,
-                    paddingVertical: 13,
-                    fontSize: 15,
-                    color: '#222',
-                  }}
-                  value={editedName}
-                  onChangeText={(text) => {
-                    setEditedName(text);
-                    setValidationError('');
-                  }}
-                  placeholder="Enter your name"
-                  placeholderTextColor="#7B8A84"
-                  autoCapitalize="words"
-                />
+                {isEditing ? (
+                  <>
+                    <TextInput
+                      style={{
+                        backgroundColor: "#F7FAF8",
+                        borderWidth: 1,
+                        borderColor: validationError ? "#A33A3A" : "#DDEBE5",
+                        borderRadius: 16,
+                        paddingHorizontal: 16,
+                        paddingVertical: 13,
+                        fontSize: 15,
+                        color: "#222",
+                      }}
+                      value={editedName}
+                      onChangeText={(text) => {
+                        setEditedName(text);
+                        setValidationError("");
+                      }}
+                      placeholder="Enter your name"
+                      placeholderTextColor="#7B8A84"
+                      autoCapitalize="words"
+                    />
 
-                {validationError ? (
-                  <Text
-                    style={{
-                      color: '#A33A3A',
-                      fontSize: 13,
-                      marginTop: 6,
-                    }}
-                  >
-                    {validationError}
-                  </Text>
-                ) : null}
-              </>
-            ) : (
-              <View style={styles.infoBox}>
-                <Text style={styles.infoValue}>
-                  {profile.name ||
-                    'Not provided'}
-                </Text>
+                    {validationError ? (
+                      <Text
+                        style={{
+                          color: "#A33A3A",
+                          fontSize: 13,
+                          marginTop: 6,
+                        }}
+                      >
+                        {validationError}
+                      </Text>
+                    ) : null}
+                  </>
+                ) : (
+                  <View style={styles.infoBox}>
+                    <Text style={styles.infoValue}>
+                      {profile.name || "Not provided"}
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.infoLabel}>
-              Email
-            </Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.infoLabel}>Email</Text>
 
-            <View
-              style={styles.infoBox}
-            >
-              <Text
-                style={
-                  styles.infoValue
-                }
-              >
-                {profile.email}
-              </Text>
-            </View>
-          </View>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoValue}>{profile.email}</Text>
+                </View>
+              </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.infoLabel}>
-              Role
-            </Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.infoLabel}>Role</Text>
 
-            <View style={styles.infoBox}>
-              <Text style={styles.infoValue}>
-                {formatRole(profile.role)}
-              </Text>
-            </View>
-          </View>
-
-
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoValue}>
+                    {formatRole(profile.role)}
+                  </Text>
+                </View>
+              </View>
 
               {isEditing && (
                 <View
                   style={{
-                    flexDirection: 'row',
+                    flexDirection: "row",
                     gap: 10,
                     marginTop: 6,
                     marginBottom: 4,
@@ -1361,20 +970,20 @@ await loadAvatar(
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      backgroundColor: '#E8EEEB',
+                      backgroundColor: "#E8EEEB",
                       paddingVertical: 14,
                       borderRadius: 16,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                     onPress={handleCancelEdit}
                     disabled={saving}
                   >
                     <Text
                       style={{
-                        color: '#376E62',
+                        color: "#376E62",
                         fontSize: 15,
-                        fontWeight: '700',
+                        fontWeight: "700",
                       }}
                     >
                       Cancel
@@ -1384,12 +993,12 @@ await loadAvatar(
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      backgroundColor: '#376E62',
+                      backgroundColor: "#376E62",
                       paddingVertical: 14,
                       borderRadius: 16,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexDirection: 'row',
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
                     }}
                     onPress={handleSaveProfile}
                     disabled={saving}
@@ -1406,9 +1015,9 @@ await loadAvatar(
 
                         <Text
                           style={{
-                            color: '#FFFFFF',
+                            color: "#FFFFFF",
                             fontSize: 15,
-                            fontWeight: '700',
+                            fontWeight: "700",
                             marginLeft: 7,
                           }}
                         >
@@ -1427,15 +1036,11 @@ await loadAvatar(
             <>
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={() =>
-                  setCohortExpanded(
-                    !cohortExpanded,
-                  )
-                }
+                onPress={() => setCohortExpanded(!cohortExpanded)}
                 style={{
-                  backgroundColor: '#F1F8F6',
+                  backgroundColor: "#F1F8F6",
                   borderWidth: 1,
-                  borderColor: '#D7E8E3',
+                  borderColor: "#D7E8E3",
                   borderRadius: 18,
                   paddingHorizontal: 16,
                   paddingVertical: 15,
@@ -1445,8 +1050,8 @@ await loadAvatar(
               >
                 <View
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
+                    flexDirection: "row",
+                    alignItems: "center",
                   }}
                 >
                   <View
@@ -1454,26 +1059,22 @@ await loadAvatar(
                       width: 44,
                       height: 44,
                       borderRadius: 14,
-                      backgroundColor: '#DDEEE9',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      backgroundColor: "#DDEEE9",
+                      alignItems: "center",
+                      justifyContent: "center",
                       marginRight: 12,
                     }}
                   >
-                    <Ionicons
-                      name="people-outline"
-                      size={22}
-                      color="#3D786B"
-                    />
+                    <Ionicons name="people-outline" size={22} color="#3D786B" />
                   </View>
 
                   <View style={{ flex: 1 }}>
                     <Text
                       style={{
                         fontSize: 10,
-                        fontWeight: '800',
+                        fontWeight: "800",
                         letterSpacing: 0.9,
-                        color: '#7A9D95',
+                        color: "#7A9D95",
                         marginBottom: 2,
                       }}
                     >
@@ -1483,8 +1084,8 @@ await loadAvatar(
                     <Text
                       style={{
                         fontSize: 17,
-                        fontWeight: '800',
-                        color: '#315F56',
+                        fontWeight: "800",
+                        color: "#315F56",
                       }}
                     >
                       Cohort Information
@@ -1496,23 +1097,19 @@ await loadAvatar(
                         style={{
                           marginTop: 4,
                           fontSize: 12,
-                          color: '#6D7D79',
+                          color: "#6D7D79",
                         }}
                       >
                         {profile.cohort.name}
                         {profile.cohort.location
                           ? ` • ${profile.cohort.location}`
-                          : ''}
+                          : ""}
                       </Text>
                     )}
                   </View>
 
                   <Ionicons
-                    name={
-                      cohortExpanded
-                        ? 'chevron-up'
-                        : 'chevron-forward'
-                    }
+                    name={cohortExpanded ? "chevron-up" : "chevron-forward"}
                     size={22}
                     color="#3D786B"
                   />
@@ -1521,45 +1118,35 @@ await loadAvatar(
 
               {cohortExpanded && (
                 <View>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.infoLabel}>Cohort</Text>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.infoLabel}>
-                  Cohort
-                </Text>
-
-                <View style={styles.infoBox}>
-                  <Text style={styles.infoValue}>
-                    {profile.cohort.name}
-                  </Text>
-                </View>
-              </View>
-
-              {profile.cohort.location && (
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.infoLabel}>
-                    Location
-                  </Text>
-
-                  <View style={styles.infoBox}>
-                    <Text style={styles.infoValue}>
-                      {profile.cohort.location}
-                    </Text>
+                    <View style={styles.infoBox}>
+                      <Text style={styles.infoValue}>
+                        {profile.cohort.name}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              )}
 
+                  {profile.cohort.location && (
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.infoLabel}>Location</Text>
+
+                      <View style={styles.infoBox}>
+                        <Text style={styles.infoValue}>
+                          {profile.cohort.location}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
               )}
             </>
           )}
-
         </View>
       </ScrollView>
 
-      <AppBottomTabBar
-        role={profile.role}
-        activeTab="menu"
-      />
+      <AppBottomTabBar role={profile.role} activeTab="menu" />
     </View>
   );
 }

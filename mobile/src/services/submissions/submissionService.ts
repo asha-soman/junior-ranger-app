@@ -1,11 +1,7 @@
-import apiClient from '../api/client';
-import { Platform } from 'react-native';
-import { getToken } from '@/src/utils/secureStore';
+import apiClient from "../api/client";
+import { uploadImage as storageUploadImage } from "../storage/storageService";
 
-export type SubmissionStatus =
-  | 'submitted'
-  | 'approved'
-  | 'rejected';
+export type SubmissionStatus = "submitted" | "approved" | "rejected";
 
 export interface AdventureSubmission {
   id: string;
@@ -31,7 +27,7 @@ export interface CreateSubmissionPayload {
 }
 
 export interface ReviewSubmissionPayload {
-  status: 'approved' | 'rejected';
+  status: "approved" | "rejected";
   feedback?: string;
 }
 
@@ -47,10 +43,7 @@ export interface TaskCompletion {
   junior_ranger_user_id: string;
   submission_text: string | null;
   image_url: string | null;
-  status:
-    | 'submitted'
-    | 'approved'
-    | 'rejected';
+  status: "submitted" | "approved" | "rejected";
   feedback: string | null;
   reviewed_by_ranger_id: string | null;
   submitted_at: string;
@@ -60,8 +53,7 @@ export interface TaskCompletion {
   updated_at?: string | null;
 }
 
-export interface AdventureTaskCompletion
-  extends TaskCompletion {
+export interface AdventureTaskCompletion extends TaskCompletion {
   task_title: string;
   task_description: string | null;
   xp_reward: number;
@@ -77,7 +69,7 @@ export interface CreateTaskCompletionPayload {
 }
 
 export interface ReviewTaskCompletionPayload {
-  status: 'approved' | 'rejected';
+  status: "approved" | "rejected";
   feedback?: string;
 }
 
@@ -99,45 +91,44 @@ export const createSubmission = async (
   return response.data.submission;
 };
 
-export const getSubmissionsForAdventure =
-  async (
-    adventureId: string,
-  ): Promise<AdventureSubmission[]> => {
-    const response = await apiClient.get(
-      `/adventures/${adventureId}/submissions`,
-    );
+export const getSubmissionsForAdventure = async (
+  adventureId: string,
+): Promise<AdventureSubmission[]> => {
+  const response = await apiClient.get(
+    `/adventures/${adventureId}/submissions`,
+  );
 
-    return response.data;
-  };
+  return response.data;
+};
 
 export interface SubmissionsPagination {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface PaginatedSubmissions {
-    data: AdventureSubmission[];
-    pagination: SubmissionsPagination;
+  data: AdventureSubmission[];
+  pagination: SubmissionsPagination;
 }
 
 export const getSubmissionsForAdventurePaginated = async (
-    adventureId: string,
-    page = 1,
-    limit = 20
+  adventureId: string,
+  page = 1,
+  limit = 20,
 ): Promise<PaginatedSubmissions> => {
-    const response = await apiClient.get(
-        `/adventures/${adventureId}/submissions/paginated`,
-        {
-            params: {
-                page,
-                limit,
-            },
-        }
-    );
+  const response = await apiClient.get(
+    `/adventures/${adventureId}/submissions/paginated`,
+    {
+      params: {
+        page,
+        limit,
+      },
+    },
+  );
 
-    return response.data;
+  return response.data;
 };
 
 export const reviewSubmission = async (
@@ -174,120 +165,12 @@ export const updateMySubmission = async (
   return response.data.submission;
 };
 
-
-export const uploadImage = async (imageUri: string): Promise<string> => {
-  const formData = new FormData();
-
-  if (Platform.OS === 'web') {
-    // Web requires an actual File or Blob.
-    const fileResponse = await fetch(imageUri);
-
-    if (!fileResponse.ok) {
-      throw new Error(
-        `Failed to read selected image: ${fileResponse.status}`,
-      );
-    }
-
-    const blob = await fileResponse.blob();
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) {
-      throw new Error(
-        `Unsupported image type: ${blob.type || 'unknown'}`,
-      );
-    }
-
-    if (blob.size > 10 * 1024 * 1024) {
-      throw new Error('Image must be smaller than 10 MB');
-    }
-
-    const extension =
-      blob.type === 'image/png'
-        ? 'png'
-        : blob.type === 'image/webp'
-          ? 'webp'
-          : 'jpg';
-
-    const file = new File(
-      [blob],
-      `task-image-${Date.now()}.${extension}`,
-      { type: blob.type },
-    );
-
-    formData.append('file', file);
-  } else {
-    // React Native Android/iOS file descriptor.
-    const filename =
-      imageUri.split('?')[0].split('/').pop() ||
-      `task-image-${Date.now()}.jpg`;
-
-    const extension = filename.split('.').pop()?.toLowerCase();
-
-    const type =
-      extension === 'png'
-        ? 'image/png'
-        : extension === 'webp'
-          ? 'image/webp'
-          : 'image/jpeg';
-
-    formData.append(
-      'file',
-      {
-        uri: imageUri,
-        name: filename,
-        type,
-      } as any,
-    );
-  }
-
-  const baseUrl =
-    Platform.OS === 'web'
-      ? process.env.EXPO_PUBLIC_WEB_API_URL
-      : process.env.EXPO_PUBLIC_MOBILE_API_URL;
-
-  if (!baseUrl) {
-    throw new Error('Backend API URL is not configured');
-  }
-
-  const token = await getToken();
-
-  if (!token) {
-    throw new Error('Authentication token is missing. Please log in again.');
-  }
-
-  const uploadUrl = `${baseUrl.replace(/\/$/, '')}/storage/upload`;
-
-  console.log('Uploading image:', {
-    platform: Platform.OS,
-    uploadUrl,
-  });
-
-  // Do not set Content-Type manually.
-  // fetch generates the correct multipart boundary.
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    throw new Error(
-      `Image upload failed (${response.status}): ${errorText}`,
-    );
-  }
-
-  const data = await response.json();
-
-  if (!data.imageUrl) {
-    throw new Error('Image upload succeeded without an image URL');
-  }
-
-  return data.imageUrl;
+export const uploadImage = async (
+  imageUri: string,
+  onProgress?: (progress: number) => void,
+): Promise<string> => {
+  return storageUploadImage(imageUri, onProgress);
 };
-
 
 /*
  * ==========================================
@@ -310,33 +193,27 @@ export const createTaskCompletion = async (
 export const getTaskCompletions = async (
   taskId: string,
 ): Promise<TaskCompletion[]> => {
-  const response = await apiClient.get(
-    `/tasks/${taskId}/completions`,
-  );
+  const response = await apiClient.get(`/tasks/${taskId}/completions`);
 
   return response.data;
 };
 
-export const getTaskCompletionsForAdventure =
-  async (
-    adventureId: string,
-  ): Promise<AdventureTaskCompletion[]> => {
-    console.log(
-      'Loading submissions for adventure:',
-      adventureId,
-    );
+export const getTaskCompletionsForAdventure = async (
+  adventureId: string,
+): Promise<AdventureTaskCompletion[]> => {
+  console.log("Loading submissions for adventure:", adventureId);
 
-    const response = await apiClient.get(
-      `/adventures/${adventureId}/task-completions`,
-    );
+  const response = await apiClient.get(
+    `/adventures/${adventureId}/task-completions`,
+  );
 
-    console.log(
-      'Submissions returned from backend:',
-      JSON.stringify(response.data, null, 2),
-    );
+  console.log(
+    "Submissions returned from backend:",
+    JSON.stringify(response.data, null, 2),
+  );
 
-    return response.data;
-  };
+  return response.data;
+};
 
 export const reviewTaskCompletion = async (
   completionId: string,
